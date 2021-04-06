@@ -93,6 +93,6 @@ class NicerExample:
                                        shuffle: bool = False) -> tf.data.Dataset:
         dataset = cls.to_tensorflow_dataset(examples)
         if shuffle:
-            dataset = dataset.shuffle(buffer_size=100, reshuffle_each_iteration=True)
+            dataset = dataset.shuffle(buffer_size=1000, reshuffle_each_iteration=True)
         dataset = dataset.batch(batch_size)
         return dataset

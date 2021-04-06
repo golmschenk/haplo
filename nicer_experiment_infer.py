@@ -8,7 +8,7 @@ from tensorflow.python.keras import callbacks
 from pathlib import Path
 
 from nicer_example import NicerExample
-from nicer_model import SimpleModel, Nyx
+from nicer_model import SimpleModel, Nyx2, Nyx10, Nyx11
 
 
 def main():
@@ -20,8 +20,8 @@ def main():
     test_examples = examples[9000:]
     test_dataset = NicerExample.to_prepared_tensorflow_dataset(test_examples, batch_size=1)
 
-    model = Nyx()
-    trial_name = "check"
+    model = Nyx11()
+    trial_name = "misunderstood-moon"
     trial_directory = Path("logs").joinpath(trial_name)
     model.load_weights(trial_directory.joinpath('best_validation_model.ckpt'))
     figures = []
