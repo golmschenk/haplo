@@ -89,10 +89,10 @@ class NicerExample:
         return dataset
 
     @classmethod
-    def to_prepared_tensorflow_dataset(cls, examples: List[NicerExample], batch_size: int = 100,
+    def to_prepared_tensorflow_dataset(cls, examples: List[NicerExample], batch_size: int = 1000,
                                        shuffle: bool = False) -> tf.data.Dataset:
         dataset = cls.to_tensorflow_dataset(examples)
         if shuffle:
-            dataset = dataset.shuffle(buffer_size=1000, reshuffle_each_iteration=True)
+            dataset = dataset.shuffle(buffer_size=10000, reshuffle_each_iteration=True)
         dataset = dataset.batch(batch_size)
         return dataset

@@ -765,3 +765,1073 @@ class Nyx12(Model):
         x = self.cropping0(x, training=training)
         x = self.reshape1(x, training=training)
         return x
+
+
+class Nyx13(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(4000, batch_normalization=False, dropout_rate=0.5)
+        self.dense1 = DenseBlock(3000, batch_normalization=False, dropout_rate=0.5)
+        self.dense2 = DenseBlock(2000, batch_normalization=False, dropout_rate=0.5)
+        self.dense3 = DenseBlock(1000, batch_normalization=False, dropout_rate=0.5)
+        self.dense4 = DenseBlock(750, batch_normalization=False)
+        self.dense5 = DenseBlock(500, batch_normalization=False, spatial=True)
+        self.reshape0 = Reshape([1, 500])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400, kernel_size=4, strides=1, batch_normalization=False)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350, kernel_size=4, strides=1, batch_normalization=False)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300, kernel_size=4, strides=1, batch_normalization=False)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250, kernel_size=4, strides=2, batch_normalization=False)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200, kernel_size=4, strides=1, batch_normalization=False)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150, kernel_size=4, strides=1, batch_normalization=False)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100, kernel_size=4, strides=1, batch_normalization=False)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTranspose(filters=1, kernel_size=4, strides=1, activation='linear')
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+class Nyx14(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(4000, batch_normalization=False, dropout_rate=0.5)
+        self.dense1 = DenseBlock(3500, batch_normalization=False, dropout_rate=0.5)
+        self.dense2 = DenseBlock(3000, batch_normalization=False, dropout_rate=0.5)
+        self.dense3 = DenseBlock(2500, batch_normalization=False, dropout_rate=0.5)
+        self.dense4 = DenseBlock(2000, batch_normalization=False, dropout_rate=0.5)
+        self.dense5 = DenseBlock(1500, batch_normalization=False, dropout_rate=0.5)
+        self.dense6 = DenseBlock(1000, batch_normalization=False, dropout_rate=0.5)
+        self.dense7 = DenseBlock(750, batch_normalization=False)
+        self.dense8 = DenseBlock(500, batch_normalization=False, spatial=True)
+        self.reshape0 = Reshape([1, 500])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400, kernel_size=2, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=200, kernel_size=3, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=120, kernel_size=4, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=60, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=30, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=1, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((3, 3))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+
+class Nyx15(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(1000, batch_normalization=False)
+        self.dense1 = DenseBlock(1000, batch_normalization=False)
+        self.dense2 = DenseBlock(900, batch_normalization=True)
+        self.dense3 = DenseBlock(900, batch_normalization=True)
+        self.dense4 = DenseBlock(800, batch_normalization=True)
+        self.dense5 = DenseBlock(800, batch_normalization=True)
+        self.dense6 = DenseBlock(700, batch_normalization=True)
+        self.dense7 = DenseBlock(700, batch_normalization=True)
+        self.dense8 = DenseBlock(600, batch_normalization=True)
+        self.dense9 = DenseBlock(600, batch_normalization=True)
+        self.dense10 = DenseBlock(500, batch_normalization=True)
+        self.dense11 = DenseBlock(500, batch_normalization=True, spatial=True)
+        self.reshape0 = Reshape([1, 500])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400, kernel_size=4, strides=1,
+                                                            batch_normalization=True)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350, kernel_size=4, strides=1,
+                                                            batch_normalization=True)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300, kernel_size=4, strides=1,
+                                                            batch_normalization=True)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250, kernel_size=4, strides=2,
+                                                            batch_normalization=True)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200, kernel_size=4, strides=1,
+                                                            batch_normalization=True)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150, kernel_size=4, strides=1,
+                                                            batch_normalization=False)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100, kernel_size=4, strides=1,
+                                                            batch_normalization=False)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTranspose(filters=1, kernel_size=4, strides=1, activation='linear')
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+
+class Nyx16(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(1000, batch_normalization=False, dropout_rate=0.5)
+        self.dense1 = DenseBlock(1000, batch_normalization=False, dropout_rate=0.5)
+        self.dense2 = DenseBlock(900, batch_normalization=True, dropout_rate=0.5)
+        self.dense3 = DenseBlock(900, batch_normalization=True, dropout_rate=0.5)
+        self.dense4 = DenseBlock(800, batch_normalization=True, dropout_rate=0.5)
+        self.dense5 = DenseBlock(800, batch_normalization=True, dropout_rate=0.5)
+        self.dense6 = DenseBlock(700, batch_normalization=True, dropout_rate=0.5)
+        self.dense7 = DenseBlock(700, batch_normalization=True, dropout_rate=0.5)
+        self.dense8 = DenseBlock(600, batch_normalization=True, dropout_rate=0.5)
+        self.dense9 = DenseBlock(600, batch_normalization=True, dropout_rate=0.5)
+        self.dense10 = DenseBlock(500, batch_normalization=True, dropout_rate=0.5)
+        self.dense11 = DenseBlock(500, batch_normalization=True, spatial=True, dropout_rate=0.5)
+        self.reshape0 = Reshape([1, 500])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0.5)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0.5)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0.5)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250, kernel_size=4, strides=2,
+                                                            batch_normalization=True, dropout_rate=0.5)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0.5)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTranspose(filters=1, kernel_size=4, strides=1, activation='linear')
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+class Nyx17(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(1000, batch_normalization=False, dropout_rate=0.5)
+        self.dense1 = DenseBlock(1000, batch_normalization=False, dropout_rate=0.5)
+        self.dense2 = DenseBlock(900, batch_normalization=False, dropout_rate=0.5)
+        self.dense3 = DenseBlock(900, batch_normalization=False, dropout_rate=0.5)
+        self.dense4 = DenseBlock(800, batch_normalization=False, dropout_rate=0.5)
+        self.dense5 = DenseBlock(800, batch_normalization=False, dropout_rate=0.5)
+        self.dense6 = DenseBlock(700, batch_normalization=False, dropout_rate=0.5)
+        self.dense7 = DenseBlock(700, batch_normalization=False, dropout_rate=0.5)
+        self.dense8 = DenseBlock(600, batch_normalization=False, dropout_rate=0.5)
+        self.dense9 = DenseBlock(600, batch_normalization=False, dropout_rate=0.5)
+        self.dense10 = DenseBlock(500, batch_normalization=False, dropout_rate=0.5)
+        self.dense11 = DenseBlock(500, batch_normalization=False, spatial=True, dropout_rate=0.5)
+        self.reshape0 = Reshape([1, 500])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTranspose(filters=1, kernel_size=4, strides=1, activation='linear')
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+
+class Nyx18(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(1000*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense1 = DenseBlock(1000*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense2 = DenseBlock(900*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense3 = DenseBlock(900*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense4 = DenseBlock(800*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense5 = DenseBlock(800*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense6 = DenseBlock(700*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense7 = DenseBlock(700*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense8 = DenseBlock(600*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense9 = DenseBlock(600*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense10 = DenseBlock(500*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense11 = DenseBlock(500*4, batch_normalization=False, spatial=True, dropout_rate=0.5)
+        self.reshape0 = Reshape([1, 500*4])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250*4, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50*4, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTranspose(filters=1, kernel_size=4, strides=1, activation='linear')
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+class Nyx19(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(1000*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense1 = DenseBlock(1000*4, batch_normalization=False, dropout_rate=0.5)
+        self.dense2 = DenseBlock(900*4, batch_normalization=True, dropout_rate=0.5)
+        self.dense3 = DenseBlock(900*4, batch_normalization=True, dropout_rate=0.5)
+        self.dense4 = DenseBlock(800*4, batch_normalization=True, dropout_rate=0.5)
+        self.dense5 = DenseBlock(800*4, batch_normalization=True, dropout_rate=0.5)
+        self.dense6 = DenseBlock(700*4, batch_normalization=True, dropout_rate=0.5)
+        self.dense7 = DenseBlock(700*4, batch_normalization=True, dropout_rate=0.5)
+        self.dense8 = DenseBlock(600*4, batch_normalization=True, dropout_rate=0.5)
+        self.dense9 = DenseBlock(600*4, batch_normalization=True, dropout_rate=0.5)
+        self.dense10 = DenseBlock(500*4, batch_normalization=True, dropout_rate=0.5)
+        self.dense11 = DenseBlock(500*4, batch_normalization=True, spatial=True, dropout_rate=0.5)
+        self.reshape0 = Reshape([1, 500*4])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400*4, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0.5)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350*4, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0.5)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300*4, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0.5)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250*4, kernel_size=4, strides=2,
+                                                            batch_normalization=True, dropout_rate=0.5)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200*4, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0.5)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.5)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50*4, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTranspose(filters=1, kernel_size=4, strides=1, activation='linear')
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+class Nyx20(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(1000*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense1 = DenseBlock(1000*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense2 = DenseBlock(900*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense3 = DenseBlock(900*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense4 = DenseBlock(800*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense5 = DenseBlock(800*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense6 = DenseBlock(700*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense7 = DenseBlock(700*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense8 = DenseBlock(600*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense9 = DenseBlock(600*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense10 = DenseBlock(500*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense11 = DenseBlock(500*4, batch_normalization=False, spatial=True, dropout_rate=0.9)
+        self.reshape0 = Reshape([1, 500*4])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.9)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.9)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.9)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250*4, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0.9)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.9)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.9)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.9)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50*4, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTranspose(filters=1, kernel_size=4, strides=1, activation='linear')
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+
+class Nyx21(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(1000*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense1 = DenseBlock(1000*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense2 = DenseBlock(900*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense3 = DenseBlock(900*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense4 = DenseBlock(800*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense5 = DenseBlock(800*4, batch_normalization=False, dropout_rate=0.9)
+        self.dense6 = DenseBlock(700*4, batch_normalization=False, dropout_rate=0)
+        self.dense7 = DenseBlock(700*4, batch_normalization=False, dropout_rate=0)
+        self.dense8 = DenseBlock(600*4, batch_normalization=False, dropout_rate=0)
+        self.dense9 = DenseBlock(600*4, batch_normalization=False, dropout_rate=0)
+        self.dense10 = DenseBlock(500*4, batch_normalization=False, dropout_rate=0)
+        self.dense11 = DenseBlock(500*4, batch_normalization=False, spatial=True, dropout_rate=0)
+        self.reshape0 = Reshape([1, 500*4])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250*4, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100*4, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50*4, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTranspose(filters=1, kernel_size=4, strides=1, activation='linear')
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+class Nyx22(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(1000, batch_normalization=False, dropout_rate=0.5)
+        self.dense1 = DenseBlock(1000, batch_normalization=False, dropout_rate=0.5)
+        self.dense2 = DenseBlock(900, batch_normalization=True, dropout_rate=0.5)
+        self.dense3 = DenseBlock(900, batch_normalization=True, dropout_rate=0.5)
+        self.dense4 = DenseBlock(800, batch_normalization=True, dropout_rate=0.5)
+        self.dense5 = DenseBlock(800, batch_normalization=True, dropout_rate=0.5)
+        self.dense6 = DenseBlock(700, batch_normalization=True, dropout_rate=0)
+        self.dense7 = DenseBlock(700, batch_normalization=True, dropout_rate=0)
+        self.dense8 = DenseBlock(600, batch_normalization=True, dropout_rate=0)
+        self.dense9 = DenseBlock(600, batch_normalization=True, dropout_rate=0)
+        self.dense10 = DenseBlock(500, batch_normalization=True, dropout_rate=0)
+        self.dense11 = DenseBlock(500, batch_normalization=True, spatial=True, dropout_rate=0)
+        self.reshape0 = Reshape([1, 500])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250, kernel_size=4, strides=2,
+                                                            batch_normalization=True, dropout_rate=0)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTranspose(filters=1, kernel_size=4, strides=1, activation='linear')
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+class Nyx23(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(1000, batch_normalization=False, dropout_rate=0.5)
+        self.dense1 = DenseBlock(1000, batch_normalization=False, dropout_rate=0.5)
+        self.dense2 = DenseBlock(900, batch_normalization=True, dropout_rate=0.5)
+        self.dense3 = DenseBlock(900, batch_normalization=True, dropout_rate=0.5)
+        self.dense4 = DenseBlock(800, batch_normalization=True, dropout_rate=0.5)
+        self.dense5 = DenseBlock(800, batch_normalization=True, dropout_rate=0.5)
+        self.dense6 = DenseBlock(700, batch_normalization=True, dropout_rate=0)
+        self.dense7 = DenseBlock(700, batch_normalization=True, dropout_rate=0)
+        self.dense8 = DenseBlock(600, batch_normalization=True, dropout_rate=0)
+        self.dense9 = DenseBlock(600, batch_normalization=True, dropout_rate=0)
+        self.dense10 = DenseBlock(500, batch_normalization=True, dropout_rate=0)
+        self.dense11 = DenseBlock(500, batch_normalization=True, spatial=True, dropout_rate=0)
+        self.reshape0 = Reshape([1, 500])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250, kernel_size=4, strides=2,
+                                                            batch_normalization=True, dropout_rate=0)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200, kernel_size=4, strides=1,
+                                                            batch_normalization=True, dropout_rate=0)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTransposeBlock(filters=1, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+    
+class Eos0(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(20, batch_normalization=False, dropout_rate=0)
+        self.dense1 = DenseBlock(30, batch_normalization=False, dropout_rate=0)
+        self.dense2 = DenseBlock(40, batch_normalization=False, dropout_rate=0)
+        self.dense3 = DenseBlock(50, batch_normalization=False, dropout_rate=0)
+        self.dense4 = DenseBlock(100, batch_normalization=False, dropout_rate=0.5)
+        self.dense5 = DenseBlock(100, batch_normalization=False, dropout_rate=0.5)
+        self.dense6 = DenseBlock(200, batch_normalization=False, dropout_rate=0.5)
+        self.dense7 = DenseBlock(200, batch_normalization=False, dropout_rate=0.5)
+        self.dense8 = DenseBlock(300, batch_normalization=False, dropout_rate=0.5)
+        self.dense9 = DenseBlock(300, batch_normalization=False, dropout_rate=0.5)
+        self.dense10 = DenseBlock(500, batch_normalization=False, dropout_rate=0.5)
+        self.dense11 = DenseBlock(500, batch_normalization=False, spatial=True, dropout_rate=0.5)
+        self.reshape0 = Reshape([1, 500])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=350, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=300, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=250, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=200, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=150, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=100, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=50, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTransposeBlock(filters=1, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+class Eos1(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(20, batch_normalization=False, dropout_rate=0)
+        self.dense1 = DenseBlock(30, batch_normalization=False, dropout_rate=0)
+        self.dense2 = DenseBlock(40, batch_normalization=False, dropout_rate=0)
+        self.dense3 = DenseBlock(50, batch_normalization=False, dropout_rate=0)
+        self.dense4 = DenseBlock(60, batch_normalization=False, dropout_rate=0)
+        self.dense5 = DenseBlock(60, batch_normalization=False, dropout_rate=0)
+        self.dense6 = DenseBlock(60, batch_normalization=False, dropout_rate=0)
+        self.dense7 = DenseBlock(60, batch_normalization=False, dropout_rate=0)
+        self.dense8 = DenseBlock(60, batch_normalization=False, dropout_rate=0)
+        self.dense9 = DenseBlock(60, batch_normalization=False, dropout_rate=0)
+        self.dense10 = DenseBlock(60, batch_normalization=False, dropout_rate=0)
+        self.dense11 = DenseBlock(60, batch_normalization=False, spatial=True, dropout_rate=0)
+        self.reshape0 = Reshape([1, 60])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=60, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=60, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=60, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=50, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=40, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=30, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=20, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=10, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution8 = Conv1DTransposeBlock(filters=1, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+class Eos2(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(20, batch_normalization=False, dropout_rate=0.1)
+        self.dense1 = DenseBlock(30, batch_normalization=False, dropout_rate=0.1)
+        self.dense2 = DenseBlock(40, batch_normalization=False, dropout_rate=0.1)
+        self.dense3 = DenseBlock(50, batch_normalization=False, dropout_rate=0.1)
+        self.dense4 = DenseBlock(60, batch_normalization=False, dropout_rate=0.1)
+        self.dense5 = DenseBlock(60, batch_normalization=False, dropout_rate=0.1)
+        self.dense6 = DenseBlock(60, batch_normalization=False, dropout_rate=0.1)
+        self.dense7 = DenseBlock(60, batch_normalization=False, dropout_rate=0.1)
+        self.dense8 = DenseBlock(60, batch_normalization=False, dropout_rate=0.1)
+        self.dense9 = DenseBlock(60, batch_normalization=False, dropout_rate=0.1)
+        self.dense10 = DenseBlock(60, batch_normalization=False, dropout_rate=0.1)
+        self.dense11 = DenseBlock(60, batch_normalization=False, spatial=True, dropout_rate=0.1)
+        self.reshape0 = Reshape([1, 60])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=60, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.1)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=60, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.1)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=60, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.1)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=50, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0.1)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=40, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.1)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=30, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.1)
+        self.transposed_convolution6 = Conv1DTransposeBlock(filters=20, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0.1)
+        self.transposed_convolution7 = Conv1DTransposeBlock(filters=10, kernel_size=4, strides=2,
+                                                            batch_normalization=False, dropout_rate=0.1)
+        self.transposed_convolution8 = Conv1DTransposeBlock(filters=1, kernel_size=4, strides=1,
+                                                            batch_normalization=False, dropout_rate=0)
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((1, 2))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.dense6(x, training=training)
+        x = self.dense7(x, training=training)
+        x = self.dense8(x, training=training)
+        x = self.dense9(x, training=training)
+        x = self.dense10(x, training=training)
+        x = self.dense11(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.transposed_convolution6(x, training=training)
+        x = self.transposed_convolution7(x, training=training)
+        x = self.transposed_convolution8(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+class Nyx9Narrow(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(4000//2, batch_normalization=False, dropout_rate=0.5)
+        self.dense1 = DenseBlock(3000//2, batch_normalization=False, dropout_rate=0.5)
+        self.dense2 = DenseBlock(2000//2, batch_normalization=False, dropout_rate=0.5)
+        self.dense3 = DenseBlock(1000//2, batch_normalization=False, dropout_rate=0.5)
+        self.dense4 = DenseBlock(750//2, batch_normalization=False)
+        self.dense5 = DenseBlock(500//2, batch_normalization=False, spatial=True)
+        self.reshape0 = Reshape([1, 500//2])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400//2, kernel_size=2, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=200//2, kernel_size=3, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=120//2, kernel_size=4, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=60//2, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=30//2, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=1, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((3, 3))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
+class Nyx9Wide(Model):
+    def __init__(self):
+        super().__init__()
+        self.dense0 = DenseBlock(4000*2, batch_normalization=False, dropout_rate=0.5)
+        self.dense1 = DenseBlock(3000*2, batch_normalization=False, dropout_rate=0.5)
+        self.dense2 = DenseBlock(2000*2, batch_normalization=False, dropout_rate=0.5)
+        self.dense3 = DenseBlock(1000*2, batch_normalization=False, dropout_rate=0.5)
+        self.dense4 = DenseBlock(750*2, batch_normalization=False)
+        self.dense5 = DenseBlock(500*2, batch_normalization=False, spatial=True)
+        self.reshape0 = Reshape([1, 500*2])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400*2, kernel_size=2, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=200*2, kernel_size=3, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=120*2, kernel_size=4, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=60*2, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=30*2, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution5 = Conv1DTransposeBlock(filters=1, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.reshape1 = Reshape([64])
+        self.cropping0 = Cropping1D((3, 3))
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        x = self.dense2(x, training=training)
+        x = self.dense3(x, training=training)
+        x = self.dense4(x, training=training)
+        x = self.dense5(x, training=training)
+        x = self.reshape0(x, training=training)
+        x = self.transposed_convolution0(x, training=training)
+        x = self.transposed_convolution1(x, training=training)
+        x = self.transposed_convolution2(x, training=training)
+        x = self.transposed_convolution3(x, training=training)
+        x = self.transposed_convolution4(x, training=training)
+        x = self.transposed_convolution5(x, training=training)
+        x = self.cropping0(x, training=training)
+        x = self.reshape1(x, training=training)
+        return x
+
