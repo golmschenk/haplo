@@ -67,26 +67,33 @@ class NicerExample:
 
     @staticmethod
     def show_parameter_distribution(examples: List[NicerExample]):
-        parameters_list = []
-        for example in examples:
-            parameters_list.append(example.parameters)
-        parameters = np.stack(parameters_list, axis=0)
+        parameters = NicerExample.extract_parameters_array(examples)
         figure, axes = plt.subplots(dpi=400)
         axes = sns.violinplot(ax=axes, data=parameters)
         plt.show()
 
     @staticmethod
     def to_tensorflow_dataset(examples: List[NicerExample]) -> tf.data.Dataset:
-        parameters_list = []
-        for example in examples:
-            parameters_list.append(example.parameters)
-        parameters = np.stack(parameters_list, axis=0)
+        parameters = NicerExample.extract_parameters_array(examples)
+        phase_amplitudes = NicerExample.extract_phase_amplitudes_array(examples)
+        dataset = tf.data.Dataset.from_tensor_slices((parameters, phase_amplitudes))
+        return dataset
+
+    @staticmethod
+    def extract_phase_amplitudes_array(examples):
         phase_amplitudes_list = []
         for example in examples:
             phase_amplitudes_list.append(example.phase_amplitudes)
         phase_amplitudes = np.stack(phase_amplitudes_list, axis=0)
-        dataset = tf.data.Dataset.from_tensor_slices((parameters, phase_amplitudes))
-        return dataset
+        return phase_amplitudes
+
+    @staticmethod
+    def extract_parameters_array(examples):
+        parameters_list = []
+        for example in examples:
+            parameters_list.append(example.parameters)
+        parameters = np.stack(parameters_list, axis=0)
+        return parameters
 
     @classmethod
     def to_prepared_tensorflow_dataset(cls, examples: List[NicerExample], batch_size: int = 1000,
