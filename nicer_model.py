@@ -49,7 +49,7 @@ class Conv1DTransposeBlock(Layer):
                  batch_normalization: bool = True, spatial: bool = True):
         super().__init__()
         leaky_relu = LeakyReLU(alpha=0.01)
-        self.convolution = Conv1DTranspose(filters, kernel_size=kernel_size, strides=strides, activation=leaky_relu)
+        self.convolution = Conv1DTranspose(filters, kernel_size=kernel_size, strides=strides, activation=leaky_relu, kernel_regularizer=regularizers.L2(l2=1000))
         if dropout_rate > 0:
             if spatial:
                 self.dropout = SpatialDropout1D(dropout_rate)
@@ -94,7 +94,7 @@ class DenseBlock(Layer):
                  batch_normalization: bool = True, spatial: bool = False):
         super().__init__()
         leaky_relu = LeakyReLU(alpha=0.01)
-        self.dense = Dense(filters, activation=leaky_relu)
+        self.dense = Dense(filters, activation=leaky_relu, kernel_regularizer=regularizers.L2(l2=1000))
         if dropout_rate > 0:
             self.dropout = Dropout(dropout_rate)
         else:
@@ -1840,19 +1840,19 @@ class Nyx9Wide(Model):
 class Nyx9Wider(Model):
     def __init__(self):
         super().__init__()
-        self.dense0 = DenseBlock(4000*4, batch_normalization=False, dropout_rate=0.0)
-        self.dense1 = DenseBlock(3000*4, batch_normalization=False, dropout_rate=0.0)
-        self.dense2 = DenseBlock(2000*4, batch_normalization=False, dropout_rate=0.0)
-        self.dense3 = DenseBlock(1000*4, batch_normalization=False, dropout_rate=0.0)
-        self.dense4 = DenseBlock(750*4, batch_normalization=False, dropout_rate=0.0)
-        self.dense5 = DenseBlock(500*4, batch_normalization=False, spatial=True, dropout_rate=0.0)
+        self.dense0 = DenseBlock(4000*8, batch_normalization=False, dropout_rate=0.0)
+        self.dense1 = DenseBlock(3000*8, batch_normalization=False, dropout_rate=0.0)
+        self.dense2 = DenseBlock(2000*8, batch_normalization=False, dropout_rate=0.0)
+        self.dense3 = DenseBlock(1000*8, batch_normalization=False, dropout_rate=0.0)
+        self.dense4 = DenseBlock(750*8, batch_normalization=False, dropout_rate=0.0)
+        self.dense5 = DenseBlock(500*8, batch_normalization=False, spatial=True, dropout_rate=0.0)
         # self.noise0 = GaussianNoise(0.05)
-        self.reshape0 = Reshape([1, 500*4])
-        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400*4, kernel_size=2, strides=1, batch_normalization=False, dropout_rate=0)
-        self.transposed_convolution1 = Conv1DTransposeBlock(filters=200*4, kernel_size=3, strides=1, batch_normalization=False, dropout_rate=0)
-        self.transposed_convolution2 = Conv1DTransposeBlock(filters=120*4, kernel_size=4, strides=1, batch_normalization=False, dropout_rate=0)
-        self.transposed_convolution3 = Conv1DTransposeBlock(filters=60*4, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
-        self.transposed_convolution4 = Conv1DTransposeBlock(filters=30*4, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.reshape0 = Reshape([1, 500*8])
+        self.transposed_convolution0 = Conv1DTransposeBlock(filters=400*8, kernel_size=2, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution1 = Conv1DTransposeBlock(filters=200*8, kernel_size=3, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution2 = Conv1DTransposeBlock(filters=120*8, kernel_size=4, strides=1, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution3 = Conv1DTransposeBlock(filters=60*8, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
+        self.transposed_convolution4 = Conv1DTransposeBlock(filters=30*8, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
         self.transposed_convolution5 = Conv1DTransposeBlock(filters=1, kernel_size=4, strides=2, batch_normalization=False, dropout_rate=0)
         self.reshape1 = Reshape([64])
         self.cropping0 = Cropping1D((3, 3))

@@ -28,17 +28,18 @@ def main():
     validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples)
 
     model = Nyx9Wider()
-    wandb.run.notes = f"{type(model).__name__}er_no_do"
+    wandb.run.notes = f"{type(model).__name__}er_no_do_l2_1000_cont"
     optimizer = tf.optimizers.Adam(learning_rate=1e-4)
     loss_metric = tf.keras.losses.MeanSquaredError()
     metrics = [tf.keras.metrics.MeanSquaredError()]
     datetime_string = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    trial_directory = Path("logs").joinpath(f'{datetime_string}')
+    trial_directory = Path("logs").joinpath(f'{wandb.run.notes}')
     best_validation_model_save_path = trial_directory.joinpath('best_validation_model.ckpt')
     best_validation_checkpoint_callback = callbacks.ModelCheckpoint(
         best_validation_model_save_path, monitor='val_loss', mode='min', save_best_only=True,
         save_weights_only=True)
     model.compile(optimizer=optimizer, loss=loss_metric, metrics=metrics)
+    model.load_weights('logs/2021-04-20-11-00-24/best_validation_model.ckpt')
     model.fit(train_dataset, epochs=5000, validation_data=validation_dataset,
               callbacks=[WandbCallback(), best_validation_checkpoint_callback])
 
