@@ -10,7 +10,9 @@ from nicer_example import NicerExample
 from nicer_model import SimpleModel, WiderWithDropoutModel, Nyx4, Nyx5, Nyx2, Nyx4Narrow, Nyx6, Nyx7, Nyx8, Nyx9, Nyx10, \
     Nyx11, Nyx12, Nyx13, Nyx14, Nyx15, Nyx16, Nyx17, Nyx18, Nyx19, Nyx20, Nyx21, Nyx22, Nyx23, Eos0, Eos1, Eos2, \
     Nyx9Narrow, Nyx9Wide, Nyx9Wider
-from residual_model import ResModel0
+from residual_model import ResModel0, ResModel1NoDoAvgPoolEnd, ResModel1NoDoAvgPoolEnd8Wider, \
+    ResModel1InitialDenseNoDoConvEndDoublingWider, ResModel1InitialDenseNoDoConvEndDoublingWiderer, \
+    ResModel1InitialDenseNoDoConvEndDoublingWidererL2
 
 
 def main():
@@ -28,7 +30,7 @@ def main():
     train_dataset = NicerExample.to_prepared_tensorflow_dataset(train_examples, shuffle=True)
     validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples)
 
-    model = ResModel0()
+    model = ResModel1InitialDenseNoDoConvEndDoublingWidererL2()
     wandb.run.notes = f"{type(model).__name__}"
     optimizer = tf.optimizers.Adam(learning_rate=1e-4)
     loss_metric = tf.keras.losses.MeanSquaredError()
@@ -40,7 +42,6 @@ def main():
         best_validation_model_save_path, monitor='val_loss', mode='min', save_best_only=True,
         save_weights_only=True)
     model.compile(optimizer=optimizer, loss=loss_metric, metrics=metrics)
-    model.run_eagerly = True
     model.fit(train_dataset, epochs=5000, validation_data=validation_dataset,
               callbacks=[WandbCallback(), best_validation_checkpoint_callback])
 
