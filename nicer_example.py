@@ -27,7 +27,8 @@ class NicerExample:
         return example
 
     @classmethod
-    def list_from_constantinos_kalapotharakos_file(cls, dataset_path: Path) -> List[NicerExample]:
+    def list_from_constantinos_kalapotharakos_file(cls, dataset_path: Path, limit: Optional[int] = None
+                                                   ) -> List[NicerExample]:
         examples: List[cls] = []
         with dataset_path.open() as dataset_file:
             value_iterator = re.finditer(r"[^\s]+", dataset_file.read())
@@ -44,6 +45,8 @@ class NicerExample:
                 for _ in range(64):
                     phase_amplitudes.append(float(next(value_iterator).group(0)))
                 examples.append(cls.new(np.array(parameters), np.array(phase_amplitudes), likelihood))
+                if limit is not None and len(examples) >= limit:
+                    break
         return examples
 
     def show(self):
@@ -73,10 +76,13 @@ class NicerExample:
         plt.show()
 
     @staticmethod
-    def to_tensorflow_dataset(examples: List[NicerExample]) -> tf.data.Dataset:
+    def to_tensorflow_dataset(examples: List[NicerExample], parameters_labels: bool = True) -> tf.data.Dataset:
         parameters = NicerExample.extract_parameters_array(examples)
         phase_amplitudes = NicerExample.extract_phase_amplitudes_array(examples)
-        dataset = tf.data.Dataset.from_tensor_slices((parameters, phase_amplitudes))
+        if parameters_labels:
+            dataset = tf.data.Dataset.from_tensor_slices((parameters, phase_amplitudes))
+        else:
+            dataset = tf.data.Dataset.from_tensor_slices((phase_amplitudes, parameters))
         return dataset
 
     @staticmethod
@@ -97,8 +103,8 @@ class NicerExample:
 
     @classmethod
     def to_prepared_tensorflow_dataset(cls, examples: List[NicerExample], batch_size: int = 1000,
-                                       shuffle: bool = False) -> tf.data.Dataset:
-        dataset = cls.to_tensorflow_dataset(examples)
+                                       shuffle: bool = False, parameters_labels: bool = True) -> tf.data.Dataset:
+        dataset = cls.to_tensorflow_dataset(examples, parameters_labels=parameters_labels)
         if shuffle:
             dataset = dataset.shuffle(buffer_size=10000, reshuffle_each_iteration=True)
         dataset = dataset.batch(batch_size)
