@@ -76,8 +76,15 @@ class NicerExample:
         plt.show()
 
     @staticmethod
-    def to_tensorflow_dataset(examples: List[NicerExample], parameters_labels: bool = True) -> tf.data.Dataset:
+    def to_tensorflow_dataset(examples: List[NicerExample], parameters_labels: bool = True,
+                              normalize_parameters: bool = False) -> tf.data.Dataset:
         parameters = NicerExample.extract_parameters_array(examples)
+        if normalize_parameters:
+            # TODO: Probably should not come from a separate file?
+            parameter_means = np.load('parameter_means.npy')
+            parameter_standard_deviations = np.load('parameter_standard_deviations.npy')
+            parameters -= parameter_means
+            parameters /= parameter_standard_deviations
         phase_amplitudes = NicerExample.extract_phase_amplitudes_array(examples)
         if parameters_labels:
             dataset = tf.data.Dataset.from_tensor_slices((parameters, phase_amplitudes))

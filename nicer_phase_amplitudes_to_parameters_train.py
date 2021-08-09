@@ -37,7 +37,6 @@ def main():
         best_validation_model_save_path, monitor='val_loss', mode='min', save_best_only=True,
         save_weights_only=True)
     model.compile(optimizer=optimizer, loss=loss_metric, metrics=metrics)
-    model.run_eagerly = True
     model.fit(train_dataset, epochs=5000, validation_data=validation_dataset,
               callbacks=[WandbCallback(), best_validation_checkpoint_callback])
 
