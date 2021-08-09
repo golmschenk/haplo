@@ -22,8 +22,10 @@ def main():
     test_examples = examples[-tenth_dataset_count:]
     print(f'Dataset sizes: train={len(train_examples)}, validation={len(validation_examples)}, '
           f'test={len(test_examples)}')
-    train_dataset = NicerExample.to_prepared_tensorflow_dataset(train_examples, shuffle=True, parameters_labels=False)
-    validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples, parameters_labels=False)
+    train_dataset = NicerExample.to_prepared_tensorflow_dataset(train_examples, shuffle=True, parameters_labels=False,
+                                                                normalize_parameters_and_phase_amplitudes=True)
+    validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples, parameters_labels=False,
+                                                                     normalize_parameters_and_phase_amplitudes=True)
 
     model = MiraNoBnNoDo()
     wandb.run.notes = f"{type(model).__name__}"

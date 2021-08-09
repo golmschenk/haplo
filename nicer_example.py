@@ -77,15 +77,17 @@ class NicerExample:
 
     @staticmethod
     def to_tensorflow_dataset(examples: List[NicerExample], parameters_labels: bool = True,
-                              normalize_parameters: bool = False) -> tf.data.Dataset:
+                              normalize_parameters_and_phase_amplitudes: bool = False) -> tf.data.Dataset:
         parameters = NicerExample.extract_parameters_array(examples)
-        if normalize_parameters:
+        phase_amplitudes = NicerExample.extract_phase_amplitudes_array(examples)
+        if normalize_parameters_and_phase_amplitudes:
             # TODO: Probably should not come from a separate file?
             parameter_means = np.load('parameter_means.npy')
             parameter_standard_deviations = np.load('parameter_standard_deviations.npy')
             parameters -= parameter_means
             parameters /= parameter_standard_deviations
-        phase_amplitudes = NicerExample.extract_phase_amplitudes_array(examples)
+            phase_amplitudes -= 34025.080543335825
+            phase_amplitudes /= 47698.66676993027
         if parameters_labels:
             dataset = tf.data.Dataset.from_tensor_slices((parameters, phase_amplitudes))
         else:
@@ -110,8 +112,11 @@ class NicerExample:
 
     @classmethod
     def to_prepared_tensorflow_dataset(cls, examples: List[NicerExample], batch_size: int = 1000,
-                                       shuffle: bool = False, parameters_labels: bool = True) -> tf.data.Dataset:
-        dataset = cls.to_tensorflow_dataset(examples, parameters_labels=parameters_labels)
+                                       shuffle: bool = False, parameters_labels: bool = True,
+                                       normalize_parameters_and_phase_amplitudes: bool = False) -> tf.data.Dataset:
+        dataset = cls.to_tensorflow_dataset(
+            examples, parameters_labels=parameters_labels,
+            normalize_parameters_and_phase_amplitudes=normalize_parameters_and_phase_amplitudes)
         if shuffle:
             dataset = dataset.shuffle(buffer_size=10000, reshuffle_each_iteration=True)
         dataset = dataset.batch(batch_size)
