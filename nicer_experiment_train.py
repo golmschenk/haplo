@@ -6,11 +6,8 @@ from wandb.keras import WandbCallback
 from tensorflow.python.keras import callbacks
 from pathlib import Path
 
-from nicer_example import NicerExample
-from nicer_model import SimpleModel, WiderWithDropoutModel, Nyx4, Nyx5, Nyx2, Nyx4Narrow, Nyx6, Nyx7, Nyx8, Nyx9, Nyx10, \
-    Nyx11, Nyx12, Nyx13, Nyx14, Nyx15, Nyx16, Nyx17, Nyx18, Nyx19, Nyx20, Nyx21, Nyx22, Nyx23, Eos0, Eos1, Eos2, \
-    Nyx9Narrow, Nyx9Wide, Nyx9Wider
-from residual_model import ResModel0, ResModel1NoDoAvgPoolEnd, ResModel1NoDoAvgPoolEnd8Wider, \
+from ml4a.nicer_example import NicerExample
+from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, \
     ResModel1InitialDenseNoDoConvEndDoublingWider, ResModel1InitialDenseNoDoConvEndDoublingWiderer, \
     ResModel1InitialDenseNoDoConvEndDoublingWidererL2
 

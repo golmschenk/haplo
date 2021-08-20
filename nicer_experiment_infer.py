@@ -1,15 +1,11 @@
-import chromedriver_binary
-import datetime
 import random
-import tensorflow as tf
-from bokeh.io import show, save, export_svg
+from bokeh.io import save, export_svg
 from bokeh.models import Column
 from bokeh.plotting import Figure
-from tensorflow.python.keras import callbacks
 from pathlib import Path
 
-from nicer_example import NicerExample
-from nicer_model import SimpleModel, Nyx2, Nyx10, Nyx9, Nyx9Wider, Nyx11
+from ml4a.nicer_example import NicerExample
+from ml4a.nicer_model import Nyx9Wider, Nyx11
 
 
 def main():

@@ -6,8 +6,8 @@ from wandb.keras import WandbCallback
 from tensorflow.python.keras import callbacks
 from pathlib import Path
 
-from nicer_example import NicerExample
-from nicer_phase_amplitudes_to_parameters_models import Mira, MiraNoBnNoDo, MiraNoSigmoid
+from ml4a.nicer_example import NicerExample
+from ml4a.nicer_phase_amplitudes_to_parameters_models import MiraNoSigmoid
 
 
 def main():
