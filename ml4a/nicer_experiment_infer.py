@@ -9,7 +9,7 @@ from ml4a.nicer_model import Nyx9Wider, Nyx11
 
 
 def main():
-    dataset_path = Path("data/mcmc_vac_all_f90.dat")
+    dataset_path = Path("../data/mcmc_vac_all_f90.dat")
     examples = NicerExample.list_from_constantinos_kalapotharakos_file(dataset_path)
     random.Random(0).shuffle(examples)
     tenth_dataset_count = int(len(examples) * 0.1)

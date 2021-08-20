@@ -12,7 +12,7 @@ class ColumnName(Enum):
     TOTAL_GAMMA_RAY_LUMINOSITY__ERG_PER_S = "Total gamma-ray luminosity (erg/s)"
 
 def load_dataset() -> pd.DataFrame:
-    dataset_path = Path("data/MLdata88.dat")
+    dataset_path = Path("../data/MLdata88.dat")
     column_names = [ColumnName.CUT_OFF_ENERGY__MEV.value,
                     ColumnName.SURFACE_MAGNETIC_FIELD__G.value,
                     ColumnName.SPIN_DOWN_POWER__ERG_PER_S.value,

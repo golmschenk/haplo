@@ -15,7 +15,7 @@ from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, \
 def main():
     print("Imports complete.", flush=True)
     wandb.init(project='ml4a', entity='ramjet', settings=wandb.Settings(start_method='fork'))
-    dataset_path = Path("data/mcmc_vac_all_f90.dat")
+    dataset_path = Path("../data/mcmc_vac_all_f90.dat")
     examples = NicerExample.list_from_constantinos_kalapotharakos_file(dataset_path)
     random.Random(0).shuffle(examples)
     tenth_dataset_count = int(len(examples) * 0.1)
