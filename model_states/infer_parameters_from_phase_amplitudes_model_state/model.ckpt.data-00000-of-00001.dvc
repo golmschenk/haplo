@@ -1,4 +1,0 @@
-outs:
-- md5: 40934d86bc1a1a94b9d959998d6ba588
-  size: 11347216
-  path: model.ckpt.data-00000-of-00001
