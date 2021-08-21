@@ -7,7 +7,7 @@ from tensorflow.python.keras import callbacks
 from pathlib import Path
 
 from ml4a.nicer_example import NicerExample
-from ml4a.nicer_phase_amplitudes_to_parameters_models import MiraNoSigmoid
+from ml4a.nicer_phase_amplitudes_to_parameters_models import Mira
 
 
 def main():
@@ -26,7 +26,7 @@ def main():
                                                                 normalize_parameters_and_phase_amplitudes=True)
     validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples, parameters_labels=False,
                                                                      normalize_parameters_and_phase_amplitudes=True)
-    model = MiraNoSigmoid()
+    model = Mira()
     wandb.run.notes = f"{type(model).__name__}"
     optimizer = tf.optimizers.Adam(learning_rate=1e-3)
     loss_metric = tf.keras.losses.MeanSquaredError()

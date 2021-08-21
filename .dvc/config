@@ -1,0 +1,5 @@
+[core]
+    analytics = true
+    remote = main
+['remote "main"']
+    url = gs://golmschenk-ml4a/

@@ -6,7 +6,7 @@ from tensorflow.keras.layers import Reshape, Convolution1D, MaxPooling1D, Averag
 from nicer_phase_amplitudes_to_parameters_model_components import BottleNeckResidualLightCurveNetworkBlock
 
 
-class Mira(Model):
+class MiraSigmoid(Model):
     def __init__(self, number_of_label_types=11, number_of_input_channels: int = 1):
         super().__init__()
         self.reshape0 = Reshape([64, 1])
@@ -223,7 +223,7 @@ class MiraNoSigmoidLowFinalLayerInitialization(Model):
         return outputs
 
 
-class MiraNoSigmoid(Model):
+class Mira(Model):
     def __init__(self, number_of_label_types=11, number_of_input_channels: int = 1):
         super().__init__()
         self.reshape0 = Reshape([64, 1])
