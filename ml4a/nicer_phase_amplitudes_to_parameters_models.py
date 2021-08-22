@@ -3,7 +3,7 @@ from tensorflow.keras import Model
 from tensorflow.keras.initializers import TruncatedNormal
 from tensorflow.keras.layers import Reshape, Convolution1D, MaxPooling1D, AveragePooling1D
 
-from nicer_phase_amplitudes_to_parameters_model_components import BottleNeckResidualLightCurveNetworkBlock
+from ml4a.nicer_phase_amplitudes_to_parameters_model_components import BottleNeckResidualLightCurveNetworkBlock
 
 
 class MiraSigmoid(Model):

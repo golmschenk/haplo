@@ -1,7 +1,8 @@
 from pathlib import Path
 
 import dvc.api
-from appdirs import user_data_dir
+
+from ml4a.paths import user_data_directory
 
 
 def download_model_states():
@@ -11,12 +12,12 @@ def download_model_states():
     ]
 
     for model_state_file_path in model_state_file_paths:
-        user_data_path = Path(user_data_dir(appname='ml4a', appauthor='golmschenk')).joinpath(model_state_file_path)
+        user_data_model_path = user_data_directory.joinpath(model_state_file_path)
         with dvc.api.open(model_state_file_path, repo='https://github.com/golmschenk/ml4a', mode='rb'
                           ) as dvc_file_handle:
             file_content = dvc_file_handle.read()
-        user_data_path.parent.mkdir(exist_ok=True, parents=True)
-        with user_data_path.open('wb') as local_file_handle:
+        user_data_model_path.parent.mkdir(exist_ok=True, parents=True)
+        with user_data_model_path.open('wb') as local_file_handle:
             local_file_handle.write(file_content)
 
 
