@@ -1,3 +1,4 @@
+import os
 import argparse
 from pathlib import Path
 import numpy as np
@@ -12,7 +13,7 @@ def infer_from_phase_amplitudes_to_parameters(input_csv_path: Path, output_csv_p
     normalized_phase_amplitudes = NicerExample.normalize_phase_amplitudes(phase_amplitudes)
     normalized_parameter_chunks = []
     for normalized_phase_amplitudes_chunk in split_array_into_chunks(normalized_phase_amplitudes, chunk_size=100):
-        normalized_parameters_chunk = model(normalized_phase_amplitudes_chunk)
+        normalized_parameters_chunk = model.call(normalized_phase_amplitudes_chunk, training=False)
         normalized_parameter_chunks.append(normalized_parameters_chunk)
     normalized_parameters = np.concatenate(normalized_parameter_chunks, axis=0)
     parameters = NicerExample.unnormalize_phase_amplitudes(normalized_parameters)
@@ -20,6 +21,7 @@ def infer_from_phase_amplitudes_to_parameters(input_csv_path: Path, output_csv_p
 
 
 if __name__ == '__main__':
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     parser = argparse.ArgumentParser(description='Infer parameters from phase amplitudes.')
     parser.add_argument('input_csv_path', type=Path, help='The path to the input phase amplitudes CSV.')
     parser.add_argument('output_csv_path', type=Path, help='The path to output parameters CSV to.')
