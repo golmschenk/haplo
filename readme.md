@@ -29,7 +29,8 @@ This setup expects `conda` is installed in some form already. The minimal `conda
 
 2. Add your input data to a CSV file. Each row should be a single example and the values should be delimited by an
    arbitrary amount of whitespace (spaces or tabs). Note, we're using the generic CSV name despite commas not being
-   used as delimiters. See [parameters_template.csv](parameters_template.csv) and
+   used as delimiters. There is no requirement for the number of digits for a value. Scientific notation using `e` or
+   `E` is allowed. See [parameters_template.csv](parameters_template.csv) and
    [phase_amplitudes_template.csv](phase_amplitudes_template.csv) for examples.
 
 3. Run the inference for either a parameters or phase amplitudes CSV input, specifying your desired input and output
