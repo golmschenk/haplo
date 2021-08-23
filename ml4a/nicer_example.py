@@ -120,7 +120,6 @@ class NicerExample:
 
     @staticmethod
     def unnormalize_parameters(parameters):
-
         parameters *= parameter_standard_deviations
         parameters += parameter_means
         return parameters
