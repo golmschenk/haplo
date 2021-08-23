@@ -3,7 +3,7 @@ This setup expects `conda` is installed in some form already. The minimal `conda
 
 1. Create a new `conda` environment for the project:
 
-        conda create -n ml4a python=3.8
+        conda create -n ml4a python=3.8 -y
 
 2. Enter the `conda` environment:
 
