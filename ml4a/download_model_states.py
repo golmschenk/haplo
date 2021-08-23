@@ -1,3 +1,4 @@
+import warnings
 from pathlib import Path
 
 import dvc.api
@@ -11,14 +12,16 @@ def download_model_states():
         Path('model_states/infer_parameters_from_phase_amplitudes_model_state/model.ckpt.index'),
     ]
 
-    for model_state_file_path in model_state_file_paths:
-        user_data_model_path = user_data_directory.joinpath(model_state_file_path)
-        with dvc.api.open(model_state_file_path, repo='https://github.com/golmschenk/ml4a', mode='rb'
-                          ) as dvc_file_handle:
-            file_content = dvc_file_handle.read()
-        user_data_model_path.parent.mkdir(exist_ok=True, parents=True)
-        with user_data_model_path.open('wb') as local_file_handle:
-            local_file_handle.write(file_content)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=UserWarning)
+        for model_state_file_path in model_state_file_paths:
+            user_data_model_path = user_data_directory.joinpath(model_state_file_path)
+            with dvc.api.open(model_state_file_path, repo='https://github.com/golmschenk/ml4a', mode='rb'
+                              ) as dvc_file_handle:
+                file_content = dvc_file_handle.read()
+            user_data_model_path.parent.mkdir(exist_ok=True, parents=True)
+            with user_data_model_path.open('wb') as local_file_handle:
+                local_file_handle.write(file_content)
 
 
 if __name__ == '__main__':
