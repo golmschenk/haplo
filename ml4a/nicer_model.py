@@ -49,7 +49,7 @@ class Conv1DTransposeBlock(Layer):
                  batch_normalization: bool = True, spatial: bool = True):
         super().__init__()
         leaky_relu = LeakyReLU(alpha=0.01)
-        self.convolution = Conv1DTranspose(filters, kernel_size=kernel_size, strides=strides, activation=leaky_relu, kernel_regularizer=regularizers.L2(l2=1000))
+        self.convolution = Conv1DTranspose(filters, kernel_size=kernel_size, strides=strides, activation=leaky_relu, kernel_regularizer=regularizers.L2(l2=0.0001))
         if dropout_rate > 0:
             if spatial:
                 self.dropout = SpatialDropout1D(dropout_rate)
@@ -94,7 +94,7 @@ class DenseBlock(Layer):
                  batch_normalization: bool = True, spatial: bool = False):
         super().__init__()
         leaky_relu = LeakyReLU(alpha=0.01)
-        self.dense = Dense(filters, activation=leaky_relu, kernel_regularizer=regularizers.L2(l2=1000))
+        self.dense = Dense(filters, activation=leaky_relu, kernel_regularizer=regularizers.L2(l2=0.0001))
         if dropout_rate > 0:
             self.dropout = Dropout(dropout_rate)
         else:

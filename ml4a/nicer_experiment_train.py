@@ -7,6 +7,7 @@ from tensorflow.python.keras import callbacks
 from pathlib import Path
 
 from ml4a.nicer_example import NicerExample
+from ml4a.nicer_model import Nyx9Wider
 from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, \
     ResModel1InitialDenseNoDoConvEndDoublingWider, ResModel1InitialDenseNoDoConvEndDoublingWiderer, \
     ResModel1InitialDenseNoDoConvEndDoublingWidererL2
@@ -15,7 +16,7 @@ from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, \
 def main():
     print("Imports complete.", flush=True)
     wandb.init(project='ml4a', entity='ramjet', settings=wandb.Settings(start_method='fork'))
-    dataset_path = Path("../data/mcmc_vac_all_f90.dat")
+    dataset_path = Path("data/mcmc_vac_all_f90.dat")
     examples = NicerExample.list_from_constantinos_kalapotharakos_file(dataset_path)
     random.Random(0).shuffle(examples)
     tenth_dataset_count = int(len(examples) * 0.1)
@@ -24,11 +25,13 @@ def main():
     test_examples = examples[-tenth_dataset_count:]
     print(f'Dataset sizes: train={len(train_examples)}, validation={len(validation_examples)}, '
           f'test={len(test_examples)}')
-    train_dataset = NicerExample.to_prepared_tensorflow_dataset(train_examples, shuffle=True)
-    validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples)
+    train_dataset = NicerExample.to_prepared_tensorflow_dataset(train_examples, shuffle=True,
+                                                                normalize_parameters_and_phase_amplitudes=True)
+    validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples,
+                                                                     normalize_parameters_and_phase_amplitudes=True)
 
     model = ResModel1InitialDenseNoDoConvEndDoublingWidererL2()
-    wandb.run.notes = f"{type(model).__name__}"
+    wandb.run.notes = f"{type(model).__name__}_0d0001_l2_reg"
     optimizer = tf.optimizers.Adam(learning_rate=1e-4)
     loss_metric = tf.keras.losses.MeanSquaredError()
     metrics = [tf.keras.metrics.MeanSquaredError()]

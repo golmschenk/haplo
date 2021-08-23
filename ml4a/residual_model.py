@@ -2,7 +2,7 @@ from tensorflow import sigmoid
 from tensorflow.keras import Model
 from tensorflow.keras.layers import Reshape, Convolution1D, MaxPooling1D, AveragePooling1D, Permute
 
-from residual_light_curve_network_block import ResidualGenerationLightCurveNetworkBlock
+from ml4a.residual_light_curve_network_block import ResidualGenerationLightCurveNetworkBlock
 
 
 class ResModel0(Model):
@@ -286,14 +286,14 @@ class ResModel1InitialDenseNoDoConvEndDoublingWidererL2(Model):
         self.dense1 = Convolution1D(50, kernel_size=1)
         output_channels = 256 * 8
         self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=50, dropout_rate=0.0, l2_regularization=1000))
+            output_channels=output_channels, input_channels=50, dropout_rate=0.0, l2_regularization=0.0001))
         input_channels = output_channels
         for output_channels in [256 * 8, 128 * 8, 64 * 8, 32 * 8, 16 * 8, 8 * 8]:
             self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.0, l2_regularization=1000))
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.0, l2_regularization=0.0001))
             for _ in range(2):
                 self.blocks.append(ResidualGenerationLightCurveNetworkBlock(output_channels=output_channels,
-                                                                            dropout_rate=0.0, l2_regularization=1000))
+                                                                            dropout_rate=0.0, l2_regularization=0.0001))
             input_channels = output_channels
         self.end_conv = Convolution1D(1, kernel_size=1)
         self.reshape = Reshape([64])
