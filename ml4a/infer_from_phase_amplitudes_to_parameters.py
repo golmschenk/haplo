@@ -12,7 +12,7 @@ def infer_from_phase_amplitudes_to_parameters(input_csv_path: Path, output_csv_p
     model = load_trained_phase_amplitudes_to_parameters_model()
     normalized_phase_amplitudes = NicerExample.normalize_phase_amplitudes(phase_amplitudes)
     normalized_parameter_chunks = []
-    for normalized_phase_amplitudes_chunk in split_array_into_chunks(normalized_phase_amplitudes, chunk_size=100):
+    for normalized_phase_amplitudes_chunk in split_array_into_chunks(normalized_phase_amplitudes, chunk_size=1000):
         normalized_parameters_chunk = model.call(normalized_phase_amplitudes_chunk, training=False)
         normalized_parameter_chunks.append(normalized_parameters_chunk)
     normalized_parameters = np.concatenate(normalized_parameter_chunks, axis=0)
