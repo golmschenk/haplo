@@ -16,7 +16,7 @@ def infer_from_phase_amplitudes_to_parameters(input_csv_path: Path, output_csv_p
         normalized_parameters_chunk = model.call(normalized_phase_amplitudes_chunk, training=False)
         normalized_parameter_chunks.append(normalized_parameters_chunk)
     normalized_parameters = np.concatenate(normalized_parameter_chunks, axis=0)
-    parameters = NicerExample.unnormalize_phase_amplitudes(normalized_parameters)
+    parameters = NicerExample.unnormalize_parameters(normalized_parameters)
     np.savetxt(output_csv_path, parameters)
 
 
