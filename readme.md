@@ -17,7 +17,7 @@ This setup expects `conda` is installed in some form already. The minimal `conda
 
         python -m ml4a.download_model_states
 
-   We note that the model states downloaded via this command for minimal model architectures for ease of use. The model state for our current best "parameters to phase amplitudes" model architecture can be downloaded [here](https://olmschenk-my.sharepoint.com/:f:/p/greg/EgNXsdvmyMlJg58-bEFS3_YBKcf5SDQpkKM1nEqVGWBt-A?e=L318gC).
+   We note that the model states downloaded via this command are for minimal model architectures designed for ease of use. The model state for our current best "parameters to phase amplitudes" model architecture can be downloaded [here](https://olmschenk-my.sharepoint.com/:f:/p/greg/EgNXsdvmyMlJg58-bEFS3_YBKcf5SDQpkKM1nEqVGWBt-A?e=L318gC).
 
 
 5. Exit the `conda` environment:
