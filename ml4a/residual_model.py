@@ -285,15 +285,16 @@ class ResModel1InitialDenseNoDoConvEndDoublingWidererL2(Model):
         self.dense0 = Convolution1D(50, kernel_size=1)
         self.dense1 = Convolution1D(50, kernel_size=1)
         output_channels = 256 * 8
+        l2_rate = 0.0001
         self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=50, dropout_rate=0.0, l2_regularization=0.0001))
+            output_channels=output_channels, input_channels=50, dropout_rate=0.0, l2_regularization=l2_rate))
         input_channels = output_channels
         for output_channels in [256 * 8, 128 * 8, 64 * 8, 32 * 8, 16 * 8, 8 * 8]:
             self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.0, l2_regularization=0.0001))
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.0, l2_regularization=l2_rate))
             for _ in range(2):
                 self.blocks.append(ResidualGenerationLightCurveNetworkBlock(output_channels=output_channels,
-                                                                            dropout_rate=0.0, l2_regularization=0.0001))
+                                                                            dropout_rate=0.0, l2_regularization=l2_rate))
             input_channels = output_channels
         self.end_conv = Convolution1D(1, kernel_size=1)
         self.reshape = Reshape([64])
@@ -316,3 +317,7 @@ class ResModel1InitialDenseNoDoConvEndDoublingWidererL2(Model):
         x = self.end_conv(x, training=training)
         outputs = self.reshape(x, training=training)
         return outputs
+
+
+class Lira(ResModel1InitialDenseNoDoConvEndDoublingWidererL2):
+    pass

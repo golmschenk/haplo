@@ -1,8 +1,11 @@
 #![feature(once_cell)]
+extern crate libc;
 
 use tract_onnx::prelude::*;
 
 use std::lazy::SyncLazy;
+use std::slice;
+use crate::tract_ndarray::{Array1, s};
 
 pub static MODEL: SyncLazy<RunnableModel<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>> = SyncLazy::new(|| {
     let model = tract_onnx::onnx()
@@ -27,3 +30,26 @@ pub static PARAMETER_MEANS: SyncLazy<tract_ndarray::Array1<f32>> = SyncLazy::new
 
 pub static PHASE_AMPLITUDE_MEAN: f32 = 34025.080543335825;
 pub static PHASE_AMPLITUDE_STANDARD_DEVIATION: f32 = 47698.66676993027;
+
+pub fn infer_from_parameters_to_phase_amplitudes_array(parameters: Array1<f32>) -> TractResult<Array1<f32>> {
+    let normalized_parameters = (parameters - &*PARAMETER_MEANS) / &*PARAMETER_STANDARD_DEVIATIONS;
+    let input_tensor: Tensor = normalized_parameters.insert_axis(tract_ndarray::Axis(0)).insert_axis(tract_ndarray::Axis(2)).into();
+    let output_tensor = MODEL.run(tvec!(input_tensor))?;
+    let output_array = output_tensor[0].to_array_view::<f32>()?;
+    let normalized_phase_amplitudes = output_array.slice(s![0, ..]);
+    let phase_amplitudes = (&normalized_phase_amplitudes * PHASE_AMPLITUDE_STANDARD_DEVIATION) + PHASE_AMPLITUDE_MEAN;
+    Ok(phase_amplitudes)
+}
+
+#[no_mangle]
+pub extern "C" fn infer_from_parameters_to_phase_amplitudes(parameters_array_pointer: *const f32, phase_amplitudes_array_pointer: *mut f32) {
+    let parameters_slice = unsafe { slice::from_raw_parts(parameters_array_pointer, 11) };
+    let parameters_array: Array1<f32> = tract_ndarray::arr1(parameters_slice);
+    let phase_amplitudes_array = infer_from_parameters_to_phase_amplitudes_array(parameters_array).unwrap();
+    let mut phase_amplitudes_array_iter = phase_amplitudes_array.iter();
+    for index in 0..64 {
+        unsafe {
+            *phase_amplitudes_array_pointer.offset(index as isize) = phase_amplitudes_array_iter.next().unwrap().clone();
+        }
+    }
+}
