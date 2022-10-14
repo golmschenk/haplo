@@ -9,7 +9,7 @@ use crate::tract_ndarray::{Array1, s};
 
 pub static MODEL: SyncLazy<RunnableModel<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>> = SyncLazy::new(|| {
     let model = tract_onnx::onnx()
-        .model_for_path("lira.onnx").unwrap()
+        .model_for_path("ml4a/lira.onnx").unwrap()
         .with_input_fact(0, InferenceFact::dt_shape(f32::datum_type(), tvec!(1, 11, 1))).unwrap()
         .into_optimized().unwrap()
         .into_runnable().unwrap();
