@@ -7,10 +7,11 @@ from tensorflow.python.keras import callbacks
 from pathlib import Path
 
 from ml4a.nicer_example import NicerExample
-from ml4a.nicer_model import Nyx9Wider
+from ml4a.nicer_model import Nyx9Wider, SimpleModel
 from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, \
     ResModel1InitialDenseNoDoConvEndDoublingWider, ResModel1InitialDenseNoDoConvEndDoublingWiderer, \
-    ResModel1InitialDenseNoDoConvEndDoublingWidererL2
+    ResModel1InitialDenseNoDoConvEndDoublingWidererL2, LiraWithDoNoLrExtraEndLayer, LiraNoL2, LiraExtraEndLayer, \
+    LiraWithDoExtraEndLayer
 
 
 def main():
@@ -30,11 +31,11 @@ def main():
     validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples,
                                                                      normalize_parameters_and_phase_amplitudes=True)
 
-    model = ResModel1InitialDenseNoDoConvEndDoublingWidererL2()
-    wandb.run.notes = f"{type(model).__name__}_0d0001_l2_reg"
-    optimizer = tf.optimizers.Adam(learning_rate=1e-4)
-    loss_metric = tf.keras.losses.MeanSquaredError()
-    metrics = [tf.keras.metrics.MeanSquaredError()]
+    model = LiraWithDoExtraEndLayer()
+    wandb.run.notes = f"{type(model).__name__}"
+    optimizer = tf.optimizers.Adam()
+    loss_metric = tf.keras.losses.MeanSquaredLogarithmicError()
+    metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.losses.MeanSquaredLogarithmicError()]
     datetime_string = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     trial_directory = Path("logs").joinpath(f'{wandb.run.notes}')
     best_validation_model_save_path = trial_directory.joinpath('best_validation_model.ckpt')
@@ -43,7 +44,7 @@ def main():
         save_weights_only=True)
     model.compile(optimizer=optimizer, loss=loss_metric, metrics=metrics)
     model.fit(train_dataset, epochs=5000, validation_data=validation_dataset,
-              callbacks=[WandbCallback(), best_validation_checkpoint_callback])
+              callbacks=[WandbCallback(save_model=False), best_validation_checkpoint_callback])
 
 
 if __name__ == "__main__":
