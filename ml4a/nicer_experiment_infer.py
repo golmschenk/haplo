@@ -5,10 +5,26 @@ from bokeh.plotting import Figure
 from pathlib import Path
 
 from ml4a.nicer_example import NicerExample
-from ml4a.nicer_model import Nyx9Wider, Nyx11
+from ml4a.nicer_model import Nyx9Wider, Nyx11, Nyx9Re, Nyx9ReTraditionalShape
+from ml4a.residual_model import Lira, NormalizingModelWrapper, LiraTraditionalShape, \
+    LiraTraditionalShapeDoubleWidthWithExtraEndLayer
 
 
 def main():
+    model0 = Nyx9Wider()
+    model0_trial_name = "Nyx9Widerer_no_do_l2_1000_cont2"
+    model0_trial_directory = Path("logs").joinpath(model0_trial_name)
+    model0.load_weights(model0_trial_directory.joinpath('best_validation_model.ckpt'))
+    model1 = LiraTraditionalShapeDoubleWidthWithExtraEndLayer()
+    model1_trial_name = "LiraTraditionalShapeDoubleWidthWithExtraEndLayer_normalized_loss_lr_1e-5_cont2"
+    model1_trial_directory = Path("logs").joinpath(model1_trial_name)
+    model1.load_weights(model1_trial_directory.joinpath('best_validation_model.ckpt'))
+    model2 = Lira()
+    model2_trial_name = "ResModel1InitialDenseNoDoConvEndDoublingWidererL2_0d00001_l2_reg_cont2"
+    model2_trial_directory = Path("logs").joinpath(model2_trial_name)
+    model2.load_weights(model2_trial_directory.joinpath('best_validation_model.ckpt'))
+    figures = []
+
     dataset_path = Path("data/mcmc_vac_all_f90.dat")
     examples = NicerExample.list_from_constantinos_kalapotharakos_file(dataset_path)
     random.Random(0).shuffle(examples)
@@ -18,35 +34,28 @@ def main():
     test_examples = examples[-tenth_dataset_count:]
     print(f'Dataset sizes: train={len(train_examples)}, validation={len(validation_examples)},'
           f'test={len(test_examples)}')
-    test_dataset = NicerExample.to_prepared_tensorflow_dataset(test_examples, batch_size=1)
+    test_dataset = NicerExample.to_prepared_tensorflow_dataset(test_examples, batch_size=1, normalize_parameters_and_phase_amplitudes=True)
 
-    old_model = Nyx11()
-    old_trial_name = "misunderstood-moon"
-    old_trial_directory = Path("logs").joinpath(old_trial_name)
-    old_model.load_weights(old_trial_directory.joinpath('best_validation_model.ckpt'))
-    model = Nyx9Wider()
-    trial_name = "dark-pond-partial"
-    trial_directory = Path("logs").joinpath(trial_name)
-    model.load_weights(trial_directory.joinpath('best_validation_model.ckpt'))
-    figures = []
     for (index, test_example) in enumerate(test_dataset):
-        if index >= 6:
+        if index >= 10:
             break
         test_input, test_output = test_example
-        predicted_test_output = model.predict(test_input)
-        old_predicted_test_output = old_model.predict(test_input)
+        model0_predicted_test_output = model0.predict(NicerExample.unnormalize_parameters(test_input))
+        model1_predicted_test_output = model1.predict(test_input)
+        model2_predicted_test_output = model2.predict(test_input)
         test_output = test_output.numpy()
         figure = Figure()
         figure.output_backend = "svg"
         figure.background_fill_color = None
         figure.border_fill_color = None
-        figure.line(x=range(test_output.shape[1]), y=test_output[0], line_width=2)
-        figure.line(x=range(old_predicted_test_output.shape[1]), y=old_predicted_test_output[0], line_width=2, color='darkgoldenrod')
-        figure.line(x=range(predicted_test_output.shape[1]), y=predicted_test_output[0], line_width=2, color='firebrick')
-        export_svg(figure, filename=f"{index}.svg")
+        figure.line(x=range(test_output.shape[1]), y=NicerExample.unnormalize_phase_amplitudes(test_output[0]), line_width=2)
+        figure.line(x=range(model0_predicted_test_output.shape[1]), y=model0_predicted_test_output[0], line_width=2, color='darkgoldenrod')
+        figure.line(x=range(model1_predicted_test_output.shape[1]), y=NicerExample.unnormalize_phase_amplitudes(model1_predicted_test_output[0]), line_width=2, color='firebrick')
+        figure.line(x=range(model2_predicted_test_output.shape[1]), y=NicerExample.unnormalize_phase_amplitudes(model2_predicted_test_output[0]), line_width=2, color='forestgreen')
+        # export_svg(figure, filename=f"{index}.svg")
         figures.append(figure)
     column = Column(*figures)
-    save(column, trial_directory.joinpath(f"infer_test_examples.html"))
+    save(column, model1_trial_directory.joinpath(f"infer_test_examples.html"))
 
 
 if __name__ == "__main__":

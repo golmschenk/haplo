@@ -6,12 +6,18 @@ from wandb.keras import WandbCallback
 from tensorflow.python.keras import callbacks
 from pathlib import Path
 
+from ml4a.losses import RelativeMeanSquaredErrorLoss
 from ml4a.nicer_example import NicerExample
-from ml4a.nicer_model import Nyx9Wider, SimpleModel
+from ml4a.nicer_model import Nyx9Wider, SimpleModel, Nyx9Re, Nyx9ReNarrowStartWideEnd, Nyx9ReTraditionalShape, \
+    Nyx9ReTraditionalShape4xWide
 from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, \
     ResModel1InitialDenseNoDoConvEndDoublingWider, ResModel1InitialDenseNoDoConvEndDoublingWiderer, \
     ResModel1InitialDenseNoDoConvEndDoublingWidererL2, LiraWithDoNoLrExtraEndLayer, LiraNoL2, LiraExtraEndLayer, \
-    LiraWithDoExtraEndLayer
+    LiraWithDoExtraEndLayer, NormalizingModelWrapper, Lira, Lira4xWide, LiraNoBn, LiraNoBnWithDo, LiraTraditionalShape, \
+    LiraTraditionalShapeDoubleWidth, LiraTraditionalShapeDoubleWidthEndBranchDropout, LiraTraditionalShapeExtraEndLayer, \
+    LiraTraditionalShapeDoubleWidthWithExtraEndLayer, LiraTraditionalShape4xWidth, \
+    LiraTraditionalShape4xWidthWithExtraEndLayer, LiraTraditionalShapeDoubleWidthWithExtraEndLayerEndActivations, \
+    LiraTraditionalShape2xWidth2xDepth
 
 
 def main():
@@ -31,17 +37,18 @@ def main():
     validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples,
                                                                      normalize_parameters_and_phase_amplitudes=True)
 
-    model = LiraWithDoExtraEndLayer()
-    wandb.run.notes = f"{type(model).__name__}"
-    optimizer = tf.optimizers.Adam()
-    loss_metric = tf.keras.losses.MeanSquaredLogarithmicError()
-    metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.losses.MeanSquaredLogarithmicError()]
+    model = LiraTraditionalShape2xWidth2xDepth()
+    wandb.run.notes = f"{type(model).__name__}_normalized_loss"
+    optimizer = tf.optimizers.Adam(learning_rate=1e-4)
+    loss_metric = RelativeMeanSquaredErrorLoss()
+    metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError()]
     datetime_string = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     trial_directory = Path("logs").joinpath(f'{wandb.run.notes}')
     best_validation_model_save_path = trial_directory.joinpath('best_validation_model.ckpt')
     best_validation_checkpoint_callback = callbacks.ModelCheckpoint(
         best_validation_model_save_path, monitor='val_loss', mode='min', save_best_only=True,
         save_weights_only=True)
+    # model.load_weights('logs/LiraTraditionalShape4xWidth_normalized_loss_lr_1e-4_cont/best_validation_model.ckpt')
     model.compile(optimizer=optimizer, loss=loss_metric, metrics=metrics)
     model.fit(train_dataset, epochs=5000, validation_data=validation_dataset,
               callbacks=[WandbCallback(save_model=False), best_validation_checkpoint_callback])

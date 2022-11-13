@@ -4,6 +4,7 @@ import numpy as np
 from tensorflow.keras.models import Model
 
 from ml4a.download_model_states import download_model_states
+from ml4a.nicer_model import Nyx9Wider
 from ml4a.nicer_phase_amplitudes_to_parameters_models import Mira
 from ml4a.paths import user_data_directory
 from ml4a.residual_model import Lira
@@ -22,9 +23,9 @@ def load_trained_phase_amplitudes_to_parameters_model() -> Model:
 
 
 def load_trained_parameters_to_phase_amplitudes_model() -> Model:
-    model = Lira()
-    model_path = user_data_directory.joinpath(
-        'model_states/infer_from_parameters_to_phase_amplitudes_model_state/model.ckpt')
+    model = Nyx9Wider()
+    model_path = Path( # user_data_directory.joinpath(
+        'logs/Nyx9Widerer_no_do_l2_1000_cont2/best_validation_model.ckpt')
     if not model_path.parent.exists():
         download_model_states()
     model.load_weights(
