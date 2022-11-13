@@ -8,7 +8,7 @@ from ml4a.nicer_example import NicerExample
 
 
 def infer_from_phase_amplitudes_to_parameters(input_csv_path: Path, output_csv_path: Path) -> None:
-    phase_amplitudes = np.loadtxt(str(input_csv_path))
+    phase_amplitudes = np.loadtxt(str(input_csv_path), delimiter=',')
     model = load_trained_phase_amplitudes_to_parameters_model()
     normalized_phase_amplitudes = NicerExample.normalize_phase_amplitudes(phase_amplitudes)
     normalized_parameter_chunks = []
@@ -17,7 +17,7 @@ def infer_from_phase_amplitudes_to_parameters(input_csv_path: Path, output_csv_p
         normalized_parameter_chunks.append(normalized_parameters_chunk)
     normalized_parameters = np.concatenate(normalized_parameter_chunks, axis=0)
     parameters = NicerExample.unnormalize_parameters(normalized_parameters)
-    np.savetxt(output_csv_path, parameters)
+    np.savetxt(output_csv_path, parameters, delimiter=',')
 
 
 if __name__ == '__main__':
