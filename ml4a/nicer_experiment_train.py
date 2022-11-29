@@ -17,7 +17,8 @@ from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, \
     LiraTraditionalShapeDoubleWidth, LiraTraditionalShapeDoubleWidthEndBranchDropout, LiraTraditionalShapeExtraEndLayer, \
     LiraTraditionalShapeDoubleWidthWithExtraEndLayer, LiraTraditionalShape4xWidth, \
     LiraTraditionalShape4xWidthWithExtraEndLayer, LiraTraditionalShapeDoubleWidthWithExtraEndLayerEndActivations, \
-    LiraTraditionalShape2xWidth2xDepth
+    LiraTraditionalShape2xWidth2xDepth, LiraTraditionalShapeEndSum, LiraTraditionalShapeWithoutDimensionDecrease, \
+    LiraTraditionalShape2LayerSkipsWithoutDimensionDecrease
 
 
 def main():
@@ -37,8 +38,8 @@ def main():
     validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples,
                                                                      normalize_parameters_and_phase_amplitudes=True)
 
-    model = LiraTraditionalShape2xWidth2xDepth()
-    wandb.run.notes = f"{type(model).__name__}_normalized_loss"
+    model = LiraTraditionalShape2LayerSkipsWithoutDimensionDecrease()
+    wandb.run.notes = f"{type(model).__name__}_normalized_loss_cont"
     optimizer = tf.optimizers.Adam(learning_rate=1e-4)
     loss_metric = RelativeMeanSquaredErrorLoss()
     metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError()]
@@ -48,8 +49,9 @@ def main():
     best_validation_checkpoint_callback = callbacks.ModelCheckpoint(
         best_validation_model_save_path, monitor='val_loss', mode='min', save_best_only=True,
         save_weights_only=True)
-    # model.load_weights('logs/LiraTraditionalShape4xWidth_normalized_loss_lr_1e-4_cont/best_validation_model.ckpt')
+    model.load_weights('logs/LiraTraditionalShape2LayerSkipsWithoutDimensionDecrease_normalized_loss/best_validation_model.ckpt')
     model.compile(optimizer=optimizer, loss=loss_metric, metrics=metrics)
+    model.run_eagerly = True
     model.fit(train_dataset, epochs=5000, validation_data=validation_dataset,
               callbacks=[WandbCallback(save_model=False), best_validation_checkpoint_callback])
 
