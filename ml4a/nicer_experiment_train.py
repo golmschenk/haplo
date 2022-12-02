@@ -6,7 +6,7 @@ from wandb.keras import WandbCallback
 from tensorflow.python.keras import callbacks
 from pathlib import Path
 
-from ml4a.losses import RelativeMeanSquaredErrorLoss
+from ml4a.losses import RelativeMeanSquaredErrorLoss, PlusOneChiSquaredStatisticLoss
 from ml4a.nicer_example import NicerExample
 from ml4a.nicer_model import Nyx9Wider, SimpleModel, Nyx9Re, Nyx9ReNarrowStartWideEnd, Nyx9ReTraditionalShape, \
     Nyx9ReTraditionalShape4xWide
@@ -38,11 +38,11 @@ def main():
     validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples,
                                                                      normalize_parameters_and_phase_amplitudes=True)
 
-    model = ResnetLike()
-    wandb.run.notes = f"{type(model).__name__}_normalized_loss_cont"
+    model = LiraTraditionalShape()
+    wandb.run.notes = f"{type(model).__name__}_chi_squared_loss"
     optimizer = tf.optimizers.Adam(learning_rate=1e-4)
-    loss_metric = RelativeMeanSquaredErrorLoss()
-    metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError()]
+    loss_metric = PlusOneChiSquaredStatisticLoss()
+    metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError(), PlusOneChiSquaredStatisticLoss().plus_one_chi_squared_statistic, RelativeMeanSquaredErrorLoss.relative_mean_squared_error_loss]
     datetime_string = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     trial_directory = Path("logs").joinpath(f'{wandb.run.notes}')
     best_validation_model_save_path = trial_directory.joinpath('best_validation_model.ckpt')
