@@ -5,7 +5,8 @@ from tensorflow.keras import Model
 from tensorflow.keras.layers import Reshape, Convolution1D, MaxPooling1D, AveragePooling1D, Permute, LeakyReLU
 
 from ml4a.residual_light_curve_network_block import ResidualGenerationLightCurveNetworkBlock, \
-    ResidualGenerationLightCurveNetworkBlockWithoutDimensionDecrease
+    ResidualGenerationLightCurveNetworkBlockWithoutDimensionDecrease, \
+    ResnetLikeMultiResidualGenerationLightCurveNetworkBlock
 
 
 class ResModel0(Model):
@@ -1257,5 +1258,45 @@ class LiraTraditionalShape2LayerSkipsWithoutDimensionDecrease(Model):
         for index, block in enumerate(self.blocks):
             x = block(x, training=training)
         x = self.end_conv(x, training=training)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+
+class ResnetLike(Model):
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        output_channels = 64
+        l2_rate = 0.0
+        self.blocks.append(ResnetLikeMultiResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=11, dropout_rate=0.0, l2_regularization=l2_rate))
+        input_channels = output_channels
+        for output_channels in [64, 64, 128, 128, 256, 256]:
+            self.blocks.append(ResnetLikeMultiResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.0,
+                l2_regularization=l2_rate))
+            for _ in range(2):
+                self.blocks.append(
+                    ResnetLikeMultiResidualGenerationLightCurveNetworkBlock(output_channels=output_channels,
+                                                                            dropout_rate=0.0,
+                                                                            l2_regularization=l2_rate))
+            input_channels = output_channels
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = reduce_mean(x, axis=-1, keepdims=True)
         outputs = self.reshape(x, training=training)
         return outputs
