@@ -10,6 +10,7 @@ from ml4a.losses import RelativeMeanSquaredErrorLoss, PlusOneChiSquaredStatistic
 from ml4a.nicer_example import NicerExample
 from ml4a.nicer_model import Nyx9Wider, SimpleModel, Nyx9Re, Nyx9ReNarrowStartWideEnd, Nyx9ReTraditionalShape, \
     Nyx9ReTraditionalShape4xWide
+from ml4a.pregenerated_output_model import PregeneratedOutputModel
 from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, \
     ResModel1InitialDenseNoDoConvEndDoublingWider, ResModel1InitialDenseNoDoConvEndDoublingWiderer, \
     ResModel1InitialDenseNoDoConvEndDoublingWidererL2, LiraWithDoNoLrExtraEndLayer, LiraNoL2, LiraExtraEndLayer, \
@@ -18,7 +19,11 @@ from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, \
     LiraTraditionalShapeDoubleWidthWithExtraEndLayer, LiraTraditionalShape4xWidth, \
     LiraTraditionalShape4xWidthWithExtraEndLayer, LiraTraditionalShapeDoubleWidthWithExtraEndLayerEndActivations, \
     LiraTraditionalShape2xWidth2xDepth, LiraTraditionalShapeEndSum, LiraTraditionalShapeWithoutDimensionDecrease, \
-    LiraTraditionalShape2LayerSkipsWithoutDimensionDecrease, ResnetLike
+    LiraTraditionalShape2LayerSkipsWithoutDimensionDecrease, ResnetLike, ResnetLikeNoBnWithDo, ResnetLikeWithL2, \
+    ResnetLikeNoBnWithDoRelu, LiraTraditionalShape4xWidthWithDo, ResnetLikeNoBnWithNonSpatialDoRelu, \
+    LiraTraditionalShape4xWidthWith0d5Do, LiraTraditionalShape8xWidthWith0d5Do, \
+    LiraTraditionalShape4xWidthWith0d5DoNoBn, LiraTraditionalShape8xWidthWith0d5DoNoBn, \
+    LiraTraditionalShape8xWidthWith0d5DoNoBnStrongLeakyRelu, LiraTraditionalShape8xWidthWithNoDoNoBn
 
 
 def main():
@@ -38,7 +43,9 @@ def main():
     validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples,
                                                                      normalize_parameters_and_phase_amplitudes=True)
 
-    model = LiraTraditionalShape()
+    # pregenerated_outputs = NicerExample.extract_phase_amplitudes_array(train_examples[:200])
+    # model = PregeneratedOutputModel(pregenerated_outputs)
+    model = LiraTraditionalShape8xWidthWithNoDoNoBn()
     wandb.run.notes = f"{type(model).__name__}_chi_squared_loss"
     optimizer = tf.optimizers.Adam(learning_rate=1e-4)
     loss_metric = PlusOneChiSquaredStatisticLoss()
@@ -49,9 +56,8 @@ def main():
     best_validation_checkpoint_callback = callbacks.ModelCheckpoint(
         best_validation_model_save_path, monitor='val_loss', mode='min', save_best_only=True,
         save_weights_only=True)
-    # model.load_weights('logs/LiraTraditionalShape2LayerSkipsWithoutDimensionDecrease_normalized_loss/best_validation_model.ckpt')
+    # model.load_weights('logs/LiraTraditionalShape4xWidthWithDo_chi_squared_loss/best_validation_model.ckpt')
     model.compile(optimizer=optimizer, loss=loss_metric, metrics=metrics)
-    model.run_eagerly = True
     model.fit(train_dataset, epochs=5000, validation_data=validation_dataset,
               callbacks=[WandbCallback(save_model=False), best_validation_checkpoint_callback])
 

@@ -6,7 +6,9 @@ from tensorflow.keras.layers import Reshape, Convolution1D, MaxPooling1D, Averag
 
 from ml4a.residual_light_curve_network_block import ResidualGenerationLightCurveNetworkBlock, \
     ResidualGenerationLightCurveNetworkBlockWithoutDimensionDecrease, \
-    ResnetLikeMultiResidualGenerationLightCurveNetworkBlock
+    ResnetLikeMultiResidualGenerationLightCurveNetworkBlock, \
+    ResnetLikeReluMultiResidualGenerationLightCurveNetworkBlock, \
+    ResnetLikeReluNonSpatialDropoutMultiResidualGenerationLightCurveNetworkBlock
 
 
 class ResModel0(Model):
@@ -1338,5 +1340,462 @@ class ResnetLikeNoBnWithDo(Model):
         for index, block in enumerate(self.blocks):
             x = block(x, training=training)
         x = reduce_mean(x, axis=-1, keepdims=True)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+
+class ResnetLikeNoBnWithDoRelu(Model):
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        output_channels = 64
+        l2_rate = 0.0
+        self.blocks.append(ResnetLikeReluMultiResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=11, dropout_rate=0.5, l2_regularization=l2_rate, batch_normalization=False))
+        input_channels = output_channels
+        for output_channels in [64, 64, 128, 128, 256, 256]:
+            self.blocks.append(ResnetLikeReluMultiResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.5,
+                l2_regularization=l2_rate, batch_normalization=False))
+            for _ in range(2):
+                self.blocks.append(
+                    ResnetLikeReluMultiResidualGenerationLightCurveNetworkBlock(output_channels=output_channels,
+                                                                            dropout_rate=0.5,
+                                                                            l2_regularization=l2_rate, batch_normalization=False))
+            input_channels = output_channels
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = reduce_mean(x, axis=-1, keepdims=True)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+
+class ResnetLikeWithL2(Model):
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        output_channels = 64
+        l2_rate = 0.01
+        self.blocks.append(ResnetLikeMultiResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=11, dropout_rate=0.0, l2_regularization=l2_rate))
+        input_channels = output_channels
+        for output_channels in [64, 64, 128, 128, 256, 256]:
+            self.blocks.append(ResnetLikeMultiResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.0,
+                l2_regularization=l2_rate))
+            for _ in range(2):
+                self.blocks.append(
+                    ResnetLikeMultiResidualGenerationLightCurveNetworkBlock(output_channels=output_channels,
+                                                                            dropout_rate=0.0,
+                                                                            l2_regularization=l2_rate))
+            input_channels = output_channels
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = reduce_mean(x, axis=-1, keepdims=True)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+class LiraTraditionalShape4xWidthWithDo(Model):
+    """
+    A general convolutional model for light curve data.
+    """
+
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        self.dense0 = Convolution1D(200, kernel_size=1)
+        self.dense1 = Convolution1D(200, kernel_size=1)
+        output_channels = 64
+        l2_rate = 0.0001
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=200, dropout_rate=0.2, l2_regularization=l2_rate))
+        input_channels = output_channels
+        for output_channels in [256, 256, 512, 512, 1024, 1024]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.2,
+                l2_regularization=l2_rate))
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(output_channels=output_channels,
+                                                                            dropout_rate=0.2,
+                                                                            l2_regularization=l2_rate))
+            input_channels = output_channels
+        self.end_conv = Convolution1D(1, kernel_size=1)
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = self.end_conv(x, training=training)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+class ResnetLikeNoBnWithNonSpatialDoRelu(Model):
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        output_channels = 64
+        l2_rate = 0.0
+        self.blocks.append(ResnetLikeReluNonSpatialDropoutMultiResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=11, dropout_rate=0.5, l2_regularization=l2_rate, batch_normalization=False))
+        input_channels = output_channels
+        for output_channels in [64, 64, 128, 128, 256, 256]:
+            self.blocks.append(ResnetLikeReluNonSpatialDropoutMultiResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.5,
+                l2_regularization=l2_rate, batch_normalization=False))
+            for _ in range(2):
+                self.blocks.append(
+                    ResnetLikeReluNonSpatialDropoutMultiResidualGenerationLightCurveNetworkBlock(output_channels=output_channels,
+                                                                                dropout_rate=0.5,
+                                                                                l2_regularization=l2_rate, batch_normalization=False))
+            input_channels = output_channels
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = reduce_mean(x, axis=-1, keepdims=True)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+class LiraTraditionalShape4xWidthWith0d5Do(Model):
+    """
+    A general convolutional model for light curve data.
+    """
+
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        self.dense0 = Convolution1D(200, kernel_size=1)
+        self.dense1 = Convolution1D(200, kernel_size=1)
+        output_channels = 64
+        l2_rate = 0.0001
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=200, dropout_rate=0.5, l2_regularization=l2_rate))
+        input_channels = output_channels
+        for output_channels in [256, 256, 512, 512, 1024, 1024]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.5,
+                l2_regularization=l2_rate))
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(output_channels=output_channels,
+                                                                            dropout_rate=0.5,
+                                                                            l2_regularization=l2_rate))
+            input_channels = output_channels
+        self.end_conv = Convolution1D(1, kernel_size=1)
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = self.end_conv(x, training=training)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+
+class LiraTraditionalShape8xWidthWith0d5Do(Model):
+    """
+    A general convolutional model for light curve data.
+    """
+
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        self.dense0 = Convolution1D(400, kernel_size=1)
+        self.dense1 = Convolution1D(400, kernel_size=1)
+        output_channels = 128
+        l2_rate = 0.0001
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=400, dropout_rate=0.5, l2_regularization=l2_rate))
+        input_channels = output_channels
+        for output_channels in [512, 512, 1024, 1024, 2048, 2048]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.5,
+                l2_regularization=l2_rate))
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(output_channels=output_channels,
+                                                                            dropout_rate=0.5,
+                                                                            l2_regularization=l2_rate))
+            input_channels = output_channels
+        self.end_conv = Convolution1D(1, kernel_size=1)
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = self.end_conv(x, training=training)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+
+class LiraTraditionalShape4xWidthWith0d5DoNoBn(Model):
+    """
+    A general convolutional model for light curve data.
+    """
+
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        self.dense0 = Convolution1D(200, kernel_size=1)
+        self.dense1 = Convolution1D(200, kernel_size=1)
+        output_channels = 64
+        l2_rate = 0.0001
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=200, dropout_rate=0.5, l2_regularization=l2_rate,
+            batch_normalization=False))
+        input_channels = output_channels
+        for output_channels in [256, 256, 512, 512, 1024, 1024]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.5,
+                l2_regularization=l2_rate, batch_normalization=False))
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                    output_channels=output_channels, dropout_rate=0.5, l2_regularization=l2_rate,
+                    batch_normalization=False))
+            input_channels = output_channels
+        self.end_conv = Convolution1D(1, kernel_size=1)
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = self.end_conv(x, training=training)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+
+class LiraTraditionalShape8xWidthWith0d5DoNoBn(Model):
+    """
+    A general convolutional model for light curve data.
+    """
+
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        self.dense0 = Convolution1D(400, kernel_size=1)
+        self.dense1 = Convolution1D(400, kernel_size=1)
+        output_channels = 128
+        l2_rate = 0.0001
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=400, dropout_rate=0.5, l2_regularization=l2_rate,
+            batch_normalization=False))
+        input_channels = output_channels
+        for output_channels in [512, 512, 1024, 1024, 2048, 2048]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.5,
+                l2_regularization=l2_rate, batch_normalization=False))
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                    output_channels=output_channels, dropout_rate=0.5, l2_regularization=l2_rate,
+                    batch_normalization=False))
+            input_channels = output_channels
+        self.end_conv = Convolution1D(1, kernel_size=1)
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = self.end_conv(x, training=training)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+
+class LiraTraditionalShape8xWidthWith0d5DoNoBnStrongLeakyRelu(Model):
+    """
+    A general convolutional model for light curve data.
+    """
+
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        self.dense0 = Convolution1D(400, kernel_size=1)
+        self.dense1 = Convolution1D(400, kernel_size=1)
+        output_channels = 128
+        l2_rate = 0.0001
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=400, dropout_rate=0.5, l2_regularization=l2_rate,
+            batch_normalization=False, leaky_relu_alpha=0.0001))
+        input_channels = output_channels
+        for output_channels in [512, 512, 1024, 1024, 2048, 2048]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.5,
+                l2_regularization=l2_rate, batch_normalization=False, leaky_relu_alpha=0.0001))
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                    output_channels=output_channels, dropout_rate=0.5, l2_regularization=l2_rate,
+                    batch_normalization=False, leaky_relu_alpha=0.0001))
+            input_channels = output_channels
+        self.end_conv = Convolution1D(1, kernel_size=1)
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = self.end_conv(x, training=training)
+        outputs = self.reshape(x, training=training)
+        return outputs
+
+
+class LiraTraditionalShape8xWidthWithNoDoNoBn(Model):
+    """
+    A general convolutional model for light curve data.
+    """
+
+    def __init__(self, number_of_input_channels: int = 11):
+        super().__init__()
+        self.blocks = []
+        self.reshape0 = Reshape([1, 11])
+        self.dense0 = Convolution1D(400, kernel_size=1)
+        self.dense1 = Convolution1D(400, kernel_size=1)
+        output_channels = 128
+        l2_rate = 0.0001
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=400, dropout_rate=0.0, l2_regularization=l2_rate,
+            batch_normalization=False, leaky_relu_alpha=0.0001))
+        input_channels = output_channels
+        for output_channels in [512, 512, 1024, 1024, 2048, 2048]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, pooling_size=2, dropout_rate=0.0,
+                l2_regularization=l2_rate, batch_normalization=False, leaky_relu_alpha=0.0001))
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                    output_channels=output_channels, dropout_rate=0.0, l2_regularization=l2_rate,
+                    batch_normalization=False, leaky_relu_alpha=0.0001))
+            input_channels = output_channels
+        self.end_conv = Convolution1D(1, kernel_size=1)
+        self.reshape = Reshape([64])
+
+    def call(self, inputs, training=False, mask=None):
+        """
+        The forward pass of the layer.
+
+        :param inputs: The input tensor.
+        :param training: A boolean specifying if the layer should be in training mode.
+        :param mask: A mask for the input tensor.
+        :return: The output tensor of the layer.
+        """
+        x = inputs
+        x = self.reshape0(x, training=training)
+        x = self.dense0(x, training=training)
+        x = self.dense1(x, training=training)
+        for index, block in enumerate(self.blocks):
+            x = block(x, training=training)
+        x = self.end_conv(x, training=training)
         outputs = self.reshape(x, training=training)
         return outputs

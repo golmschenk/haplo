@@ -7,7 +7,8 @@ from pathlib import Path
 from ml4a.nicer_example import NicerExample
 from ml4a.nicer_model import Nyx9Wider, Nyx11, Nyx9Re, Nyx9ReTraditionalShape
 from ml4a.residual_model import Lira, NormalizingModelWrapper, LiraTraditionalShape, \
-    LiraTraditionalShapeDoubleWidthWithExtraEndLayer
+    LiraTraditionalShapeDoubleWidthWithExtraEndLayer, LiraTraditionalShape4xWidthWithDo, \
+    LiraTraditionalShape8xWidthWith0d5DoNoBn
 
 
 def main():
@@ -15,12 +16,12 @@ def main():
     model0_trial_name = "Nyx9Widerer_no_do_l2_1000_cont2"
     model0_trial_directory = Path("logs").joinpath(model0_trial_name)
     model0.load_weights(model0_trial_directory.joinpath('best_validation_model.ckpt'))
-    model1 = LiraTraditionalShapeDoubleWidthWithExtraEndLayer()
-    model1_trial_name = "LiraTraditionalShapeDoubleWidthWithExtraEndLayer_normalized_loss_lr_1e-5_cont2"
+    model1 = LiraTraditionalShape8xWidthWith0d5DoNoBn()
+    model1_trial_name = "LiraTraditionalShape8xWidthWith0d5DoNoBn_chi_squared_loss"
     model1_trial_directory = Path("logs").joinpath(model1_trial_name)
     model1.load_weights(model1_trial_directory.joinpath('best_validation_model.ckpt'))
-    model2 = Lira()
-    model2_trial_name = "ResModel1InitialDenseNoDoConvEndDoublingWidererL2_0d00001_l2_reg_cont2"
+    model2 = LiraTraditionalShapeDoubleWidthWithExtraEndLayer()
+    model2_trial_name = "LiraTraditionalShapeDoubleWidthWithExtraEndLayer_normalized_loss_lr_1e-5_cont2"
     model2_trial_directory = Path("logs").joinpath(model2_trial_name)
     model2.load_weights(model2_trial_directory.joinpath('best_validation_model.ckpt'))
     figures = []
