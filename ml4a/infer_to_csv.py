@@ -9,12 +9,12 @@ from pathlib import Path
 from ml4a.nicer_example import NicerExample
 from ml4a.nicer_model import Nyx9Wider, Nyx11, Nyx9Re, Nyx9ReTraditionalShape
 from ml4a.residual_model import Lira, NormalizingModelWrapper, LiraTraditionalShape, \
-    LiraTraditionalShapeDoubleWidthWithExtraEndLayer
+    LiraTraditionalShapeDoubleWidthWithExtraEndLayer, LiraTraditionalShape8xWidthWith0d5DoNoBn
 
 
 def main():
-    model = LiraTraditionalShape()
-    model_trial_name = "LiraTraditionalShape_normalized_loss_lr_1e-4_exported_2022_10_31"
+    model = LiraTraditionalShape8xWidthWith0d5DoNoBn()
+    model_trial_name = "LiraTraditionalShape8xWidthWith0d5DoNoBn_chi_squared_loss"
     model_trial_directory = Path("logs").joinpath(model_trial_name)
     model.load_weights(model_trial_directory.joinpath('best_validation_model.ckpt'))
 
