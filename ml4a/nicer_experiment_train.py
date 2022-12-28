@@ -36,7 +36,7 @@ def main():
 
     # pregenerated_outputs = NicerExample.extract_phase_amplitudes_array(train_examples[:200])
     model = LiraTraditionalShape8xWidthWith0d5DoNoBn()
-    wandb.run.notes = f"{type(model).__name__}_chi_squared_loss"
+    wandb.run.notes = f"{type(model).__name__}_chi_squared_loss_new_init"
     optimizer = tf.optimizers.Adam(learning_rate=1e-4)
     loss_metric = PlusOneChiSquaredStatisticLoss()
     metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError(), PlusOneChiSquaredStatisticLoss().plus_one_chi_squared_statistic, RelativeMeanSquaredErrorLoss.relative_mean_squared_error_loss]
