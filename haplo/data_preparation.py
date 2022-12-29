@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from haplo.data_column_name import DataColumnName
+from haplo.data_paths import constantinos_kalapotharakos_format_dataset_path, dataset_path
 
 
 def constantinos_kalapotharakos_file_handle_to_pandas(file_handle: TextIO) -> pd.DataFrame:
@@ -37,5 +38,4 @@ def constantinos_kalapotharakos_format_file_to_arrow_file(input_file_path: Path,
 
 
 if __name__ == '__main__':
-    constantinos_kalapotharakos_format_file_to_arrow_file(Path('data/mcmc_vac_all_f90.dat'),
-                                                          Path('data/parameters_and_phase_amplitudes.arrow'))
+    constantinos_kalapotharakos_format_file_to_arrow_file(constantinos_kalapotharakos_format_dataset_path, dataset_path)
