@@ -4,12 +4,17 @@ extern crate libc;
 use tract_onnx::prelude::*;
 
 use std::lazy::SyncLazy;
-use std::slice;
+use std::{fs, slice};
 use crate::tract_ndarray::{Array1, s};
+use toml::Table;
 
 pub static MODEL: SyncLazy<RunnableModel<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>> = SyncLazy::new(|| {
+    let filename = "ml4a_configuration.toml";
+    let configuration_file_contents = fs::read_to_string(filename).unwrap();
+    let value = configuration_file_contents.parse::<Table>().unwrap();
+    let onnx_path_string = value["onnx_model_path"].as_str().unwrap();
     let model = tract_onnx::onnx()
-        .model_for_path("ml4a/lira.onnx").unwrap()
+        .model_for_path(onnx_path_string).unwrap()
         .with_input_fact(0, InferenceFact::dt_shape(f32::datum_type(), tvec!(1, 11, 1))).unwrap()
         .into_optimized().unwrap()
         .into_runnable().unwrap();
