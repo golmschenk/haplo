@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
 from haplo.data_column_name import DataColumnName
-from haplo.data_preparation import constantinos_kalapotharakos_file_handle_to_pandas
+from haplo.data_preparation import constantinos_kalapotharakos_file_handle_to_polars
 
 
 def test_conversion_of_constantinos_kalapotharakos_format_file_handle_to_pandas_dataframe():
@@ -60,7 +60,7 @@ def test_conversion_of_constantinos_kalapotharakos_format_file_handle_to_pandas_
    3858.44869583521        3582.59549752075        3355.65062746198     
    3153.37600771749  
     """
-    data_frame = constantinos_kalapotharakos_file_handle_to_pandas(file_stub)
+    data_frame = constantinos_kalapotharakos_file_handle_to_polars(file_stub)
     assert data_frame.iloc[0][DataColumnName.PARAMETER0] == -0.137349282472716
     assert data_frame.iloc[0][DataColumnName.PARAMETER10] == 2.77055893884855
     assert data_frame.iloc[0][DataColumnName.PHASE_AMPLITUDE2] == 2585.23695232772
