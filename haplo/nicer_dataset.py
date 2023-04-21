@@ -1,12 +1,17 @@
+from typing import Optional, Callable
+
 import pandas as pd
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, Subset
 
 from haplo.data_column_name import DataColumnName
 from haplo.data_paths import dataset_path
 
 
 class NicerDataset(Dataset):
-    def __init__(self):
+    def __init__(self, parameters_transform: Optional[Callable] = None,
+                 phase_amplitudes_transform: Optional[Callable] = None):
+        self.parameters_transform: Callable = parameters_transform
+        self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
         self.data_frame: pd.DataFrame = pd.read_feather(dataset_path)
 
     def __len__(self):
@@ -93,4 +98,16 @@ class NicerDataset(Dataset):
             DataColumnName.PHASE_AMPLITUDE62,
             DataColumnName.PHASE_AMPLITUDE63,
         ]]
+        if self.parameters_transform is not None:
+            parameters = self.parameters_transform(parameters)
+        if self.phase_amplitudes_transform is not None:
+            phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes)
         return parameters, phase_amplitudes
+
+
+def split_into_train_validation_and_test_datasets(dataset: NicerDataset) -> (NicerDataset, NicerDataset, NicerDataset):
+    length_10_percent = round(len(dataset) * 0.1)
+    train_dataset = Subset(dataset, range(length_10_percent * 8))
+    validation_dataset = Subset(dataset, range(length_10_percent * 8, length_10_percent * 9))
+    test_dataset = Subset(dataset, range(length_10_percent * 9, len(dataset)))
+    return train_dataset, validation_dataset, test_dataset
