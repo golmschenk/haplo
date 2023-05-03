@@ -1,5 +1,6 @@
 from typing import Optional, Callable
 
+import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset, Subset
 
@@ -31,7 +32,7 @@ class NicerDataset(Dataset):
             DataColumnName.PARAMETER8,
             DataColumnName.PARAMETER9,
             DataColumnName.PARAMETER10,
-        ]]
+        ]].values
         phase_amplitudes = row.loc[[
             DataColumnName.PHASE_AMPLITUDE0,
             DataColumnName.PHASE_AMPLITUDE1,
@@ -97,12 +98,12 @@ class NicerDataset(Dataset):
             DataColumnName.PHASE_AMPLITUDE61,
             DataColumnName.PHASE_AMPLITUDE62,
             DataColumnName.PHASE_AMPLITUDE63,
-        ]]
+        ]].values
         if self.parameters_transform is not None:
             parameters = self.parameters_transform(parameters)
         if self.phase_amplitudes_transform is not None:
             phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes)
-        return parameters, phase_amplitudes
+        return parameters.astype(np.float32), phase_amplitudes.astype(np.float32)
 
 
 def split_into_train_validation_and_test_datasets(dataset: NicerDataset) -> (NicerDataset, NicerDataset, NicerDataset):
