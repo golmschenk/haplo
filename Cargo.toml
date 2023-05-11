@@ -18,4 +18,4 @@ crate-type = ["staticlib"]
 
 #[[bin]]
 #name = "main"
-#path = "ml4a/bin/main.rs"
+#path = "haplo/bin/main.rs"

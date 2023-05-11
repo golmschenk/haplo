@@ -10,7 +10,6 @@ from tensorflow.python.ops import math_ops
 
 from nicer_example import NicerExample
 
-
 phase_amplitude_mean = tf.constant(34025.080543335825, dtype=tf.float64)
 phase_amplitude_standard_deviation = tf.constant(47698.66676993027, dtype=tf.float64)
 parameter_means = tf.constant(
@@ -22,10 +21,12 @@ parameter_standard_deviations = tf.constant(
      0.2815981892528909, 0.281641754864262, 0.28109705707606697, 0.9062620846468298, 1.8139690831565327,
      2.886950440590801])
 
+
 def unnormalize_phase_amplitudes(phase_amplitudes):
     phase_amplitudes *= phase_amplitude_standard_deviation
     phase_amplitudes += phase_amplitude_mean
     return phase_amplitudes
+
 
 class RelativeMeanSquaredErrorLoss(Loss):
     def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
@@ -57,3 +58,32 @@ class PlusOneChiSquaredStatisticLoss(Loss):
         chi_squared_statistic = tf.cast(chi_squared_statistic_f64, dtype=tf.float32)
         return chi_squared_statistic
 
+
+class PlusOneChiSquaredStatisticLossNoUnnormalizing(Loss):
+    def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
+        return self.plus_one_chi_squared_statistic(y_true, y_pred)
+
+    @staticmethod
+    def plus_one_chi_squared_statistic(y_true, y_pred):
+        observed = tf.cast(y_pred + 1.0, dtype=tf.float64)
+        expected = tf.cast(y_true + 1.0, dtype=tf.float64)
+        chi_squared_statistic_f64 = backend.mean(backend.sum(((observed - expected) ** 2) / expected, axis=1))
+        chi_squared_statistic = tf.cast(chi_squared_statistic_f64, dtype=tf.float32)
+        return chi_squared_statistic
+
+
+class PlusOneChiSquaredMeanDenominatorStatisticLoss(Loss):
+    def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
+        return self.loss(y_true, y_pred)
+
+    @staticmethod
+    def loss(y_true, y_pred):
+        observed = unnormalize_phase_amplitudes(tf.cast(y_pred + 1.0, dtype=tf.float64))
+        expected = unnormalize_phase_amplitudes(tf.cast(y_true + 1.0, dtype=tf.float64))
+        chi_squared_statistic_f64 = (
+            backend.mean(
+                backend.sum(((observed - expected) ** 2), axis=1) / backend.mean(expected, axis=1)
+            )
+        )
+        chi_squared_statistic = tf.cast(chi_squared_statistic_f64, dtype=tf.float32)
+        return chi_squared_statistic

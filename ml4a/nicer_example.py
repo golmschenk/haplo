@@ -141,7 +141,7 @@ class NicerExample:
         return parameters
 
     @classmethod
-    def to_prepared_tensorflow_dataset(cls, examples: List[NicerExample], batch_size: int = 1000,
+    def to_prepared_tensorflow_dataset(cls, examples: List[NicerExample], batch_size: int = 2000,
                                        shuffle: bool = False, parameters_labels: bool = True,
                                        normalize_parameters_and_phase_amplitudes: bool = False) -> tf.data.Dataset:
         dataset = cls.to_tensorflow_dataset(
@@ -150,4 +150,5 @@ class NicerExample:
         if shuffle:
             dataset = dataset.shuffle(buffer_size=10000, reshuffle_each_iteration=True)
         dataset = dataset.batch(batch_size)
+        dataset = dataset.prefetch(10)
         return dataset
