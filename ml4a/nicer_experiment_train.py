@@ -1,7 +1,13 @@
+import tensorflow as tf
+slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(port_base=15000)
+communication = tf.distribute.experimental.CommunicationImplementation.NCCL
+communication_options = tf.distribute.experimental.CommunicationOptions(implementation=communication)
+mirrored_strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver,
+                                                              communication_options=communication_options)
+
 import datetime
 import gc
 import random
-import tensorflow as tf
 import wandb
 from wandb.keras import WandbCallback
 from tensorflow.python.keras import callbacks
@@ -21,10 +27,6 @@ from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, LiraTraditionalSh
 
 
 def main():
-    slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(port_base=15000)
-    communication = tf.distribute.experimental.CommunicationImplementation.NCCL
-    mirrored_strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver,
-                                                                  communication_options=communication)
     print(f'Number of replicas: {mirrored_strategy.num_replicas_in_sync}.')
     # strategy = tf.distribute.MirroredStrategy()
     # print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
@@ -32,7 +34,7 @@ def main():
         print("Imports complete.", flush=True)
         wandb.init(project='haplo', entity='ramjet', settings=wandb.Settings(start_method='fork'))
         model = LiraTraditionalShape8xWidthWithNoDoNoBn()
-        wandb.run.notes = f"{type(model).__name__}_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_cont_from_with_do"
+        wandb.run.notes = f"{type(model).__name__}_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_cont1"
         optimizer = tf.optimizers.Adam(learning_rate=1e-4, clipnorm=1)
         loss_metric = PlusOneChiSquaredStatisticLoss()
         metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError(), PlusOneChiSquaredStatisticLoss().plus_one_chi_squared_statistic, RelativeMeanSquaredErrorLoss.relative_mean_squared_error_loss, PlusOneChiSquaredMeanDenominatorStatisticLoss().loss]
@@ -42,7 +44,7 @@ def main():
         best_validation_checkpoint_callback = callbacks.ModelCheckpoint(
             best_validation_model_save_path, monitor='val_loss', mode='min', save_best_only=True,
             save_weights_only=True)
-        model.load_weights('logs/LiraTraditionalShape8xWidthWith0d5DoNoBn_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_from_start/best_validation_model.ckpt')
+        model.load_weights('logs/LiraTraditionalShape8xWidthWithNoDoNoBn_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_cont/best_validation_model.ckpt')
         model.compile(optimizer=optimizer, loss=loss_metric, metrics=metrics)
         dataset_path = Path('data/mcmc_vac_all_50m.dat')
         examples = NicerExample.list_from_constantinos_kalapotharakos_file(dataset_path)

@@ -17,7 +17,7 @@ import subprocess
 
 def main():
     model_class = LiraTraditionalShape8xWidthWithNoDoNoBn
-    model_trial_name = "LiraTraditionalShape8xWidthWithNoDoNoBn_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_cont_from_with_do"
+    model_trial_name = "LiraTraditionalShape8xWidthWithNoDoNoBn_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_cont"
     model = model_class()
     model_trial_directory = Path("logs").joinpath(model_trial_name)
     model_path = model_trial_directory.joinpath('best_validation_model.ckpt')
