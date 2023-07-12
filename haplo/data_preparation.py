@@ -1,4 +1,5 @@
 import re
+import mmap
 from pathlib import Path
 from typing import TextIO, Dict, List
 
@@ -10,7 +11,9 @@ from haplo.data_paths import constantinos_kalapotharakos_format_rotated_dataset_
 
 
 def constantinos_kalapotharakos_file_handle_to_polars(file_handle: TextIO) -> pl.DataFrame:
-    value_iterator = re.finditer(r"[^\s]+", file_handle.read())
+    file_fileno = file_handle.fileno()
+    file_contents = mmap.mmap(file_fileno, 0, access=mmap.ACCESS_READ)
+    value_iterator = re.finditer(rb"[^\s]+", file_contents)
     list_of_dictionaries: List[Dict] = []
     while True:
         parameters = []
@@ -27,6 +30,8 @@ def constantinos_kalapotharakos_file_handle_to_polars(file_handle: TextIO) -> pl
         row_values = parameters + phase_amplitudes
         row_dictionary = {str(name): value for name, value in zip(DataColumnName, row_values)}
         list_of_dictionaries.append(row_dictionary)
+        if len(list_of_dictionaries) % 10000 == 0:
+            print(f'{len(list_of_dictionaries)}', flush=True)
     data_frame = pl.from_dicts(list_of_dictionaries, schema={str(name): pl.Float64 for name in DataColumnName})
     return data_frame
 
