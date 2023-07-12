@@ -3,13 +3,13 @@
 
 
 from torch import permute
-from torch.nn import Module, Conv1d, LeakyReLU, BatchNorm1d, Upsample, ConstantPad1d, Dropout1d
+from torch.nn import Module, Conv1d, LeakyReLU, BatchNorm1d, Upsample, ConstantPad1d, Dropout1d, ModuleList
 
 
 class LiraTraditionalShape8xWidthWith0d5DoNoBn(Module):
     def __init__(self):
         super().__init__()
-        self.blocks = []
+        self.blocks = ModuleList()
         self.dense0 = Conv1d(11, 400, kernel_size=1)
         self.activation = LeakyReLU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
