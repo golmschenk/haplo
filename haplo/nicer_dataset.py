@@ -2,6 +2,7 @@ from typing import Optional, Callable
 
 import numpy as np
 import pandas as pd
+from pyarrow import feather
 from torch.utils.data import Dataset, Subset
 
 from haplo.data_column_name import DataColumnName
@@ -13,7 +14,7 @@ class NicerDataset(Dataset):
                  phase_amplitudes_transform: Optional[Callable] = None):
         self.parameters_transform: Callable = parameters_transform
         self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
-        self.data_frame: pd.DataFrame = pd.read_feather(dataset_path)
+        self.data_frame: pd.DataFrame = feather.read_feather(dataset_path, memory_map=True)
 
     def __len__(self):
         return self.data_frame.shape[0]
