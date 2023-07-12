@@ -6,7 +6,7 @@ from torch import permute
 from torch.nn import Module, Conv1d, LeakyReLU, BatchNorm1d, Upsample, ConstantPad1d, Dropout1d, ModuleList
 
 
-class LiraTraditionalShape8xWidthWith0d5DoNoBn(Module):
+class LiraTraditionalShape8xWidthWithNoDoNoBn(Module):
     def __init__(self):
         super().__init__()
         self.blocks = ModuleList()
@@ -15,17 +15,17 @@ class LiraTraditionalShape8xWidthWith0d5DoNoBn(Module):
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
         self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=400, dropout_rate=0.5,
+            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
             batch_normalization=False))
         input_channels = output_channels
         for output_channels in [512, 512, 1024, 1024, 2048, 2048]:
             self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2, dropout_rate=0.5,
+                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2, dropout_rate=0.0,
                 batch_normalization=False))
             input_channels = output_channels
             for _ in range(2):
                 self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.5,
+                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
                     batch_normalization=False))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)

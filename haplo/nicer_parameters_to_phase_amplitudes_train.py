@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 
 from haplo.data_paths import rotated_dataset_path, unrotated_dataset_path
 from haplo.losses import PlusOneChiSquaredStatisticLoss
-from haplo.models import LiraTraditionalShape8xWidthWith0d5DoNoBn
+from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBn
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
@@ -35,7 +35,7 @@ def train_session():
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size)
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size)
 
-    model = LiraTraditionalShape8xWidthWith0d5DoNoBn()
+    model = LiraTraditionalShape8xWidthWithNoDoNoBn()
     model = model.to(device)
     loss_function = PlusOneChiSquaredStatisticLoss()
     optimizer = Adam(model.parameters(), lr=learning_rate)
