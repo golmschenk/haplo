@@ -5,7 +5,8 @@ from typing import TextIO, Dict, List
 import polars as pl
 
 from haplo.data_column_name import DataColumnName
-from haplo.data_paths import constantinos_kalapotharakos_format_dataset_path, dataset_path
+from haplo.data_paths import constantinos_kalapotharakos_format_rotated_dataset_path, rotated_dataset_path, \
+    constantinos_kalapotharakos_format_unrotated_dataset_path, unrotated_dataset_path
 
 
 def constantinos_kalapotharakos_file_handle_to_polars(file_handle: TextIO) -> pl.DataFrame:
@@ -38,4 +39,7 @@ def constantinos_kalapotharakos_format_file_to_arrow_file(input_file_path: Path,
 
 
 if __name__ == '__main__':
-    constantinos_kalapotharakos_format_file_to_arrow_file(constantinos_kalapotharakos_format_dataset_path, dataset_path)
+    constantinos_kalapotharakos_format_file_to_arrow_file(
+        constantinos_kalapotharakos_format_rotated_dataset_path, rotated_dataset_path)
+    constantinos_kalapotharakos_format_file_to_arrow_file(
+        constantinos_kalapotharakos_format_unrotated_dataset_path, unrotated_dataset_path)

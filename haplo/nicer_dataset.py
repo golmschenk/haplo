@@ -1,4 +1,5 @@
-from typing import Optional, Callable
+from pathlib import Path
+from typing import Optional, Callable, List
 
 import numpy as np
 import pandas as pd
@@ -6,11 +7,10 @@ from pyarrow import feather
 from torch.utils.data import Dataset, Subset
 
 from haplo.data_column_name import DataColumnName
-from haplo.data_paths import dataset_path
 
 
 class NicerDataset(Dataset):
-    def __init__(self, parameters_transform: Optional[Callable] = None,
+    def __init__(self, dataset_path: Path, parameters_transform: Optional[Callable] = None,
                  phase_amplitudes_transform: Optional[Callable] = None):
         self.parameters_transform: Callable = parameters_transform
         self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
@@ -113,3 +113,19 @@ def split_into_train_validation_and_test_datasets(dataset: NicerDataset) -> (Nic
     validation_dataset = Subset(dataset, range(length_10_percent * 8, length_10_percent * 9))
     test_dataset = Subset(dataset, range(length_10_percent * 9, len(dataset)))
     return train_dataset, validation_dataset, test_dataset
+
+
+def split_dataset_into_fractional_datasets(dataset: NicerDataset, fractions: List[float]) -> List[NicerDataset]:
+    assert np.isclose(np.sum(fractions), 1.0)
+    fractional_datasets: List[NicerDataset] = []
+    cumulative_fraction = 0
+    previous_index = 0
+    for fraction in fractions:
+        cumulative_fraction += fraction
+        if np.isclose(np.sum(fractions), 1.0):
+            next_index = len(dataset)
+        else:
+            next_index = round(len(dataset) * cumulative_fraction)
+        fractional_dataset: NicerDataset = Subset(dataset, range(previous_index, next_index))
+        fractional_datasets.append(fractional_dataset)
+    return fractional_datasets
