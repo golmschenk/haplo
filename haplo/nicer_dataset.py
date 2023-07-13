@@ -104,7 +104,7 @@ class NicerDataset(Dataset):
             parameters = self.parameters_transform(parameters)
         if self.phase_amplitudes_transform is not None:
             phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes)
-        return parameters.astype(np.float32), phase_amplitudes.astype(np.float32)
+        return parameters, phase_amplitudes
 
 
 def split_into_train_validation_and_test_datasets(dataset: NicerDataset) -> (NicerDataset, NicerDataset, NicerDataset):
