@@ -64,12 +64,12 @@ def train_session():
 
     wandb.run.notes = f"pt_{type(model).__name__}_chi_squared_loss_64m_clip"
 
-    for t in range(epochs):
-        print(f"Epoch {t + 1}\n-------------------------------")
+    for epoch in range(epochs):
+        print(f"Epoch {epoch + 1}\n-------------------------------")
         train_loop(train_dataloader, model, loss_function, optimizer, network_device=network_device,
-                   loss_device=loss_device, epoch=t)
+                   loss_device=loss_device, epoch=epoch)
         loop_test(validation_dataloader, model, loss_function, network_device=network_device, loss_device=loss_device,
-                  epoch=t)
+                  epoch=epoch)
         torch.save(model.state_dict(), 'latest_model.pt')
     print("Done!")
 
