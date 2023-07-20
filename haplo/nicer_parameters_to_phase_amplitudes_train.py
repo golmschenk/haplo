@@ -20,11 +20,14 @@ def train_session():
     print(f'GPUs: {gpu_count}')
 
     if torch.backends.mps.is_available():
-        device = torch.device('mps')
+        network_device = torch.device('mps')
+        loss_device = torch.device('cpu')
     elif torch.cuda.is_available():
-        device = torch.device('cuda')
+        network_device = torch.device('cuda')
+        loss_device = torch.device('cuda')
     else:
-        device = torch.device('cpu')
+        network_device = torch.device('cpu')
+        loss_device = torch.device('cpu')
 
     rotated_dataset_path_moved = move_path_to_nvme(rotated_dataset_path)
     unrotated_dataset_path_moved = move_path_to_nvme(unrotated_dataset_path)
@@ -38,44 +41,47 @@ def train_session():
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
     validation_dataset, test_dataset = split_dataset_into_fractional_datasets(evaluation_dataset, [0.5, 0.5])
 
-    learning_rate = 1e-5
+    learning_rate = 1e-4
     if gpu_count == 0:
         batch_size = 1000
     else:
         batch_size = 1000 * gpu_count
     epochs = 5000
 
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=cpu_count)
-    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, num_workers=cpu_count)
-
     model = LiraTraditionalShape8xWidthWithNoDoNoBn()
     if gpu_count > 1:
         model = DataParallel(model)
-    model = model.to(device)
+    model = model.to(network_device, non_blocking=True)
+
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=cpu_count, pin_memory=True)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, num_workers=cpu_count, pin_memory=True)
+
     clip_value = 1.0
     for parameter in model.parameters():
         parameter.register_hook(lambda gradient: torch.clamp(gradient, -clip_value, clip_value))
     loss_function = PlusOneChiSquaredStatisticLoss()
     optimizer = Adam(model.parameters(), lr=learning_rate)
 
-    wandb.run.notes = f"pt_{type(model).__name__}_chi_squared_loss_64m_clip_lr_1e-5"
+    wandb.run.notes = f"pt_{type(model).__name__}_chi_squared_loss_64m_clip"
 
     for t in range(epochs):
         print(f"Epoch {t + 1}\n-------------------------------")
-        train_loop(train_dataloader, model, loss_function, optimizer, device=device, epoch=t)
-        loop_test(validation_dataloader, model, loss_function, device=device, epoch=t)
+        train_loop(train_dataloader, model, loss_function, optimizer, network_device=network_device,
+                   loss_device=loss_device, epoch=t)
+        loop_test(validation_dataloader, model, loss_function, network_device=network_device, loss_device=loss_device,
+                  epoch=t)
         torch.save(model.state_dict(), 'latest_model.pt')
     print("Done!")
 
 
-def train_loop(dataloader, model_, loss_fn, optimizer, device, epoch):
+def train_loop(dataloader, model_, loss_fn, optimizer, network_device, loss_device, epoch):
     size = len(dataloader.dataset)
     for batch, (X, y) in enumerate(dataloader):
         # Compute prediction and loss
-        X = X.to(device)
-        y = y
+        X = X.to(network_device, non_blocking=True)
+        y = y.to(loss_device, non_blocking=True)
         pred = model_(X)
-        loss = loss_fn(pred.to('cpu'), y).to(device)
+        loss = loss_fn(pred.to(loss_device, non_blocking=True), y).to(network_device, non_blocking=True)
 
         # Backpropagation
         optimizer.zero_grad()
@@ -89,16 +95,16 @@ def train_loop(dataloader, model_, loss_fn, optimizer, device, epoch):
     wandb.log({'epoch': epoch}, step=epoch)
 
 
-def loop_test(dataloader, model_: Module, loss_fn, device, epoch):
+def loop_test(dataloader, model_: Module, loss_fn, network_device, loss_device, epoch):
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
 
     with torch.no_grad():
         for X, y in dataloader:
-            X = X.to(device)
-            y = y
+            X = X.to(network_device, non_blocking=True)
+            y = y.to(loss_device, non_blocking=True)
             pred = model_(X)
-            test_loss += loss_fn(pred.to('cpu'), y).to(device).item()
+            test_loss += loss_fn(pred.to(loss_device, non_blocking=True), y).to(network_device, non_blocking=True).item()
 
     test_loss /= num_batches
     print(f"Test Error: \nAvg loss: {test_loss:>8f} \n", flush=True)
