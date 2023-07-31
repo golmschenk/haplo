@@ -1,6 +1,3 @@
-from io import StringIO
-from unittest.mock import Mock
-
 import pytest
 
 from haplo.data_column_name import DataColumnName
