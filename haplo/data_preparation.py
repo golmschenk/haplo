@@ -10,9 +10,7 @@ from haplo.data_paths import constantinos_kalapotharakos_format_rotated_dataset_
     constantinos_kalapotharakos_format_unrotated_dataset_path, unrotated_dataset_path
 
 
-def constantinos_kalapotharakos_file_handle_to_polars(file_handle: TextIO) -> pl.DataFrame:
-    file_fileno = file_handle.fileno()
-    file_contents = mmap.mmap(file_fileno, 0, access=mmap.ACCESS_READ)
+def constantinos_kalapotharakos_file_handle_to_polars(file_contents: bytes | mmap.mmap) -> pl.DataFrame:
     value_iterator = re.finditer(rb"[^\s]+", file_contents)
     list_of_dictionaries: List[Dict] = []
     data_frame = pl.from_dicts([], schema={str(name): pl.Float32 for name in DataColumnName})
@@ -43,9 +41,16 @@ def constantinos_kalapotharakos_file_handle_to_polars(file_handle: TextIO) -> pl
     return data_frame
 
 
+def get_memory_mapped_file_contents(file_handle: TextIO) -> mmap.mmap:
+    file_fileno = file_handle.fileno()
+    file_contents = mmap.mmap(file_fileno, 0, access=mmap.ACCESS_READ)
+    return file_contents
+
+
 def constantinos_kalapotharakos_format_file_to_arrow_file(input_file_path: Path, output_file_path: Path):
-    with input_file_path.open() as file:
-        data_frame = constantinos_kalapotharakos_file_handle_to_polars(file)
+    with input_file_path.open() as file_handle:
+        file_contents = get_memory_mapped_file_contents(file_handle)
+        data_frame = constantinos_kalapotharakos_file_handle_to_polars(file_contents)
         data_frame = data_frame.sample(frac=1.0, seed=0)
         data_frame.write_ipc(output_file_path)
 
