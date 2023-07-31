@@ -17,7 +17,7 @@ def train_session():
     else:
         device = torch.device('cpu')
 
-    evaluation_dataset = NicerDataset(
+    evaluation_dataset = NicerDataset.new(
         dataset_path=unrotated_dataset_path,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())

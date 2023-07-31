@@ -11,8 +11,7 @@ from torch.utils.data import DataLoader
 
 from haplo.data_paths import rotated_dataset_path, unrotated_dataset_path, move_path_to_nvme
 from haplo.losses import PlusOneChiSquaredStatisticLoss, PlusOneBeforeUnnormalizationChiSquaredStatisticLoss
-from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBn, LiraTraditionalShapeWidthWithNoDoNoBn, SimpleModel, \
-    SingleDenseLayerModel
+from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBn
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
@@ -35,11 +34,11 @@ def train_session():
     evaluation_dataset_path = unrotated_dataset_path
     train_dataset_path_moved = move_path_to_nvme(train_dataset_path)
     evaluation_dataset_path_moved = move_path_to_nvme(evaluation_dataset_path)
-    train_dataset = NicerDataset(
+    train_dataset = NicerDataset.new(
         dataset_path=train_dataset_path_moved,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
-    evaluation_dataset = NicerDataset(
+    evaluation_dataset = NicerDataset.new(
         dataset_path=evaluation_dataset_path_moved,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())

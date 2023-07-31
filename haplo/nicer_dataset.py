@@ -10,11 +10,19 @@ from haplo.data_column_name import DataColumnName
 
 
 class NicerDataset(Dataset):
-    def __init__(self, dataset_path: Path, parameters_transform: Optional[Callable] = None,
+    def __init__(self, data_frame: pd.DataFrame, parameters_transform: Optional[Callable] = None,
                  phase_amplitudes_transform: Optional[Callable] = None):
         self.parameters_transform: Callable = parameters_transform
         self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
-        self.data_frame: pd.DataFrame = feather.read_feather(dataset_path, memory_map=True)
+        self.data_frame: pd.DataFrame = data_frame
+
+    @classmethod
+    def new(cls, dataset_path: Path, parameters_transform: Optional[Callable] = None,
+            phase_amplitudes_transform: Optional[Callable] = None):
+        data_frame = feather.read_feather(dataset_path, memory_map=True)
+        instance = cls(data_frame=data_frame, parameters_transform=parameters_transform,
+                       phase_amplitudes_transform=phase_amplitudes_transform)
+        return instance
 
     def __len__(self):
         return self.data_frame.shape[0]
