@@ -30,14 +30,16 @@ def train_session():
         network_device = torch.device('cpu')
         loss_device = network_device
 
-    train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.arrow')
+    train_dataset_path = Path('data/800k_parameters_and_phase_amplitudes.arrow')
     evaluation_dataset_path = unrotated_dataset_path
     train_dataset_path_moved = move_path_to_nvme(train_dataset_path)
     evaluation_dataset_path_moved = move_path_to_nvme(evaluation_dataset_path)
-    train_dataset = NicerDataset.new(
+    full_train_dataset = NicerDataset.new(
         dataset_path=train_dataset_path_moved,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
+    dataset_fraction = 500_000 / len(full_train_dataset)
+    train_dataset, _ = split_dataset_into_fractional_datasets(full_train_dataset, [dataset_fraction, 1 - dataset_fraction])
     evaluation_dataset = NicerDataset.new(
         dataset_path=evaluation_dataset_path_moved,
         parameters_transform=PrecomputedNormalizeParameters(),

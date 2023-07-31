@@ -130,7 +130,7 @@ def split_dataset_into_fractional_datasets(dataset: NicerDataset, fractions: Lis
     previous_index = 0
     for fraction in fractions:
         cumulative_fraction += fraction
-        if np.isclose(np.sum(fractions), 1.0):
+        if np.isclose(cumulative_fraction, 1.0):
             next_index = len(dataset)
         else:
             next_index = round(len(dataset) * cumulative_fraction)
