@@ -1,9 +1,11 @@
 # TODO: I just quickly ported the TensorFlow version to PyTorch without much testing.
 # TODO: The various components should be tested.
+import math
 
 
 from torch import permute
-from torch.nn import Module, Conv1d, LeakyReLU, BatchNorm1d, Upsample, ConstantPad1d, Dropout1d, ModuleList
+from torch.nn import Module, Conv1d, LeakyReLU, BatchNorm1d, Upsample, ConstantPad1d, Dropout1d, ModuleList, \
+    ConvTranspose1d, Linear
 
 
 class LiraTraditionalShape8xWidthWithNoDoNoBn(Module):
@@ -20,7 +22,8 @@ class LiraTraditionalShape8xWidthWithNoDoNoBn(Module):
         input_channels = output_channels
         for output_channels in [512, 512, 1024, 1024, 2048, 2048]:
             self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2, dropout_rate=0.0,
+                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
+                dropout_rate=0.0,
                 batch_normalization=False))
             input_channels = output_channels
             for _ in range(2):
@@ -55,12 +58,13 @@ class ResidualGenerationLightCurveNetworkBlock(Module):
         else:
             self.batch_normalization = None
         reduced_channels = output_channels // dimension_decrease_factor
-        self.dimension_decrease_layer = Conv1d(
+        self.dimension_decrease_layer = ConvTranspose1d(
             in_channels=input_channels, out_channels=reduced_channels, kernel_size=1)
-        self.convolutional_layer = Conv1d(
+        self.convolutional_layer = ConvTranspose1d(
             in_channels=reduced_channels, out_channels=reduced_channels, kernel_size=kernel_size,
-            padding='same')
-        self.dimension_increase_layer = Conv1d(
+            padding=math.floor(kernel_size / 2)
+        )
+        self.dimension_increase_layer = ConvTranspose1d(
             in_channels=reduced_channels, out_channels=output_channels, kernel_size=1)
         if upsampling_scale_factor > 1:
             self.upsampling_layer = Upsample(scale_factor=upsampling_scale_factor)
