@@ -136,4 +136,19 @@ def split_dataset_into_fractional_datasets(dataset: NicerDataset, fractions: Lis
             next_index = round(len(dataset) * cumulative_fraction)
         fractional_dataset: NicerDataset = Subset(dataset, range(previous_index, next_index))
         fractional_datasets.append(fractional_dataset)
+        previous_index = next_index
     return fractional_datasets
+
+
+def split_dataset_into_count_datasets(dataset: NicerDataset, counts: List[int]) -> List[NicerDataset]:
+    assert np.sum(counts) < len(dataset)
+    count_datasets: List[NicerDataset] = []
+    next_index = 0
+    previous_index = 0
+    for count in counts:
+        next_index += count
+        count_dataset: NicerDataset = Subset(dataset, range(previous_index, next_index))
+        count_datasets.append(count_dataset)
+        previous_index = next_index
+    count_datasets.append(Subset(dataset, range(previous_index, len(dataset))))
+    return count_datasets

@@ -12,7 +12,7 @@ from torch.utils.data import DataLoader
 from haplo.data_paths import rotated_dataset_path, unrotated_dataset_path, move_path_to_nvme
 from haplo.losses import PlusOneChiSquaredStatisticLoss, PlusOneBeforeUnnormalizationChiSquaredStatisticLoss
 from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBn
-from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
+from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
 
@@ -39,12 +39,12 @@ def train_session():
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
     dataset_fraction = 500_000 / len(full_train_dataset)
-    train_dataset, _ = split_dataset_into_fractional_datasets(full_train_dataset, [dataset_fraction, 1 - dataset_fraction])
+    train_dataset, _ = split_dataset_into_count_datasets(full_train_dataset, [dataset_fraction, 1 - dataset_fraction])
     evaluation_dataset = NicerDataset.new(
         dataset_path=evaluation_dataset_path_moved,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
-    validation_dataset, test_dataset = split_dataset_into_fractional_datasets(evaluation_dataset, [0.5, 0.5])
+    validation_dataset, test_dataset = split_dataset_into_count_datasets(evaluation_dataset, [0.5, 0.5])
 
     learning_rate = 1e-4
     if gpu_count == 0:
