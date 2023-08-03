@@ -1,10 +1,4 @@
 import tensorflow as tf
-slurm_resolver = tf.distribute.cluster_resolver.SlurmClusterResolver(port_base=15000)
-communication = tf.distribute.experimental.CommunicationImplementation.NCCL
-communication_options = tf.distribute.experimental.CommunicationOptions(implementation=communication)
-mirrored_strategy = tf.distribute.MultiWorkerMirroredStrategy(cluster_resolver=slurm_resolver,
-                                                              communication_options=communication_options)
-
 import datetime
 import gc
 import random
@@ -13,6 +7,7 @@ from wandb.keras import WandbCallback
 from tensorflow.python.keras import callbacks
 from pathlib import Path
 
+from haplo.nicer_dataset import NicerDataset
 from ml4a.losses import RelativeMeanSquaredErrorLoss, PlusOneChiSquaredStatisticLoss, \
     PlusOneChiSquaredMeanDenominatorStatisticLoss
 from ml4a.nicer_example import NicerExample
@@ -27,15 +22,13 @@ from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, LiraTraditionalSh
 
 
 def main():
-    print(f'Number of replicas: {mirrored_strategy.num_replicas_in_sync}.')
-    # strategy = tf.distribute.MirroredStrategy()
-    # print('Number of devices: {}'.format(strategy.num_replicas_in_sync))
+    mirrored_strategy = tf.distribute.MirroredStrategy()
     with mirrored_strategy.scope():
         print("Imports complete.", flush=True)
         wandb.init(project='haplo', entity='ramjet', settings=wandb.Settings(start_method='fork'))
         model = LiraTraditionalShape8xWidthWithNoDoNoBn()
-        wandb.run.notes = f"{type(model).__name__}_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_cont1"
-        optimizer = tf.optimizers.Adam(learning_rate=1e-4, clipnorm=1)
+        wandb.run.notes = f"tf_pt_data_{type(model).__name__}_plus_one_chi_squared_loss_800k_dataset_small_batch"
+        optimizer = tf.optimizers.Adam(learning_rate=1e-4)
         loss_metric = PlusOneChiSquaredStatisticLoss()
         metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError(), PlusOneChiSquaredStatisticLoss().plus_one_chi_squared_statistic, RelativeMeanSquaredErrorLoss.relative_mean_squared_error_loss, PlusOneChiSquaredMeanDenominatorStatisticLoss().loss]
         datetime_string = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -44,10 +37,15 @@ def main():
         best_validation_checkpoint_callback = callbacks.ModelCheckpoint(
             best_validation_model_save_path, monitor='val_loss', mode='min', save_best_only=True,
             save_weights_only=True)
-        model.load_weights('logs/LiraTraditionalShape8xWidthWithNoDoNoBn_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_cont/best_validation_model.ckpt')
+        # model.load_weights('logs/LiraTraditionalShape8xWidthWithNoDoNoBn_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_cont/best_validation_model.ckpt')
         model.compile(optimizer=optimizer, loss=loss_metric, metrics=metrics)
-        dataset_path = Path('data/mcmc_vac_all_50m.dat')
-        examples = NicerExample.list_from_constantinos_kalapotharakos_file(dataset_path)
+        # dataset_path = Path('data/mcmc_vac_all_50m.dat')
+        train_dataset_path = Path('data/800k_parameters_and_phase_amplitudes.arrow')
+        full_train_dataset = NicerDataset.new(dataset_path=train_dataset_path)
+        examples = []
+        for parameters, phase_amplitudes in full_train_dataset:
+            examples.append(NicerExample.new(parameters=parameters, phase_amplitudes=phase_amplitudes, likelihood=0))
+        # examples = NicerExample.list_from_constantinos_kalapotharakos_file(dataset_path)
         random.Random(0).shuffle(examples)
         tenth_dataset_count = int(len(examples) * 0.1)
         train_examples = examples[:-2*tenth_dataset_count]
@@ -57,7 +55,6 @@ def main():
               f'test={len(test_examples)}')
         train_dataset = NicerExample.to_prepared_tensorflow_dataset(train_examples, shuffle=True,
                                                                     normalize_parameters_and_phase_amplitudes=True)
-
         validation_dataset = NicerExample.to_prepared_tensorflow_dataset(validation_examples,
                                                                          normalize_parameters_and_phase_amplitudes=True)
     model.fit(train_dataset, epochs=5000, validation_data=validation_dataset,

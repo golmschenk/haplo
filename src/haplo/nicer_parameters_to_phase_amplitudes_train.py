@@ -30,7 +30,7 @@ def train_session():
         network_device = torch.device('cpu')
         loss_device = network_device
 
-    train_dataset_path = Path('data/800k_parameters_and_phase_amplitudes.arrow')
+    train_dataset_path = rotated_dataset_path
     evaluation_dataset_path = unrotated_dataset_path
     train_dataset_path_moved = move_path_to_nvme(train_dataset_path)
     evaluation_dataset_path_moved = move_path_to_nvme(evaluation_dataset_path)
@@ -38,7 +38,8 @@ def train_session():
         dataset_path=train_dataset_path_moved,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
-    train_dataset, _ = split_dataset_into_count_datasets(full_train_dataset, [500_000])
+    # train_dataset, _ = split_dataset_into_count_datasets(full_train_dataset, [50_000_000])
+    train_dataset = full_train_dataset
     evaluation_dataset = NicerDataset.new(
         dataset_path=evaluation_dataset_path_moved,
         parameters_transform=PrecomputedNormalizeParameters(),
@@ -47,9 +48,9 @@ def train_session():
 
     learning_rate = 1e-4
     if gpu_count == 0:
-        batch_size = 1000
+        batch_size = 100
     else:
-        batch_size = 1000 * gpu_count
+        batch_size = 100 * gpu_count
     epochs = 5000
 
     model = LiraTraditionalShape8xWidthWithNoDoNoBn()
@@ -63,8 +64,8 @@ def train_session():
     model = model.to(network_device, non_blocking=True)
 
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=6, pin_memory=True,
-                                  persistent_workers=True, prefetch_factor=6)
-    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, num_workers=10,
+                                  persistent_workers=True, prefetch_factor=10)
+    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, num_workers=6,
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10)
 
     # clip_value = 1.0
@@ -73,7 +74,7 @@ def train_session():
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticLoss()
     optimizer = Adam(model.parameters(), lr=learning_rate, weight_decay=0.0001)
 
-    wandb.run.notes = f"{model_name}_chi_squared_loss_old_50m_persistent_workers_corrected_transposed_old_loss_lr_1e-4_l2_spawn_6_workers_per"
+    wandb.run.notes = f"{model_name}_chi_squared_loss_old_50m_bs_100"
 
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1}\n-------------------------------")

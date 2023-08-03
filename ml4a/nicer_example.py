@@ -9,7 +9,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from bokeh.io import show
 from bokeh.models import Column
-from bokeh.plotting import Figure
+from bokeh.plotting import figure as Figure
 
 phase_amplitude_mean = 34025.080543335825
 phase_amplitude_standard_deviation = 47698.66676993027
