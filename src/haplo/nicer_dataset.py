@@ -15,8 +15,8 @@ class NicerDataset(Dataset):
         self.parameters_transform: Callable = parameters_transform
         self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
         self.data_frame: pd.DataFrame = data_frame
-        if self.data_frame.shape[0] > 50_000_000:
-            self.data_frame = self.data_frame.head(50_000_000)
+        # if self.data_frame.shape[0] > 50_000_000:
+        #     self.data_frame = self.data_frame.head(50_000_000)
 
     @classmethod
     def new(cls, dataset_path: Path, parameters_transform: Optional[Callable] = None,
@@ -111,9 +111,9 @@ class NicerDataset(Dataset):
             DataColumnName.PHASE_AMPLITUDE63,
         ]].values
         if self.parameters_transform is not None:
-            parameters = self.parameters_transform(parameters)
+            parameters = self.parameters_transform(parameters.copy())
         if self.phase_amplitudes_transform is not None:
-            phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes)
+            phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes.copy())
         return parameters, phase_amplitudes
 
 

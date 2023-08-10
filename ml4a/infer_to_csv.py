@@ -17,7 +17,7 @@ import subprocess
 
 def main():
     model_class = LiraTraditionalShape8xWidthWithNoDoNoBn
-    model_trial_name = "LiraTraditionalShape8xWidthWithNoDoNoBn_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_cont"
+    model_trial_name = "LiraTraditionalShape8xWidthWith0d5DoNoBn_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_from_start"
     model = model_class()
     model_trial_directory = Path("logs").joinpath(model_trial_name)
     model_path = model_trial_directory.joinpath('best_validation_model.ckpt')
@@ -35,9 +35,9 @@ def main():
     print(f'Dataset sizes: train={len(train_examples)}, validation={len(validation_examples)}, '
           f'test={len(test_examples)}')
     partial_test_dataset = NicerExample.to_prepared_tensorflow_dataset(partial_test_examples,
-                                                               normalize_parameters_and_phase_amplitudes=True)
+                                                               normalize_parameters_and_phase_amplitudes=False)
     partial_train_dataset = NicerExample.to_prepared_tensorflow_dataset(partial_train_examples,
-                                                                        normalize_parameters_and_phase_amplitudes=True)
+                                                                        normalize_parameters_and_phase_amplitudes=False)
     partial_train_parameters_array = NicerExample.extract_parameters_array(partial_train_examples)
     np.savetxt(model_trial_directory.joinpath(f'partial_train_parameters.csv'), partial_train_parameters_array,
                delimiter=',')
@@ -54,7 +54,7 @@ def main():
     processed_count = 0
     for (index, train_example) in enumerate(partial_train_dataset):
         train_input, train_output = train_example
-        model_predicted_train_output = model.predict(train_input)
+        model_predicted_train_output = model.predict(NicerExample.normalize_parameters(train_input))
         batch_unnormalized_phase_amplitudes = NicerExample.unnormalize_phase_amplitudes(model_predicted_train_output)
         batch_predictions.append(batch_unnormalized_phase_amplitudes)
         processed_count += batch_unnormalized_phase_amplitudes.shape[0]
@@ -65,7 +65,7 @@ def main():
     batch_predictions = []
     for (index, test_example) in enumerate(partial_test_dataset):
         test_input, test_output = test_example
-        model_predicted_test_output = model.predict(test_input)
+        model_predicted_test_output = model.predict(NicerExample.normalize_parameters(test_input))
         batch_unnormalized_phase_amplitudes = NicerExample.unnormalize_phase_amplitudes(model_predicted_test_output)
         batch_predictions.append(batch_unnormalized_phase_amplitudes)
         processed_count += batch_unnormalized_phase_amplitudes.shape[0]

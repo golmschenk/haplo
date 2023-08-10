@@ -8,7 +8,7 @@ from tensorflow.python.framework import ops
 from tensorflow.keras import backend
 from tensorflow.python.ops import math_ops
 
-from nicer_example import NicerExample
+from ml4a.nicer_example import NicerExample
 
 phase_amplitude_mean = tf.constant(34025.080543335825, dtype=tf.float64)
 phase_amplitude_standard_deviation = tf.constant(47698.66676993027, dtype=tf.float64)
