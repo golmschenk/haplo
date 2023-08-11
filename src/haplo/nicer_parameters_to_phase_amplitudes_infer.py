@@ -1,9 +1,9 @@
 import torch
-from torch.nn import Module
+from torch.nn import Module, DataParallel
 from torch.utils.data import DataLoader
 
 from haplo.data_paths import rotated_dataset_path, unrotated_dataset_path
-from haplo.losses import PlusOneChiSquaredStatisticLoss
+from haplo.losses import PlusOneChiSquaredStatisticMetric
 from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBn
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
@@ -27,11 +27,11 @@ def train_session():
 
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
 
-    model = LiraTraditionalShape8xWidthWithNoDoNoBn()
+    model = DataParallel(LiraTraditionalShape8xWidthWithNoDoNoBn())
     model = model.to(device)
     model.load_state_dict(torch.load('latest_model.pt'))
     model.eval()
-    loss_function = PlusOneChiSquaredStatisticLoss()
+    loss_function = PlusOneChiSquaredStatisticMetric()
 
     loop_test(test_dataloader, model, loss_function, device=device)
 

@@ -58,6 +58,18 @@ class PlusOneChiSquaredStatisticLoss(Loss):
         chi_squared_statistic = tf.cast(chi_squared_statistic_f64, dtype=tf.float32)
         return chi_squared_statistic
 
+class PlusOneChiSquaredStatisticLossUnreduced(Loss):
+    def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:
+        return self.plus_one_chi_squared_statistic(y_true, y_pred)
+
+    @staticmethod
+    def plus_one_chi_squared_statistic(y_true, y_pred):
+        observed = unnormalize_phase_amplitudes(tf.cast(y_pred + 1.0, dtype=tf.float64))
+        expected = unnormalize_phase_amplitudes(tf.cast(y_true + 1.0, dtype=tf.float64))
+        chi_squared_statistic_f64 = backend.sum(((observed - expected) ** 2) / expected, axis=1)
+        chi_squared_statistic = tf.cast(chi_squared_statistic_f64, dtype=tf.float32)
+        return chi_squared_statistic
+
 
 class PlusOneChiSquaredStatisticLossNoUnnormalizing(Loss):
     def call(self, y_true: tf.Tensor, y_pred: tf.Tensor) -> tf.Tensor:

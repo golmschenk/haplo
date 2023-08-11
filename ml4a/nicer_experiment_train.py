@@ -9,7 +9,7 @@ from pathlib import Path
 
 from haplo.nicer_dataset import NicerDataset
 from ml4a.losses import RelativeMeanSquaredErrorLoss, PlusOneChiSquaredStatisticLoss, \
-    PlusOneChiSquaredMeanDenominatorStatisticLoss
+    PlusOneChiSquaredMeanDenominatorStatisticLoss, PlusOneChiSquaredStatisticLossUnreduced
 from ml4a.nicer_example import NicerExample
 from ml4a.nicer_model import Nyx9Wider, SimpleModel, Nyx9Re, Nyx9ReNarrowStartWideEnd, Nyx9ReTraditionalShape, \
     Nyx9ReTraditionalShape4xWide
@@ -27,9 +27,9 @@ def main():
         print("Imports complete.", flush=True)
         wandb.init(project='haplo', entity='ramjet', settings=wandb.Settings(start_method='fork'))
         model = LiraTraditionalShape8xWidthWithNoDoNoBn()
-        wandb.run.notes = f"tf_tf_data_{type(model).__name__}_plus_one_chi_squared_loss_800k_dataset_small_batch"
+        wandb.run.notes = f"tf_{type(model).__name__}_plus_one_chi_squared_loss_pt_50m_dataset_small_batch_unreduced"
         optimizer = tf.optimizers.Adam(learning_rate=1e-4)
-        loss_metric = PlusOneChiSquaredStatisticLoss()
+        loss_metric = PlusOneChiSquaredStatisticLossUnreduced()
         metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError(), PlusOneChiSquaredStatisticLoss().plus_one_chi_squared_statistic, RelativeMeanSquaredErrorLoss.relative_mean_squared_error_loss, PlusOneChiSquaredMeanDenominatorStatisticLoss().loss]
         datetime_string = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         trial_directory = Path("logs").joinpath(f'{wandb.run.notes}')
@@ -38,14 +38,15 @@ def main():
             best_validation_model_save_path, monitor='val_loss', mode='min', save_best_only=True,
             save_weights_only=True)
         # model.load_weights('logs/LiraTraditionalShape8xWidthWithNoDoNoBn_chi_squared_loss_50m_dataset_small_batch_clip_norm_1_cont/best_validation_model.ckpt')
+        model.run_eagerly = True
         model.compile(optimizer=optimizer, loss=loss_metric, metrics=metrics)
-        dataset_path = Path('data/mcmc_vac_all_800k.dat')
-        # train_dataset_path = Path('data/800k_parameters_and_phase_amplitudes.arrow')
-        # full_train_dataset = NicerDataset.new(dataset_path=train_dataset_path)
-        # examples = []
-        # for parameters, phase_amplitudes in full_train_dataset:
-        #     examples.append(NicerExample.new(parameters=parameters, phase_amplitudes=phase_amplitudes, likelihood=0))
-        examples = NicerExample.list_from_constantinos_kalapotharakos_file(dataset_path)
+        # dataset_path = Path('data/mcmc_vac_all_800k.dat')
+        train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.arrow')
+        full_train_dataset = NicerDataset.new(dataset_path=train_dataset_path)
+        examples = []
+        for parameters, phase_amplitudes in full_train_dataset:
+            examples.append(NicerExample.new(parameters=parameters, phase_amplitudes=phase_amplitudes, likelihood=0))
+        # examples = NicerExample.list_from_constantinos_kalapotharakos_file(dataset_path)
         random.Random(0).shuffle(examples)
         tenth_dataset_count = int(len(examples) * 0.1)
         train_examples = examples[:-2*tenth_dataset_count]

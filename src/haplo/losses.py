@@ -4,7 +4,7 @@ from torch.nn import Module
 from haplo.nicer_transform import PrecomputedUnnormalizePhaseAmplitudes
 
 
-class PlusOneChiSquaredStatisticLoss(Module):
+class PlusOneChiSquaredStatisticMetric(Module):
     def forward(self, output: torch.Tensor, target: torch.Tensor):
         unnormalize_phase_amplitudes = PrecomputedUnnormalizePhaseAmplitudes()
         observed = unnormalize_phase_amplitudes(output.type(torch.float64)) + 1.0
@@ -14,7 +14,7 @@ class PlusOneChiSquaredStatisticLoss(Module):
         return chi_squared_statistic
 
 
-class PlusOneBeforeUnnormalizationChiSquaredStatisticLoss(Module):
+class PlusOneBeforeUnnormalizationChiSquaredStatisticMetric(Module):
     def forward(self, output: torch.Tensor, target: torch.Tensor):
         unnormalize_phase_amplitudes = PrecomputedUnnormalizePhaseAmplitudes()
         observed = unnormalize_phase_amplitudes(output.type(torch.float64) + 1.0)

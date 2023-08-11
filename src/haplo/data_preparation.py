@@ -56,7 +56,9 @@ def constantinos_kalapotharakos_format_file_to_arrow_file(input_file_path: Path,
 
 
 if __name__ == '__main__':
-    constantinos_kalapotharakos_format_file_to_arrow_file(
-        Path('data/mcmc_vac_all_50m.dat'), Path('data/50m_unshuffled_rotated_parameters_and_phase_amplitudes.arrow'))
+    # constantinos_kalapotharakos_format_file_to_arrow_file(
+    #     Path('data/mcmc_vac_all_50m.dat'), Path('data/50m_unshuffled_rotated_parameters_and_phase_amplitudes.arrow'))
     # constantinos_kalapotharakos_format_file_to_arrow_file(
     #     constantinos_kalapotharakos_format_rotated_dataset_path, rotated_dataset_path)
+    constantinos_kalapotharakos_format_file_to_arrow_file(
+        Path('data/mcmc_vac_all_800k.dat'), Path('data/check.arrow'))
