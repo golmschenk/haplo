@@ -10,7 +10,8 @@ from torch.optim import Adam, AdamW
 from torch.utils.data import DataLoader
 
 from haplo.data_paths import rotated_dataset_path, unrotated_dataset_path, move_path_to_nvme
-from haplo.losses import PlusOneChiSquaredStatisticMetric, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric
+from haplo.losses import PlusOneChiSquaredStatisticMetric, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
+    norm_based_gradient_clip
 from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBn, LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers, \
     LiraTraditionalShape8xWidthWith0d5DoNoBnOldFirstLayers
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets, split_dataset_into_fractional_datasets
@@ -31,7 +32,7 @@ def train_session():
         network_device = torch.device('cpu')
         loss_device = network_device
 
-    train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.arrow')
+    train_dataset_path = Path('data/800k_parameters_and_phase_amplitudes.arrow')
     evaluation_dataset_path = unrotated_dataset_path
     train_dataset_path_moved = move_path_to_nvme(train_dataset_path)
     evaluation_dataset_path_moved = move_path_to_nvme(evaluation_dataset_path)
@@ -69,14 +70,13 @@ def train_session():
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, num_workers=6,
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10)
 
-    # clip_value = 1.0
-    # for parameter in model.parameters():
-    #     parameter.register_hook(lambda gradient: torch.clamp(gradient, -clip_value, clip_value))
-    loss_function = PlusOneChiSquaredStatisticMetric()
+    for parameter in model.parameters():
+        parameter.register_hook(norm_based_gradient_clip)
+    loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001, eps=1e-7)
 
-    wandb.run.notes = f"{model_name}_cor_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size}_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw"
+    wandb.run.notes = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size}_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip"
 
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1}\n-------------------------------")
@@ -117,7 +117,7 @@ def train_loop(dataloader, model_, loss_fn, optimizer, network_device, loss_devi
             loss_value, current = loss.item(), (batch + 1) * len(X)
             total_cycle_loss += loss_value
             print(f"loss: {loss_value:>7f}  [{current:>5d}/{len(dataloader.dataset):>5d}]", flush=True)
-    wandb.log({'plus_one_chi_squared_statistic': total_cycle_loss / number_of_batches}, commit=False)
+    wandb.log({'loss': total_cycle_loss / number_of_batches}, commit=False)
     cycle_metric_values = metric_totals / number_of_batches
     for metric_function_index, metric_function in enumerate(metric_functions):
         wandb.log({f'{get_metric_name(metric_function)}': cycle_metric_values[metric_function_index]}, commit=False)
