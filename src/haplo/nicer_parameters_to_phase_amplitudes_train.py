@@ -22,28 +22,25 @@ from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets,
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
 
-def ddp_setup(rank: int, world_size: int, distributed_back_end: str):
+def ddp_setup(distributed_back_end: str):
     """
     Args:
         rank: Unique identifier of each process
         world_size: Total number of processes
     """
-    os.environ["MASTER_ADDR"] = os.environ["SLURMD_NODENAME"]
-    os.environ["MASTER_PORT"] = "57392"
-    init_process_group(backend=distributed_back_end, rank=rank, world_size=world_size)
-    if torch.cuda.is_available():
-        torch.cuda.set_device(rank)
+    init_process_group(backend=distributed_back_end)
 
 
-def train_session(process_rank, process_world_size, distributed_back_end):
-    ddp_setup(process_rank, process_world_size, distributed_back_end=distributed_back_end)
+def train_session(distributed_back_end):
+    ddp_setup(distributed_back_end=distributed_back_end)
     wandb.init(project='haplo', entity='ramjet', settings=wandb.Settings(start_method='fork'))
     cpu_count = multiprocessing.cpu_count()
     gpu_count = torch.cuda.device_count()
     print(f'GPUs: {gpu_count}')
 
     if torch.cuda.is_available():
-        network_device = torch.device(f'cuda:{process_rank}')
+        local_rank = int(os.environ['LOCAL_RANK'])
+        network_device = torch.device(f'cuda:{local_rank}')
         loss_device = network_device
     else:
         network_device = torch.device('cpu')
@@ -81,7 +78,7 @@ def train_session(process_rank, process_world_size, distributed_back_end):
     model_name = type(model).__name__
     model = model.to(network_device, non_blocking=True)
     if torch.cuda.is_available():
-        model = DistributedDataParallel(model, device_ids=[process_rank])
+        model = DistributedDataParallel(model, device_ids=[local_rank])
     else:
         model = DistributedDataParallel(model)
 
@@ -181,10 +178,8 @@ def loop_test(dataloader, model_: Module, loss_fn, network_device, loss_device, 
 
 
 if __name__ == '__main__':
-    world_size = torch.cuda.device_count()
-    distributed_back_end = 'nccl'
-    if world_size == 0:
-        world_size = 1
+    if torch.cuda.is_available():
+        distributed_back_end = 'nccl'
+    else:
         distributed_back_end = 'gloo'
-    multiprocessing.spawn(train_session, args=(world_size, distributed_back_end), nprocs=world_size, join=True)
-    pass
+    train_session(distributed_back_end)
