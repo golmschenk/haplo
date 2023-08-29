@@ -6,23 +6,27 @@ import numpy as np
 import stringcase
 import torch
 import wandb as wandb
-from torch.distributed import init_process_group, destroy_process_group
+from torch.distributed import init_process_group, destroy_process_group, Backend
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import AdamW
 from torch.utils.data import DataLoader, DistributedSampler
 from torch import multiprocessing
 
-from haplo.data_paths import rotated_dataset_path, unrotated_dataset_path, move_path_to_nvme
+from haplo.data_paths import unrotated_dataset_path, move_path_to_nvme
 from haplo.losses import PlusOneChiSquaredStatisticMetric, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
     norm_based_gradient_clip
-from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBn, LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers, \
-    LiraTraditionalShape8xWidthWith0d5DoNoBnOldFirstLayers
-from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets, split_dataset_into_fractional_datasets
+from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers
+from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
+from haplo.wandb_liaison import wandb_set_run_name, wandb_init, wandb_log, wandb_commit
 
 
-def ddp_setup(distributed_back_end: str):
+def ddp_setup():
+    if torch.cuda.is_available():
+        distributed_back_end = Backend.NCCL
+    else:
+        distributed_back_end = Backend.GLOO
     if 'RANK' not in os.environ:
         # The script was not called with `torchrun` and environment variables need to be set manually.
         os.environ['RANK'] = str(0)
@@ -34,12 +38,10 @@ def ddp_setup(distributed_back_end: str):
 
 
 def train_session():
-    if torch.cuda.is_available():
-        distributed_back_end = 'nccl'
-    else:
-        distributed_back_end = 'gloo'
-    ddp_setup(distributed_back_end=distributed_back_end)
-    wandb.init(project='haplo', entity='ramjet', settings=wandb.Settings(start_method='fork', _disable_stats=True, _disable_meta=True))
+    ddp_setup()
+    process_rank = int(os.environ['RANK'])
+    wandb_init(process_rank=process_rank, project='haplo', entity='ramjet',
+               settings=wandb.Settings(start_method='fork', _disable_stats=True, _disable_meta=True))
     cpu_count = multiprocessing.cpu_count()
     gpu_count = torch.cuda.device_count()
     print(f'GPUs: {gpu_count}')
@@ -85,6 +87,7 @@ def train_session():
     model_name = type(model).__name__
     model = model.to(network_device, non_blocking=True)
     if torch.cuda.is_available():
+        local_rank = int(os.environ['LOCAL_RANK'])
         model = DistributedDataParallel(model, device_ids=[local_rank])
     else:
         model = DistributedDataParallel(model)
@@ -102,28 +105,29 @@ def train_session():
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001, eps=1e-7)
 
-    wandb.run.notes = (f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size}"
-                       f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node"
-                       f"_no_sys_log")
+    run_name = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size}" \
+               f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node" \
+               f"_no_sys_log"
+    wandb_set_run_name(run_name, process_rank=process_rank)
 
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1}\n-------------------------------")
         train_loop(train_dataloader, model, loss_function, optimizer, network_device=network_device,
-                   loss_device=loss_device, epoch=epoch, metric_functions=metric_functions)
-        loop_test(validation_dataloader, model, loss_function, network_device=network_device,
-                  loss_device=loss_device,
-                  epoch=epoch, metric_functions=metric_functions)
+                   loss_device=loss_device, epoch=epoch, metric_functions=metric_functions, process_rank=process_rank)
+        loop_test(validation_dataloader, model, loss_function, network_device=network_device, loss_device=loss_device,
+                  epoch=epoch, metric_functions=metric_functions, process_rank=process_rank)
 
         torch.save(model.state_dict(), Path(f'sessions/{wandb.run.id}_latest_model.pt'))
-        wandb.log({'epoch': epoch}, commit=False)
-        wandb.log({'cycle': epoch}, commit=False)
-        wandb.log({}, commit=True)
+        wandb_log('epoch', epoch, process_rank=process_rank)
+        wandb_log('cycle', epoch, process_rank=process_rank)
+        wandb_commit(process_rank=process_rank)
     print("Done!")
 
     destroy_process_group()
 
 
-def train_loop(dataloader, model_, loss_fn, optimizer, network_device, loss_device, epoch, metric_functions):
+def train_loop(dataloader, model_, loss_fn, optimizer, network_device, loss_device, epoch, metric_functions,
+               process_rank: int):
     number_of_batches = len(dataloader)
     model_.train()
     total_cycle_loss = 0
@@ -148,10 +152,11 @@ def train_loop(dataloader, model_, loss_fn, optimizer, network_device, loss_devi
             loss_value, current = loss.item(), (batch + 1) * len(X)
             total_cycle_loss += loss_value
             print(f"loss: {loss_value:>7f}  [{current:>5d}/{len(dataloader.dataset):>5d}]", flush=True)
-    wandb.log({'loss': total_cycle_loss / number_of_batches}, commit=False)
+    wandb_log('loss', total_cycle_loss / number_of_batches, process_rank=process_rank)
     cycle_metric_values = metric_totals / number_of_batches
     for metric_function_index, metric_function in enumerate(metric_functions):
-        wandb.log({f'{get_metric_name(metric_function)}': cycle_metric_values[metric_function_index]}, commit=False)
+        wandb_log(f'{get_metric_name(metric_function)}', cycle_metric_values[metric_function_index],
+                  process_rank=process_rank)
 
 
 def get_metric_name(metric_function):
@@ -161,7 +166,8 @@ def get_metric_name(metric_function):
     return metric_name
 
 
-def loop_test(dataloader, model_: Module, loss_fn, network_device, loss_device, epoch, metric_functions):
+def loop_test(dataloader, model_: Module, loss_fn, network_device, loss_device, epoch, metric_functions,
+              process_rank: int):
     number_of_batches = len(dataloader)
     test_loss, correct = 0, 0
     metric_totals = np.zeros(shape=[len(metric_functions)])
@@ -180,10 +186,11 @@ def loop_test(dataloader, model_: Module, loss_fn, network_device, loss_device, 
 
     test_loss /= number_of_batches
     print(f"Test Error: \nAvg loss: {test_loss:>8f} \n", flush=True)
-    wandb.log({'val_plus_one_chi_squared_statistic': test_loss}, commit=False)
+    wandb_log('val_plus_one_chi_squared_statistic', test_loss, process_rank=process_rank)
     cycle_metric_values = metric_totals / number_of_batches
     for metric_function_index, metric_function in enumerate(metric_functions):
-        wandb.log({f'val_{get_metric_name(metric_function)}': cycle_metric_values[metric_function_index]}, commit=False)
+        wandb_log(f'val_{get_metric_name(metric_function)}', cycle_metric_values[metric_function_index],
+                  process_rank=process_rank)
 
 
 if __name__ == '__main__':
