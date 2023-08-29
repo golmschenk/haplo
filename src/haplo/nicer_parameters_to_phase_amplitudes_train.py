@@ -1,6 +1,7 @@
 import multiprocessing
 import os
 from pathlib import Path
+from typing import Callable, Tuple, List
 
 import numpy as np
 import stringcase
@@ -9,9 +10,10 @@ import wandb as wandb
 from torch.distributed import init_process_group, destroy_process_group, Backend
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
-from torch.optim import AdamW
+from torch.optim import AdamW, Optimizer
+from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler
-from torch import multiprocessing
+from torch import multiprocessing, Tensor
 
 from haplo.data_paths import unrotated_dataset_path, move_path_to_nvme
 from haplo.losses import PlusOneChiSquaredStatisticMetric, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
@@ -77,7 +79,7 @@ def train_session():
     # else:
     #     batch_size = batch_size_per_gpu * gpu_count
     batch_size = batch_size_per_gpu
-    epochs = 5000
+    cycles_to_run = 5000
 
     model = LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers()
     # def init_weights(m):
@@ -110,48 +112,49 @@ def train_session():
                f"_no_sys_log"
     wandb_set_run_name(run_name, process_rank=process_rank)
 
-    for epoch in range(epochs):
-        print(f"Epoch {epoch + 1}\n-------------------------------")
+    for cycle in range(cycles_to_run):
+        print(f"Epoch {cycle + 1}\n-------------------------------")
         train_loop(train_dataloader, model, loss_function, optimizer, network_device=network_device,
-                   loss_device=loss_device, epoch=epoch, metric_functions=metric_functions, process_rank=process_rank)
+                   loss_device=loss_device, cycle=cycle, metric_functions=metric_functions, process_rank=process_rank)
         loop_test(validation_dataloader, model, loss_function, network_device=network_device, loss_device=loss_device,
-                  epoch=epoch, metric_functions=metric_functions, process_rank=process_rank)
+                  cycle=cycle, metric_functions=metric_functions, process_rank=process_rank)
 
         torch.save(model.state_dict(), Path(f'sessions/{wandb.run.id}_latest_model.pt'))
-        wandb_log('epoch', epoch, process_rank=process_rank)
-        wandb_log('cycle', epoch, process_rank=process_rank)
+        wandb_log('epoch', cycle, process_rank=process_rank)
+        wandb_log('cycle', cycle, process_rank=process_rank)
         wandb_commit(process_rank=process_rank)
     print("Done!")
 
     destroy_process_group()
 
 
-def train_loop(dataloader, model_, loss_fn, optimizer, network_device, loss_device, epoch, metric_functions,
-               process_rank: int):
+def train_loop(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
+               optimizer: Optimizer, network_device: Device, loss_device: Device, cycle: int,
+               metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int):
     number_of_batches = len(dataloader)
-    model_.train()
+    model.train()
     total_cycle_loss = 0
     metric_totals = np.zeros(shape=[len(metric_functions)])
-    dataloader.sampler.set_epoch(epoch)
-    for batch, (X, y) in enumerate(dataloader):
-        # Compute prediction and loss
-        X = X.to(network_device, non_blocking=True)
-        y = y.to(loss_device, non_blocking=True)
-        pred = model_(X)
-        loss = loss_fn(pred.to(loss_device, non_blocking=True), y).to(network_device, non_blocking=True)
+    assert isinstance(dataloader.sampler, DistributedSampler)
+    dataloader.sampler.set_epoch(cycle)
+    for batch, (parameters, light_curves) in enumerate(dataloader):
+        parameters = parameters.to(network_device, non_blocking=True)
+        light_curves = light_curves.to(loss_device, non_blocking=True)
+        predicted_light_curves = model(parameters)
+        loss = loss_function(predicted_light_curves.to(loss_device, non_blocking=True), light_curves).to(network_device,
+                                                                                                         non_blocking=True)
         for metric_function_index, metric_function in enumerate(metric_functions):
-            batch_metric_value = metric_function(pred.to(loss_device, non_blocking=True), y).item()
+            batch_metric_value = metric_function(predicted_light_curves.to(loss_device, non_blocking=True),
+                                                 light_curves).item()
             metric_totals[metric_function_index] += batch_metric_value
-        # Backpropagation
         optimizer.zero_grad()
         loss.backward()
-        # torch.nn.utils.clip_grad_norm_(model_.parameters(), max_norm=100.0)
         optimizer.step()
 
         if batch % 1 == 0:
-            loss_value, current = loss.item(), (batch + 1) * len(X)
+            loss_value, current = loss.item(), (batch + 1) * len(parameters)
             total_cycle_loss += loss_value
-            print(f"loss: {loss_value:>7f}  [{current:>5d}/{len(dataloader.dataset):>5d}]", flush=True)
+            print(f"loss: {loss_value:>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]", flush=True)
     wandb_log('loss', total_cycle_loss / number_of_batches, process_rank=process_rank)
     cycle_metric_values = metric_totals / number_of_batches
     for metric_function_index, metric_function in enumerate(metric_functions):
@@ -166,27 +169,30 @@ def get_metric_name(metric_function):
     return metric_name
 
 
-def loop_test(dataloader, model_: Module, loss_fn, network_device, loss_device, epoch, metric_functions,
-              process_rank: int):
+def loop_test(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
+              network_device: Device, loss_device: Device, cycle: int,
+              metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int):
     number_of_batches = len(dataloader)
-    test_loss, correct = 0, 0
+    total_cycle_loss = 0
     metric_totals = np.zeros(shape=[len(metric_functions)])
-    model_.eval()
-    dataloader.sampler.set_epoch(epoch)
+    model.eval()
+    assert isinstance(dataloader.sampler, DistributedSampler)
+    dataloader.sampler.set_epoch(cycle)
     with torch.no_grad():
-        for X, y in dataloader:
-            X = X.to(network_device, non_blocking=True)
-            y = y.to(loss_device, non_blocking=True)
-            pred = model_(X)
-            test_loss += loss_fn(pred.to(loss_device, non_blocking=True), y).to(network_device,
-                                                                                non_blocking=True).item()
+        for parameters, light_curves in dataloader:
+            parameters = parameters.to(network_device, non_blocking=True)
+            light_curves = light_curves.to(loss_device, non_blocking=True)
+            predicted_light_curves = model(parameters)
+            total_cycle_loss += loss_function(predicted_light_curves.to(loss_device, non_blocking=True), light_curves
+                                              ).to(network_device, non_blocking=True).item()
             for metric_function_index, metric_function in enumerate(metric_functions):
-                batch_metric_value = metric_function(pred.to(loss_device, non_blocking=True), y).item()
+                batch_metric_value = metric_function(predicted_light_curves.to(loss_device, non_blocking=True),
+                                                     light_curves).item()
                 metric_totals[metric_function_index] += batch_metric_value
 
-    test_loss /= number_of_batches
-    print(f"Test Error: \nAvg loss: {test_loss:>8f} \n", flush=True)
-    wandb_log('val_plus_one_chi_squared_statistic', test_loss, process_rank=process_rank)
+    cycle_loss = total_cycle_loss / number_of_batches
+    print(f"Test Error: \nAvg loss: {cycle_loss:>8f} \n", flush=True)
+    wandb_log('val_plus_one_chi_squared_statistic', cycle_loss, process_rank=process_rank)
     cycle_metric_values = metric_totals / number_of_batches
     for metric_function_index, metric_function in enumerate(metric_functions):
         wandb_log(f'val_{get_metric_name(metric_function)}', cycle_metric_values[metric_function_index],
