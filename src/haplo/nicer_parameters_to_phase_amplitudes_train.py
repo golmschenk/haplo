@@ -23,17 +23,23 @@ from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNor
 
 
 def ddp_setup(distributed_back_end: str):
-    """
-    Args:
-        rank: Unique identifier of each process
-        world_size: Total number of processes
-    """
+    if 'RANK' not in os.environ:
+        # The script was not called with `torchrun` and environment variables need to be set manually.
+        os.environ['RANK'] = str(0)
+        os.environ['LOCAL_RANK'] = str(0)
+        os.environ['WORLD_SIZE'] = str(1)
+        os.environ["MASTER_ADDR"] = "localhost"
+        os.environ["MASTER_PORT"] = "35728"
     init_process_group(backend=distributed_back_end)
 
 
-def train_session(distributed_back_end):
+def train_session():
+    if torch.cuda.is_available():
+        distributed_back_end = 'nccl'
+    else:
+        distributed_back_end = 'gloo'
     ddp_setup(distributed_back_end=distributed_back_end)
-    wandb.init(project='haplo', entity='ramjet', settings=wandb.Settings(start_method='fork'))
+    wandb.init(project='haplo', entity='ramjet', settings=wandb.Settings(start_method='fork', _disable_stats=True, _disable_meta=True))
     cpu_count = multiprocessing.cpu_count()
     gpu_count = torch.cuda.device_count()
     print(f'GPUs: {gpu_count}')
@@ -64,10 +70,11 @@ def train_session(distributed_back_end):
 
     batch_size_per_gpu = 100
     learning_rate = 1e-4
-    if gpu_count == 0:
-        batch_size = batch_size_per_gpu
-    else:
-        batch_size = batch_size_per_gpu * gpu_count
+    # if gpu_count == 0:
+    #     batch_size = batch_size_per_gpu
+    # else:
+    #     batch_size = batch_size_per_gpu * gpu_count
+    batch_size = batch_size_per_gpu
     epochs = 5000
 
     model = LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers()
@@ -95,7 +102,9 @@ def train_session(distributed_back_end):
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001, eps=1e-7)
 
-    wandb.run.notes = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size}_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip"
+    wandb.run.notes = (f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size}"
+                       f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node"
+                       f"_no_sys_log")
 
     for epoch in range(epochs):
         print(f"Epoch {epoch + 1}\n-------------------------------")
@@ -178,8 +187,4 @@ def loop_test(dataloader, model_: Module, loss_fn, network_device, loss_device, 
 
 
 if __name__ == '__main__':
-    if torch.cuda.is_available():
-        distributed_back_end = 'nccl'
-    else:
-        distributed_back_end = 'gloo'
-    train_session(distributed_back_end)
+    train_session()
