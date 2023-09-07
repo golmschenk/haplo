@@ -40,10 +40,11 @@ def ddp_setup():
 
 
 def train_session():
+    torch.multiprocessing.set_start_method('spawn')
     ddp_setup()
     process_rank = int(os.environ['RANK'])
     wandb_init(process_rank=process_rank, project='haplo', entity='ramjet',
-               settings=wandb.Settings(start_method='fork', _disable_stats=True, _disable_meta=True))
+               settings=wandb.Settings(start_method='fork'))
     cpu_count = multiprocessing.cpu_count()
     gpu_count = torch.cuda.device_count()
     print(f'GPUs: {gpu_count}')
@@ -94,10 +95,10 @@ def train_session():
     else:
         model = DistributedDataParallel(model)
 
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=2, pin_memory=True,
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=3, pin_memory=True,
                                   persistent_workers=True, prefetch_factor=10, shuffle=False,
                                   sampler=DistributedSampler(train_dataset))
-    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, num_workers=2,
+    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, num_workers=3,
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
 
@@ -109,7 +110,7 @@ def train_session():
 
     run_name = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size}" \
                f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node" \
-               f"_no_sys_log"
+               f"_spawn_w3"
     wandb_set_run_name(run_name, process_rank=process_rank)
 
     for cycle in range(cycles_to_run):
@@ -118,14 +119,18 @@ def train_session():
                    loss_device=loss_device, cycle=cycle, metric_functions=metric_functions, process_rank=process_rank)
         loop_test(validation_dataloader, model, loss_function, network_device=network_device, loss_device=loss_device,
                   cycle=cycle, metric_functions=metric_functions, process_rank=process_rank)
-
-        torch.save(model.state_dict(), Path(f'sessions/{wandb.run.id}_latest_model.pt'))
+        save_model(model, process_rank=process_rank)
         wandb_log('epoch', cycle, process_rank=process_rank)
         wandb_log('cycle', cycle, process_rank=process_rank)
         wandb_commit(process_rank=process_rank)
     print("Done!")
 
     destroy_process_group()
+
+
+def save_model(model: Module, process_rank: int):
+    if process_rank == 0:
+        torch.save(model.state_dict(), Path(f'sessions/{wandb.run.id}_latest_model.pt'))
 
 
 def train_loop(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
