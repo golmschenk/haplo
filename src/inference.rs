@@ -7,7 +7,7 @@ extern crate libc;
 use tract_onnx::prelude::*;
 
 pub static MODEL: LazyLock<RunnableModel<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>> = LazyLock::new(|| {
-    let filename = "ml4a_configuration.toml";
+    let filename = "haplo_configuration.toml";
     let configuration_file_contents = fs::read_to_string(filename).unwrap();
     let value = configuration_file_contents.parse::<Table>().unwrap();
     let onnx_path_string = value["onnx_model_path"].as_str().unwrap();

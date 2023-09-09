@@ -1,5 +1,5 @@
 [package]
-name = "ml4a"
+name = "haplo"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,10 +11,10 @@ libc = "*"
 toml = "0.7.2"
 
 [lib]
-name = "ml4a"
-path = "ml4a/lib.rs"
+name = "haplo"
+path = "src/lib.rs"
 crate-type = ["staticlib"]
 
 [[bin]]
-name = "main"
-path = "ml4a/main.rs"
+name = "haplo_main"
+path = "src/main.rs"

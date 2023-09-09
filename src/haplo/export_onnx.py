@@ -1,6 +1,8 @@
 from pathlib import Path
 
+import onnx
 import torch
+from onnxruntime.tools.onnx_model_utils import make_dim_param_fixed
 from torch.nn import Module
 
 from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers
@@ -19,16 +21,21 @@ def export_onnx(model: Module):
     model.eval()
     fake_input = torch.randn(1, 11, requires_grad=True)
     _ = model(fake_input)  # Model must be run to trace.
+    onnx_model_path = Path('exported_model.onnx')
     torch.onnx.export(model,
                       fake_input,
-                      'exported_model.onnx',
+                      str(onnx_model_path),
                       export_params=True,
                       opset_version=11,
                       do_constant_folding=True,
                       input_names=['input'],
                       output_names=['output'],
-                      dynamic_axes={'output': {0: 'batch_size'}},
+                      dynamic_axes={'output': {0: 'batch_size', 1: 'phase_amplitudes_length'}},
                       )
+    onnx_model = onnx.load(str(onnx_model_path))
+    make_dim_param_fixed(onnx_model.graph, 'batch_size', 1)
+    make_dim_param_fixed(onnx_model.graph, 'phase_amplitudes_length', 64)
+    onnx.save(onnx_model, str(onnx_model_path))
 
 
 def export_onnx_model_from_pytorch_path(pytorch_path: Path):
