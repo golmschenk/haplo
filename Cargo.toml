@@ -3,8 +3,6 @@ name = "ml4a"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 [dependencies]
 image = "0.23.14"
 tract-onnx = "*"
@@ -13,9 +11,10 @@ libc = "*"
 toml = "0.7.2"
 
 [lib]
+name = "ml4a"
 path = "ml4a/lib.rs"
 crate-type = ["staticlib"]
 
-#[[bin]]
-#name = "main"
-#path = "haplo/bin/main.rs"
+[[bin]]
+name = "main"
+path = "ml4a/main.rs"
