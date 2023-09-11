@@ -114,7 +114,7 @@ def train_session():
     wandb_set_run_name(run_name, process_rank=process_rank)
 
     for cycle in range(cycles_to_run):
-        print(f"Epoch {cycle + 1}\n-------------------------------")
+        print(f"Epoch {cycle}\n-------------------------------")
         train_loop(train_dataloader, model, loss_function, optimizer, network_device=network_device,
                    loss_device=loss_device, cycle=cycle, metric_functions=metric_functions, process_rank=process_rank)
         loop_test(validation_dataloader, model, loss_function, network_device=network_device, loss_device=loss_device,
