@@ -1,0 +1,24 @@
+[tool.poetry]
+name = "haplo"
+version = "0.1.0"
+description = ""
+authors = ["golmschenk <greg@olmschenk.com>"]
+readme = "readme.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+stringcase = "^1.2.0"
+filelock = "^3.12.3"
+numpy = "^1.25.2"
+onnx = "^1.14.1"
+onnxruntime = "^1.15.1"
+pandas = "^2.1.0"
+polars = "^0.19.2"
+pyarrow = "^13.0.0"
+torch = "^2.0.1"
+wandb = "^0.15.10"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
