@@ -9,7 +9,7 @@ from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_data
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
 
-def train_session():
+def infer_session():
     if torch.backends.mps.is_available():
         device = torch.device('mps')
     elif torch.cuda.is_available():

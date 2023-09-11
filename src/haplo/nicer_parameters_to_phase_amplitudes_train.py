@@ -56,12 +56,17 @@ def default_train_session():
     optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001, eps=1e-7)
     batch_size_per_device = 100
     cycles_to_run = 5000
+    model_name = type(model).__name__
+    run_name = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size_per_device}" \
+               f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node" \
+               f"_spawn_w3"
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
-                  batch_size_per_device, cycles_to_run)
+                  batch_size_per_device, cycles_to_run, run_name)
 
 
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
-                  metric_functions: List[Module], optimizer: Optimizer, batch_size_per_device: int, cycles_to_run: int):
+                  metric_functions: List[Module], optimizer: Optimizer, batch_size_per_device: int, cycles_to_run: int,
+                  run_name: str):
     torch.multiprocessing.set_start_method('spawn')
     ddp_setup()
     process_rank = int(os.environ['RANK'])
@@ -79,7 +84,6 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
         network_device = torch.device('cpu')
         loss_device = network_device
 
-    model_name = type(model).__name__
     model = model.to(network_device, non_blocking=True)
     if torch.cuda.is_available():
         local_rank = int(os.environ['LOCAL_RANK'])
@@ -94,9 +98,6 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
 
-    run_name = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size_per_device}" \
-               f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node" \
-               f"_spawn_w3"
     wandb_set_run_name(run_name, process_rank=process_rank)
 
     for cycle in range(cycles_to_run):
