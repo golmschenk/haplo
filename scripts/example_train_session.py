@@ -11,9 +11,9 @@ from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNor
 
 
 def example_train_session():
-    train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.arrow')
+    full_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.arrow')
     full_train_dataset = NicerDataset.new(
-        dataset_path=train_dataset_path,
+        dataset_path=full_dataset_path,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
     train_dataset, validation_dataset, test_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
