@@ -1,12 +1,11 @@
-from unittest.mock import Mock
+import pytest
 
 from haplo.data_column_name import DataColumnName
 from haplo.data_preparation import constantinos_kalapotharakos_file_handle_to_polars
 
 
 def test_conversion_of_constantinos_kalapotharakos_format_file_handle_to_pandas_dataframe():
-    file_stub = Mock()
-    file_stub.read.return_value = """
+    file_contents_stub = b"""
   -0.137349282472716       4.651922986569446E-002 -0.126309026142708     
    2.57614122691645        3.94358482944553       0.303202923979724     
   0.132341360556433       0.304479697430865       0.758863131388038     
@@ -60,9 +59,9 @@ def test_conversion_of_constantinos_kalapotharakos_format_file_handle_to_pandas_
    3858.44869583521        3582.59549752075        3355.65062746198     
    3153.37600771749  
     """
-    data_frame = constantinos_kalapotharakos_file_handle_to_polars(file_stub)
-    assert data_frame.iloc[0][DataColumnName.PARAMETER0] == -0.137349282472716
-    assert data_frame.iloc[0][DataColumnName.PARAMETER10] == 2.77055893884855
-    assert data_frame.iloc[0][DataColumnName.PHASE_AMPLITUDE2] == 2585.23695232772
-    assert data_frame.iloc[0][DataColumnName.PHASE_AMPLITUDE60] == 5805.71893764466
-    assert data_frame.iloc[1][DataColumnName.PHASE_AMPLITUDE0] == 2965.60917973073
+    data_frame = constantinos_kalapotharakos_file_handle_to_polars(file_contents_stub)
+    assert data_frame[DataColumnName.PARAMETER0][0] == pytest.approx(-0.137349282472716)
+    assert data_frame[DataColumnName.PARAMETER10][0] == pytest.approx(2.77055893884855)
+    assert data_frame[DataColumnName.PHASE_AMPLITUDE2][0] == pytest.approx(2585.23695232772)
+    assert data_frame[DataColumnName.PHASE_AMPLITUDE60][0] == pytest.approx(5805.71893764466)
+    assert data_frame[DataColumnName.PHASE_AMPLITUDE0][1] == pytest.approx(2965.60917973073)

@@ -1,31 +1,34 @@
 # TODO: I just quickly ported the TensorFlow version to PyTorch without much testing.
 # TODO: The various components should be tested.
+import math
 
 
 from torch import permute
-from torch.nn import Module, Conv1d, LeakyReLU, BatchNorm1d, Upsample, ConstantPad1d, Dropout1d
+from torch.nn import Module, Conv1d, LeakyReLU, BatchNorm1d, Upsample, ConstantPad1d, Dropout1d, ModuleList, \
+    ConvTranspose1d, Linear
 
 
-class LiraTraditionalShape8xWidthWith0d5DoNoBn(Module):
+class LiraTraditionalShape8xWidthWithNoDoNoBn(Module):
     def __init__(self):
         super().__init__()
-        self.blocks = []
+        self.blocks = ModuleList()
         self.dense0 = Conv1d(11, 400, kernel_size=1)
         self.activation = LeakyReLU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
         self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=400, dropout_rate=0.5,
+            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
             batch_normalization=False))
         input_channels = output_channels
         for output_channels in [512, 512, 1024, 1024, 2048, 2048]:
             self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2, dropout_rate=0.5,
+                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
+                dropout_rate=0.0,
                 batch_normalization=False))
             input_channels = output_channels
             for _ in range(2):
                 self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.5,
+                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
                     batch_normalization=False))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
@@ -55,12 +58,13 @@ class ResidualGenerationLightCurveNetworkBlock(Module):
         else:
             self.batch_normalization = None
         reduced_channels = output_channels // dimension_decrease_factor
-        self.dimension_decrease_layer = Conv1d(
+        self.dimension_decrease_layer = ConvTranspose1d(
             in_channels=input_channels, out_channels=reduced_channels, kernel_size=1)
-        self.convolutional_layer = Conv1d(
+        self.convolutional_layer = ConvTranspose1d(
             in_channels=reduced_channels, out_channels=reduced_channels, kernel_size=kernel_size,
-            padding='same')
-        self.dimension_increase_layer = Conv1d(
+            padding=math.floor(kernel_size / 2)
+        )
+        self.dimension_increase_layer = ConvTranspose1d(
             in_channels=reduced_channels, out_channels=output_channels, kernel_size=1)
         if upsampling_scale_factor > 1:
             self.upsampling_layer = Upsample(scale_factor=upsampling_scale_factor)
@@ -109,3 +113,79 @@ class ResidualGenerationLightCurveNetworkBlock(Module):
         if self.dropout_layer is not None:
             y = self.dropout_layer(y)
         return x + y
+
+
+class LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers(Module):
+    def __init__(self):
+        super().__init__()
+        self.blocks = ModuleList()
+        self.dense0 = Conv1d(11, 400, kernel_size=1)
+        self.activation = LeakyReLU()
+        self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
+        output_channels = 128
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
+            batch_normalization=False))
+        input_channels = output_channels
+        for output_channels in [512, 512, 1024, 1024, 2048, 2048]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
+                dropout_rate=0.0,
+                batch_normalization=False))
+            input_channels = output_channels
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
+                    batch_normalization=False))
+                input_channels = output_channels
+        self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
+
+    def forward(self, x):
+        x = x.reshape([-1, 11, 1])
+        x = self.dense0(x)
+        # x = self.activation(x)
+        x = self.dense1(x)
+        x = self.activation(x)
+        for index, block in enumerate(self.blocks):
+            x = block(x)
+        x = self.end_conv(x)
+        outputs = x.reshape([-1, 64])
+        return outputs
+
+
+class LiraTraditionalShape8xWidthWith0d5DoNoBnOldFirstLayers(Module):
+    def __init__(self):
+        super().__init__()
+        self.blocks = ModuleList()
+        self.dense0 = Conv1d(11, 400, kernel_size=1)
+        self.activation = LeakyReLU()
+        self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
+        output_channels = 128
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=400, dropout_rate=0.5,
+            batch_normalization=False))
+        input_channels = output_channels
+        for output_channels in [512, 512, 1024, 1024, 2048, 2048]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
+                dropout_rate=0.5,
+                batch_normalization=False))
+            input_channels = output_channels
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.5,
+                    batch_normalization=False))
+                input_channels = output_channels
+        self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
+
+    def forward(self, x):
+        x = x.reshape([-1, 11, 1])
+        x = self.dense0(x)
+        # x = self.activation(x)
+        x = self.dense1(x)
+        x = self.activation(x)
+        for index, block in enumerate(self.blocks):
+            x = block(x)
+        x = self.end_conv(x)
+        outputs = x.reshape([-1, 64])
+        return outputs

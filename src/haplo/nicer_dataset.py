@@ -1,19 +1,30 @@
-from typing import Optional, Callable
+from pathlib import Path
+from typing import Optional, Callable, List
 
 import numpy as np
 import pandas as pd
+from pyarrow import feather
 from torch.utils.data import Dataset, Subset
 
 from haplo.data_column_name import DataColumnName
-from haplo.data_paths import dataset_path
 
 
 class NicerDataset(Dataset):
-    def __init__(self, parameters_transform: Optional[Callable] = None,
+    def __init__(self, data_frame: pd.DataFrame, parameters_transform: Optional[Callable] = None,
                  phase_amplitudes_transform: Optional[Callable] = None):
         self.parameters_transform: Callable = parameters_transform
         self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
-        self.data_frame: pd.DataFrame = pd.read_feather(dataset_path)
+        self.data_frame: pd.DataFrame = data_frame
+        # if self.data_frame.shape[0] > 50_000_000:
+        #     self.data_frame = self.data_frame.head(50_000_000)
+
+    @classmethod
+    def new(cls, dataset_path: Path, parameters_transform: Optional[Callable] = None,
+            phase_amplitudes_transform: Optional[Callable] = None):
+        data_frame = feather.read_feather(dataset_path, memory_map=True)
+        instance = cls(data_frame=data_frame, parameters_transform=parameters_transform,
+                       phase_amplitudes_transform=phase_amplitudes_transform)
+        return instance
 
     def __len__(self):
         return self.data_frame.shape[0]
@@ -100,10 +111,10 @@ class NicerDataset(Dataset):
             DataColumnName.PHASE_AMPLITUDE63,
         ]].values
         if self.parameters_transform is not None:
-            parameters = self.parameters_transform(parameters)
+            parameters = self.parameters_transform(parameters.copy())
         if self.phase_amplitudes_transform is not None:
-            phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes)
-        return parameters.astype(np.float32), phase_amplitudes.astype(np.float32)
+            phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes.copy())
+        return parameters, phase_amplitudes
 
 
 def split_into_train_validation_and_test_datasets(dataset: NicerDataset) -> (NicerDataset, NicerDataset, NicerDataset):
@@ -112,3 +123,34 @@ def split_into_train_validation_and_test_datasets(dataset: NicerDataset) -> (Nic
     validation_dataset = Subset(dataset, range(length_10_percent * 8, length_10_percent * 9))
     test_dataset = Subset(dataset, range(length_10_percent * 9, len(dataset)))
     return train_dataset, validation_dataset, test_dataset
+
+
+def split_dataset_into_fractional_datasets(dataset: NicerDataset, fractions: List[float]) -> List[NicerDataset]:
+    assert np.isclose(np.sum(fractions), 1.0)
+    fractional_datasets: List[NicerDataset] = []
+    cumulative_fraction = 0
+    previous_index = 0
+    for fraction in fractions:
+        cumulative_fraction += fraction
+        if np.isclose(cumulative_fraction, 1.0):
+            next_index = len(dataset)
+        else:
+            next_index = round(len(dataset) * cumulative_fraction)
+        fractional_dataset: NicerDataset = Subset(dataset, range(previous_index, next_index))
+        fractional_datasets.append(fractional_dataset)
+        previous_index = next_index
+    return fractional_datasets
+
+
+def split_dataset_into_count_datasets(dataset: NicerDataset, counts: List[int]) -> List[NicerDataset]:
+    assert np.sum(counts) < len(dataset)
+    count_datasets: List[NicerDataset] = []
+    next_index = 0
+    previous_index = 0
+    for count in counts:
+        next_index += count
+        count_dataset: NicerDataset = Subset(dataset, range(previous_index, next_index))
+        count_datasets.append(count_dataset)
+        previous_index = next_index
+    count_datasets.append(Subset(dataset, range(previous_index, len(dataset))))
+    return count_datasets

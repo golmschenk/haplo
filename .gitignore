@@ -244,3 +244,5 @@ cython_debug/
 
 ### Project specific
 /wandb/
+/sessions/
+/logs/
