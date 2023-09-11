@@ -12,7 +12,7 @@ from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import AdamW, Optimizer
 from torch.types import Device
-from torch.utils.data import DataLoader, DistributedSampler
+from torch.utils.data import DataLoader, DistributedSampler, Dataset
 from torch import multiprocessing, Tensor
 
 from haplo.data_paths import unrotated_dataset_path, move_path_to_nvme
@@ -39,7 +39,29 @@ def ddp_setup():
     init_process_group(backend=distributed_back_end)
 
 
-def train_session():
+def default_train_session():
+    train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.arrow')
+    full_train_dataset = NicerDataset.new(
+        dataset_path=train_dataset_path,
+        parameters_transform=PrecomputedNormalizeParameters(),
+        phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
+    train_dataset, validation_dataset, test_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
+                                                                                             [0.8, 0.1, 0.1])
+    model = LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers()
+    for parameter in model.parameters():
+        parameter.register_hook(norm_based_gradient_clip)
+    loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
+    metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
+    learning_rate = 1e-4
+    optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001, eps=1e-7)
+    batch_size_per_device = 100
+    cycles_to_run = 5000
+    train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
+                  batch_size_per_device, cycles_to_run)
+
+
+def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
+                  metric_functions: List[Module], optimizer: Optimizer, batch_size_per_device: int, cycles_to_run: int):
     torch.multiprocessing.set_start_method('spawn')
     ddp_setup()
     process_rank = int(os.environ['RANK'])
@@ -57,36 +79,6 @@ def train_session():
         network_device = torch.device('cpu')
         loss_device = network_device
 
-    train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.arrow')
-    evaluation_dataset_path = unrotated_dataset_path
-    train_dataset_path_moved = move_path_to_nvme(train_dataset_path)
-    evaluation_dataset_path_moved = move_path_to_nvme(evaluation_dataset_path)
-    full_train_dataset = NicerDataset.new(
-        dataset_path=train_dataset_path,
-        parameters_transform=PrecomputedNormalizeParameters(),
-        phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
-    train_dataset, validation_dataset, test_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
-                                                                                             [0.8, 0.1, 0.1])
-    # evaluation_dataset = NicerDataset.new(
-    #     dataset_path=evaluation_dataset_path_moved,
-    #     parameters_transform=PrecomputedNormalizeParameters(),
-    #     phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
-    # validation_dataset, test_dataset = split_dataset_into_fractional_datasets(evaluation_dataset, [0.5, 0.5])
-
-    batch_size_per_gpu = 100
-    learning_rate = 1e-4
-    # if gpu_count == 0:
-    #     batch_size = batch_size_per_gpu
-    # else:
-    #     batch_size = batch_size_per_gpu * gpu_count
-    batch_size = batch_size_per_gpu
-    cycles_to_run = 5000
-
-    model = LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers()
-    # def init_weights(m):
-    #     if hasattr(m, 'weights'):
-    #         torch.nn.init.normal_(m.weights, std=0.00001)
-    # model.apply(init_weights)
     model_name = type(model).__name__
     model = model.to(network_device, non_blocking=True)
     if torch.cuda.is_available():
@@ -95,20 +87,14 @@ def train_session():
     else:
         model = DistributedDataParallel(model)
 
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, num_workers=3, pin_memory=True,
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device, num_workers=3, pin_memory=True,
                                   persistent_workers=True, prefetch_factor=10, shuffle=False,
                                   sampler=DistributedSampler(train_dataset))
-    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size, num_workers=3,
+    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device, num_workers=3,
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
 
-    for parameter in model.parameters():
-        parameter.register_hook(norm_based_gradient_clip)
-    loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
-    metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
-    optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001, eps=1e-7)
-
-    run_name = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size}" \
+    run_name = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size_per_device}" \
                f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node" \
                f"_spawn_w3"
     wandb_set_run_name(run_name, process_rank=process_rank)
@@ -205,4 +191,4 @@ def loop_test(dataloader: DataLoader, model: Module, loss_function: Callable[[Te
 
 
 if __name__ == '__main__':
-    train_session()
+    default_train_session()
