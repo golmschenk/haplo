@@ -17,6 +17,7 @@ polars = "^0.19.2"
 pyarrow = "^13.0.0"
 torch = "^2.0.1"
 wandb = "^0.15.10"
+pytest = "^7.4.2"
 
 
 [build-system]
