@@ -1,22 +1,22 @@
-import datetime
+import multiprocessing
 import multiprocessing
 import os
 from pathlib import Path
-from typing import Callable, Tuple, List, Dict, Any
+from typing import Callable, List, Dict, Any
 
 import numpy as np
 import stringcase
 import torch
 import wandb as wandb
+from torch import multiprocessing, Tensor
 from torch.distributed import init_process_group, destroy_process_group, Backend
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import AdamW, Optimizer
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
-from torch import multiprocessing, Tensor
 
-from haplo.data_paths import unrotated_dataset_path, move_path_to_nvme
+from haplo.data_paths import move_path_to_nvme
 from haplo.losses import PlusOneChiSquaredStatisticMetric, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
     norm_based_gradient_clip
 from haplo.models import Cura
@@ -44,6 +44,7 @@ def ddp_setup():
 
 def default_train_session():
     train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.db')
+    train_dataset_path = move_path_to_nvme(train_dataset_path)
     full_train_dataset = NicerDataset.new(
         dataset_path=train_dataset_path,
         parameters_transform=PrecomputedNormalizeParameters(),

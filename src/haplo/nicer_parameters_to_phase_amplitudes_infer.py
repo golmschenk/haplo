@@ -52,4 +52,4 @@ def loop_test(dataloader, model_: Module, loss_fn, device):
 
 
 if __name__ == '__main__':
-    train_session()
+    infer_session()

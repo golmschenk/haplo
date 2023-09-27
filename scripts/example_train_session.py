@@ -11,7 +11,7 @@ from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNor
 
 
 def example_train_session():
-    full_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.arrow')
+    full_dataset_path = Path('data/800k_parameters_and_phase_amplitudes.db')
     full_train_dataset = NicerDataset.new(
         dataset_path=full_dataset_path,
         parameters_transform=PrecomputedNormalizeParameters(),
@@ -27,7 +27,7 @@ def example_train_session():
     optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001, eps=1e-7)
     batch_size_per_device = 100
     cycles_to_run = 5000
-    run_notes = 'example_run'
+    run_notes = f'example_run_bs_{batch_size_per_device}_lr_{learning_rate}'  # Whatever you want to log in a string.
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
                   batch_size_per_device, cycles_to_run, run_notes)
 
