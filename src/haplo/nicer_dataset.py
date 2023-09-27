@@ -6,6 +6,7 @@ import numpy as np
 import polars as pl
 import pyarrow
 from pyarrow import feather, MemoryMappedFile
+from tenacity import wait_random, retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 from torch.utils.data import Dataset, Subset
 
 from haplo.data_column_name import DataColumnName
@@ -36,8 +37,7 @@ class NicerDataset(Dataset):
 
     def __getitem__(self, index):
         row_index = index + 1  # The SQL database auto increments from 1, not 0.
-        row_data_frame = pl.read_database_uri(query=rf'select * from main where ROWID = {row_index}', uri=self.database_uri)
-        row = row_data_frame.row(0)
+        row = self.get_row_from_index(row_index)
         parameters = np.array(row[:11], dtype=np.float32)
         phase_amplitudes = np.array(row[11:], dtype=np.float32)
         if self.parameters_transform is not None:
@@ -45,6 +45,15 @@ class NicerDataset(Dataset):
         if self.phase_amplitudes_transform is not None:
             phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes)
         return parameters, phase_amplitudes
+
+    # TODO: This retry probably shouldn't be necessary at all. But even if it is, I should probably be catching
+    #       only a specific kind of exception here (i.e., pyo3_runtime.PanicException).
+    @retry(wait=wait_exponential(multiplier=1, min=1, max=10), stop=stop_after_attempt(10))
+    def get_row_from_index(self, row_index):
+        row_data_frame = pl.read_database_uri(query=rf'select * from main where ROWID = {row_index}',
+                                              uri=self.database_uri)
+        row = row_data_frame.row(0)
+        return row
 
 
 def split_into_train_validation_and_test_datasets(dataset: NicerDataset) -> (NicerDataset, NicerDataset, NicerDataset):

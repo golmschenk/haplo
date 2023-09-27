@@ -105,10 +105,10 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
         model = DistributedDataParallel(model)
 
     print(f'{process_rank}: Loading dataset...')
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device, num_workers=5, pin_memory=True,
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device, num_workers=3, pin_memory=True,
                                   persistent_workers=True, prefetch_factor=10, shuffle=False,
                                   sampler=DistributedSampler(train_dataset))
-    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device, num_workers=5,
+    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device, num_workers=3,
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
 

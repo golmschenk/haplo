@@ -21,6 +21,7 @@ pytest = "^7.4.2"
 bokeh = "^3.2.2"
 sqlalchemy = "^2.0.21"
 connectorx = "^0.3.2"
+tenacity = "^8.2.3"
 
 
 [build-system]
