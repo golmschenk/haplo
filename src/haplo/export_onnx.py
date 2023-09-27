@@ -5,7 +5,7 @@ import torch
 from onnxruntime.tools.onnx_model_utils import make_dim_param_fixed
 from torch.nn import Module
 
-from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers
+from haplo.models import Cura
 
 
 class WrappedModel(Module):
@@ -39,7 +39,7 @@ def export_onnx(model: Module):
 
 
 def export_onnx_model_from_pytorch_path(pytorch_path: Path):
-    model = LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers()
+    model = Cura()
     model = WrappedModel(model)
     model.load_state_dict(torch.load(pytorch_path, map_location='cpu'))
     export_onnx(model)

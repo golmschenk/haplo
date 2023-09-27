@@ -19,7 +19,7 @@ from torch import multiprocessing, Tensor
 from haplo.data_paths import unrotated_dataset_path, move_path_to_nvme
 from haplo.losses import PlusOneChiSquaredStatisticMetric, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
     norm_based_gradient_clip
-from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers
+from haplo.models import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 from haplo.wandb_liaison import wandb_set_run_name, wandb_init, wandb_log, wandb_commit, \
@@ -50,7 +50,7 @@ def default_train_session():
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
     train_dataset, validation_dataset, test_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
                                                                                              [0.8, 0.1, 0.1])
-    model = LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers()
+    model = Cura()
     for parameter in model.parameters():
         parameter.register_hook(norm_based_gradient_clip)
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()

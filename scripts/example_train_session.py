@@ -4,7 +4,7 @@ from torch.optim import AdamW
 
 from haplo.losses import norm_based_gradient_clip, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
     PlusOneChiSquaredStatisticMetric
-from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers
+from haplo.models import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
 from haplo.nicer_parameters_to_phase_amplitudes_train import train_session
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
@@ -18,7 +18,7 @@ def example_train_session():
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
     train_dataset, validation_dataset, test_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
                                                                                              [0.8, 0.1, 0.1])
-    model = LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers()
+    model = Cura()
     for parameter in model.parameters():
         parameter.register_hook(norm_based_gradient_clip)
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()

@@ -115,7 +115,7 @@ class ResidualGenerationLightCurveNetworkBlock(Module):
         return x + y
 
 
-class LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers(Module):
+class Cura(Module):
     def __init__(self):
         super().__init__()
         self.blocks = ModuleList()
