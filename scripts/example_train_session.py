@@ -27,9 +27,9 @@ def example_train_session():
     optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001, eps=1e-7)
     batch_size_per_device = 100
     cycles_to_run = 5000
-    run_name = 'example_run'
+    run_notes = 'example_run'
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
-                  batch_size_per_device, cycles_to_run, run_name)
+                  batch_size_per_device, cycles_to_run, run_notes)
 
 
 if __name__ == '__main__':

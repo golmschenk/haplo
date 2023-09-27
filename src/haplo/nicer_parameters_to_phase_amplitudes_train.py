@@ -60,18 +60,18 @@ def default_train_session():
     batch_size_per_device = 100
     cycles_to_run = 5000
     model_name = type(model).__name__
-    run_name = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size_per_device}" \
+    run_notes = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size_per_device}" \
                f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node" \
                f"_spawn_w3_no_wd_sqlite_db"
     hyperparameter_log_dictionary = {'learning_rate': learning_rate}
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
-                  batch_size_per_device, cycles_to_run, run_name,
+                  batch_size_per_device, cycles_to_run, run_notes,
                   hyperparameter_log_dictionary=hyperparameter_log_dictionary)
 
 
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
                   metric_functions: List[Module], optimizer: Optimizer, batch_size_per_device: int, cycles_to_run: int,
-                  run_name: str, hyperparameter_log_dictionary: Dict[str, Any] | None = None):
+                  run_notes: str, hyperparameter_log_dictionary: Dict[str, Any] | None = None):
     if hyperparameter_log_dictionary is None:
         hyperparameter_log_dictionary = {}
     print('Starting training...')
@@ -112,7 +112,7 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
 
-    wandb_set_run_name(run_name, process_rank=process_rank)
+    wandb_set_run_name(run_notes, process_rank=process_rank)
 
     print(f'{process_rank}: Starting training loop...')
     for cycle in range(cycles_to_run):
