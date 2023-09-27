@@ -189,3 +189,15 @@ class LiraTraditionalShape8xWidthWith0d5DoNoBnOldFirstLayers(Module):
         x = self.end_conv(x)
         outputs = x.reshape([-1, 64])
         return outputs
+
+
+class SingleDenseNetwork(Module):
+    def __init__(self):
+        super().__init__()
+        self.dense = Linear(11, 64)
+        self.activation = LeakyReLU()
+
+    def forward(self, x):
+        x = self.dense(x)
+        x = self.activation(x)
+        return x
