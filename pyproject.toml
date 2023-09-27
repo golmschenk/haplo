@@ -19,6 +19,8 @@ torch = "^2.0.1"
 wandb = "^0.15.10"
 pytest = "^7.4.2"
 bokeh = "^3.2.2"
+sqlalchemy = "^2.0.21"
+connectorx = "^0.3.2"
 
 
 [build-system]

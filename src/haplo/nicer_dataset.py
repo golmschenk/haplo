@@ -1,119 +1,49 @@
+import mmap
 from pathlib import Path
 from typing import Optional, Callable, List
 
 import numpy as np
-import pandas as pd
-from pyarrow import feather
+import polars as pl
+import pyarrow
+from pyarrow import feather, MemoryMappedFile
 from torch.utils.data import Dataset, Subset
 
 from haplo.data_column_name import DataColumnName
 
 
 class NicerDataset(Dataset):
-    def __init__(self, data_frame: pd.DataFrame, parameters_transform: Optional[Callable] = None,
+    def __init__(self, dataset_path: Path, parameters_transform: Optional[Callable] = None,
                  phase_amplitudes_transform: Optional[Callable] = None):
+        self.dataset_path: Path = dataset_path
         self.parameters_transform: Callable = parameters_transform
         self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
-        self.data_frame: pd.DataFrame = data_frame
-        # if self.data_frame.shape[0] > 50_000_000:
-        #     self.data_frame = self.data_frame.head(50_000_000)
+        self.database_uri = f'sqlite://{self.dataset_path}'
+        # TODO: Quick hack. Should not being doing logic in init. Move this to factory method.
+        count_data_frame = pl.read_database_uri(query='select count(1) from main', uri=self.database_uri)
+        count_row = count_data_frame.row(0)
+        count = count_row[0]
+        self.length: int = count
 
     @classmethod
     def new(cls, dataset_path: Path, parameters_transform: Optional[Callable] = None,
             phase_amplitudes_transform: Optional[Callable] = None):
-        data_frame = feather.read_feather(dataset_path, memory_map=True)
-        instance = cls(data_frame=data_frame, parameters_transform=parameters_transform,
+        instance = cls(dataset_path=dataset_path, parameters_transform=parameters_transform,
                        phase_amplitudes_transform=phase_amplitudes_transform)
         return instance
 
     def __len__(self):
-        return self.data_frame.shape[0]
+        return self.length
 
     def __getitem__(self, index):
-        row = self.data_frame.iloc[index]
-        parameters = row.loc[[
-            DataColumnName.PARAMETER0,
-            DataColumnName.PARAMETER1,
-            DataColumnName.PARAMETER2,
-            DataColumnName.PARAMETER3,
-            DataColumnName.PARAMETER4,
-            DataColumnName.PARAMETER5,
-            DataColumnName.PARAMETER6,
-            DataColumnName.PARAMETER7,
-            DataColumnName.PARAMETER8,
-            DataColumnName.PARAMETER9,
-            DataColumnName.PARAMETER10,
-        ]].values
-        phase_amplitudes = row.loc[[
-            DataColumnName.PHASE_AMPLITUDE0,
-            DataColumnName.PHASE_AMPLITUDE1,
-            DataColumnName.PHASE_AMPLITUDE2,
-            DataColumnName.PHASE_AMPLITUDE3,
-            DataColumnName.PHASE_AMPLITUDE4,
-            DataColumnName.PHASE_AMPLITUDE5,
-            DataColumnName.PHASE_AMPLITUDE6,
-            DataColumnName.PHASE_AMPLITUDE7,
-            DataColumnName.PHASE_AMPLITUDE8,
-            DataColumnName.PHASE_AMPLITUDE9,
-            DataColumnName.PHASE_AMPLITUDE10,
-            DataColumnName.PHASE_AMPLITUDE11,
-            DataColumnName.PHASE_AMPLITUDE12,
-            DataColumnName.PHASE_AMPLITUDE13,
-            DataColumnName.PHASE_AMPLITUDE14,
-            DataColumnName.PHASE_AMPLITUDE15,
-            DataColumnName.PHASE_AMPLITUDE16,
-            DataColumnName.PHASE_AMPLITUDE17,
-            DataColumnName.PHASE_AMPLITUDE18,
-            DataColumnName.PHASE_AMPLITUDE19,
-            DataColumnName.PHASE_AMPLITUDE20,
-            DataColumnName.PHASE_AMPLITUDE21,
-            DataColumnName.PHASE_AMPLITUDE22,
-            DataColumnName.PHASE_AMPLITUDE23,
-            DataColumnName.PHASE_AMPLITUDE24,
-            DataColumnName.PHASE_AMPLITUDE25,
-            DataColumnName.PHASE_AMPLITUDE26,
-            DataColumnName.PHASE_AMPLITUDE27,
-            DataColumnName.PHASE_AMPLITUDE28,
-            DataColumnName.PHASE_AMPLITUDE29,
-            DataColumnName.PHASE_AMPLITUDE30,
-            DataColumnName.PHASE_AMPLITUDE31,
-            DataColumnName.PHASE_AMPLITUDE32,
-            DataColumnName.PHASE_AMPLITUDE33,
-            DataColumnName.PHASE_AMPLITUDE34,
-            DataColumnName.PHASE_AMPLITUDE35,
-            DataColumnName.PHASE_AMPLITUDE36,
-            DataColumnName.PHASE_AMPLITUDE37,
-            DataColumnName.PHASE_AMPLITUDE38,
-            DataColumnName.PHASE_AMPLITUDE39,
-            DataColumnName.PHASE_AMPLITUDE40,
-            DataColumnName.PHASE_AMPLITUDE41,
-            DataColumnName.PHASE_AMPLITUDE42,
-            DataColumnName.PHASE_AMPLITUDE43,
-            DataColumnName.PHASE_AMPLITUDE44,
-            DataColumnName.PHASE_AMPLITUDE45,
-            DataColumnName.PHASE_AMPLITUDE46,
-            DataColumnName.PHASE_AMPLITUDE47,
-            DataColumnName.PHASE_AMPLITUDE48,
-            DataColumnName.PHASE_AMPLITUDE49,
-            DataColumnName.PHASE_AMPLITUDE50,
-            DataColumnName.PHASE_AMPLITUDE51,
-            DataColumnName.PHASE_AMPLITUDE52,
-            DataColumnName.PHASE_AMPLITUDE53,
-            DataColumnName.PHASE_AMPLITUDE54,
-            DataColumnName.PHASE_AMPLITUDE55,
-            DataColumnName.PHASE_AMPLITUDE56,
-            DataColumnName.PHASE_AMPLITUDE57,
-            DataColumnName.PHASE_AMPLITUDE58,
-            DataColumnName.PHASE_AMPLITUDE59,
-            DataColumnName.PHASE_AMPLITUDE60,
-            DataColumnName.PHASE_AMPLITUDE61,
-            DataColumnName.PHASE_AMPLITUDE62,
-            DataColumnName.PHASE_AMPLITUDE63,
-        ]].values
+        row_index = index + 1  # The SQL database auto increments from 1, not 0.
+        row_data_frame = pl.read_database_uri(query=rf'select * from main where ROWID = {row_index}', uri=self.database_uri)
+        row = row_data_frame.row(0)
+        parameters = np.array(row[:11], dtype=np.float32)
+        phase_amplitudes = np.array(row[11:], dtype=np.float32)
         if self.parameters_transform is not None:
-            parameters = self.parameters_transform(parameters.copy())
+            parameters = self.parameters_transform(parameters)
         if self.phase_amplitudes_transform is not None:
-            phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes.copy())
+            phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes)
         return parameters, phase_amplitudes
 
 

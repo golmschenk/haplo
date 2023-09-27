@@ -1,7 +1,8 @@
+import datetime
 import multiprocessing
 import os
 from pathlib import Path
-from typing import Callable, Tuple, List
+from typing import Callable, Tuple, List, Dict, Any
 
 import numpy as np
 import stringcase
@@ -21,7 +22,8 @@ from haplo.losses import PlusOneChiSquaredStatisticMetric, PlusOneBeforeUnnormal
 from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBnOldFirstLayers
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
-from haplo.wandb_liaison import wandb_set_run_name, wandb_init, wandb_log, wandb_commit
+from haplo.wandb_liaison import wandb_set_run_name, wandb_init, wandb_log, wandb_commit, \
+    wandb_log_hyperparameter_dictionary
 
 
 def ddp_setup():
@@ -29,6 +31,7 @@ def ddp_setup():
         distributed_back_end = Backend.NCCL
     else:
         distributed_back_end = Backend.GLOO
+    distributed_back_end = Backend.GLOO
     if 'RANK' not in os.environ:
         # The script was not called with `torchrun` and environment variables need to be set manually.
         os.environ['RANK'] = str(0)
@@ -40,7 +43,7 @@ def ddp_setup():
 
 
 def default_train_session():
-    train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.arrow')
+    train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.db')
     full_train_dataset = NicerDataset.new(
         dataset_path=train_dataset_path,
         parameters_transform=PrecomputedNormalizeParameters(),
@@ -53,25 +56,32 @@ def default_train_session():
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     learning_rate = 1e-4
-    optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001, eps=1e-7)
+    optimizer = AdamW(model.parameters(), lr=learning_rate, eps=1e-7)
     batch_size_per_device = 100
     cycles_to_run = 5000
     model_name = type(model).__name__
     run_name = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size_per_device}" \
                f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node" \
-               f"_spawn_w3"
+               f"_spawn_w3_no_wd_sqlite_db"
+    hyperparameter_log_dictionary = {'learning_rate': learning_rate}
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
-                  batch_size_per_device, cycles_to_run, run_name)
+                  batch_size_per_device, cycles_to_run, run_name,
+                  hyperparameter_log_dictionary=hyperparameter_log_dictionary)
 
 
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
                   metric_functions: List[Module], optimizer: Optimizer, batch_size_per_device: int, cycles_to_run: int,
-                  run_name: str):
+                  run_name: str, hyperparameter_log_dictionary: Dict[str, Any]):
+    print('Starting training...')
+    print('Starting process spawning...')
     torch.multiprocessing.set_start_method('spawn')
+    print('Starting DDP setup...')
     ddp_setup()
     process_rank = int(os.environ['RANK'])
+    print(f'{process_rank}: Starting wandb...')
     wandb_init(process_rank=process_rank, project='haplo', entity='ramjet',
                settings=wandb.Settings(start_method='fork'))
+    wandb_log_hyperparameter_dictionary(hyperparameter_log_dictionary, process_rank=process_rank)
     cpu_count = multiprocessing.cpu_count()
     gpu_count = torch.cuda.device_count()
     print(f'GPUs: {gpu_count}')
@@ -84,6 +94,7 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
         network_device = torch.device('cpu')
         loss_device = network_device
 
+    print(f'{process_rank}: Moving model to device...')
     model = model.to(network_device, non_blocking=True)
     if torch.cuda.is_available():
         local_rank = int(os.environ['LOCAL_RANK'])
@@ -91,15 +102,17 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     else:
         model = DistributedDataParallel(model)
 
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device, num_workers=3, pin_memory=True,
+    print(f'{process_rank}: Loading dataset...')
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device, num_workers=5, pin_memory=True,
                                   persistent_workers=True, prefetch_factor=10, shuffle=False,
                                   sampler=DistributedSampler(train_dataset))
-    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device, num_workers=3,
+    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device, num_workers=5,
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
 
     wandb_set_run_name(run_name, process_rank=process_rank)
 
+    print(f'{process_rank}: Starting training loop...')
     for cycle in range(cycles_to_run):
         print(f"Epoch {cycle}\n-------------------------------")
         train_loop(train_dataloader, model, loss_function, optimizer, network_device=network_device,

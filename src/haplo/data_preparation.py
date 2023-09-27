@@ -10,7 +10,12 @@ from haplo.data_paths import constantinos_kalapotharakos_format_rotated_dataset_
     constantinos_kalapotharakos_format_unrotated_dataset_path, unrotated_dataset_path
 
 
-def constantinos_kalapotharakos_file_handle_to_polars(file_contents: bytes | mmap.mmap) -> pl.DataFrame:
+def constantinos_kalapotharakos_file_handle_to_sqlite(file_contents: bytes | mmap.mmap, output_file_path: Path
+                                                      ):
+    output_file_path.unlink(missing_ok=True)
+    Path(str(output_file_path) + '-shm').unlink(missing_ok=True)
+    Path(str(output_file_path) + '-wal').unlink(missing_ok=True)
+    Path(str(output_file_path) + '-journal').unlink(missing_ok=True)
     value_iterator = re.finditer(rb"[^\s]+", file_contents)
     list_of_dictionaries: List[Dict] = []
     data_frame = pl.from_dicts([], schema={str(name): pl.Float32 for name in DataColumnName})
@@ -33,13 +38,11 @@ def constantinos_kalapotharakos_file_handle_to_polars(file_contents: bytes | mma
         count += 1
         if len(list_of_dictionaries) % 100000 == 0:
             print(f'{count}', flush=True)
-            chunk_data_frame = pl.from_dicts(list_of_dictionaries,
-                                             schema={str(name): pl.Float32 for name in DataColumnName})
-            data_frame = data_frame.vstack(chunk_data_frame)
+            chunk_data_frame = pl.from_dicts(list_of_dictionaries, schema={str(name): pl.Float32 for name in DataColumnName})
+            chunk_data_frame.write_database('main', f'sqlite:///{output_file_path}', if_exists='append')
             list_of_dictionaries = []
     chunk_data_frame = pl.from_dicts(list_of_dictionaries, schema={str(name): pl.Float32 for name in DataColumnName})
-    data_frame = data_frame.vstack(chunk_data_frame)
-    return data_frame
+    chunk_data_frame.write_database('main', f'sqlite:///{output_file_path}', if_exists='append')
 
 
 def arbitrary_constantinos_kalapotharakos_file_handle_to_polars(data_path: Path, columns_per_row: int
@@ -79,18 +82,19 @@ def get_memory_mapped_file_contents(file_handle: TextIO) -> mmap.mmap:
     return file_contents
 
 
-def constantinos_kalapotharakos_format_file_to_arrow_file(input_file_path: Path, output_file_path: Path):
+def constantinos_kalapotharakos_format_file_to_sqlite(input_file_path: Path, output_file_path: Path) -> None:
+    """
+    Produces an SQLite database from a Constantinos Kalapotharakos format file. The expected input format includes
+    11 parameters, 1 likelihood value (which is ignored), and 64 phase amplitude values for each entry.
+
+    :param input_file_path: The Path to the Constantinos Kalapotharakos format file.
+    :param output_file_path: The Path to the output SQLite database.
+    """
     with input_file_path.open() as file_handle:
         file_contents = get_memory_mapped_file_contents(file_handle)
-        data_frame = constantinos_kalapotharakos_file_handle_to_polars(file_contents)
-        # data_frame = data_frame.sample(frac=1.0, seed=0)
-        data_frame.write_ipc(output_file_path)
+        constantinos_kalapotharakos_file_handle_to_sqlite(file_contents, output_file_path)
 
 
 if __name__ == '__main__':
-    # constantinos_kalapotharakos_format_file_to_arrow_file(
-    #     Path('data/mcmc_vac_all_50m.dat'), Path('data/50m_unshuffled_rotated_parameters_and_phase_amplitudes.arrow'))
-    # constantinos_kalapotharakos_format_file_to_arrow_file(
-    #     constantinos_kalapotharakos_format_rotated_dataset_path, rotated_dataset_path)
-    constantinos_kalapotharakos_format_file_to_arrow_file(
-        Path('data/mcmc_vac_all_800k.dat'), Path('data/check.arrow'))
+    constantinos_kalapotharakos_format_file_to_sqlite(
+        Path('data/mcmc_vac_all_640m_A.dat'), Path('data/640m_rotated_parameters_and_phase_amplitudes.db'))
