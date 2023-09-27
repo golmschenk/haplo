@@ -71,7 +71,9 @@ def default_train_session():
 
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
                   metric_functions: List[Module], optimizer: Optimizer, batch_size_per_device: int, cycles_to_run: int,
-                  run_name: str, hyperparameter_log_dictionary: Dict[str, Any]):
+                  run_name: str, hyperparameter_log_dictionary: Dict[str, Any] | None = None):
+    if hyperparameter_log_dictionary is None:
+        hyperparameter_log_dictionary = {}
     print('Starting training...')
     print('Starting process spawning...')
     torch.multiprocessing.set_start_method('spawn')
