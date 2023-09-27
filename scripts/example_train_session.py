@@ -29,7 +29,7 @@ def example_train_session():
     cycles_to_run = 5000
     run_notes = f'example_run_bs_{batch_size_per_device}_lr_{learning_rate}'  # Whatever you want to log in a string.
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
-                  batch_size_per_device, cycles_to_run, run_notes)
+                  batch_size_per_device, cycles_to_run, run_notes, wandb_project='example', wandb_entity='ramjet')
 
 
 if __name__ == '__main__':
