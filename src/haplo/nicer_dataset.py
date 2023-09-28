@@ -8,6 +8,7 @@ import pyarrow
 from pyarrow import feather, MemoryMappedFile
 from tenacity import wait_random, retry, wait_exponential, stop_after_attempt, retry_if_exception_type
 from torch.utils.data import Dataset, Subset
+from sqlalchemy import create_engine
 
 from haplo.data_column_name import DataColumnName
 
@@ -18,12 +19,16 @@ class NicerDataset(Dataset):
         self.dataset_path: Path = dataset_path
         self.parameters_transform: Callable = parameters_transform
         self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
-        self.database_uri = f'sqlite://{self.dataset_path}'
+        self.database_uri = f'sqlite:///{self.dataset_path}?mode=ro'
         # TODO: Quick hack. Should not being doing logic in init. Move this to factory method.
-        count_data_frame = pl.read_database_uri(query='select count(1) from main', uri=self.database_uri)
+        engine = create_engine(self.database_uri)
+        connection = engine.connect()
+        count_data_frame = pl.read_database(query='select count(1) from main', connection=connection)
         count_row = count_data_frame.row(0)
         count = count_row[0]
         self.length: int = count
+        self.engine = None
+        self.connection = None
 
     @classmethod
     def new(cls, dataset_path: Path, parameters_transform: Optional[Callable] = None,
@@ -36,6 +41,10 @@ class NicerDataset(Dataset):
         return self.length
 
     def __getitem__(self, index):
+        # TODO: Horrible hack.
+        if self.engine is None:
+            self.engine = create_engine(self.database_uri)
+            self.connection = self.engine.connect()
         row_index = index + 1  # The SQL database auto increments from 1, not 0.
         row = self.get_row_from_index(row_index)
         parameters = np.array(row[:11], dtype=np.float32)
@@ -46,12 +55,9 @@ class NicerDataset(Dataset):
             phase_amplitudes = self.phase_amplitudes_transform(phase_amplitudes)
         return parameters, phase_amplitudes
 
-    # TODO: This retry probably shouldn't be necessary at all. But even if it is, I should probably be catching
-    #       only a specific kind of exception here (i.e., pyo3_runtime.PanicException).
-    @retry(wait=wait_exponential(multiplier=1, min=1, max=10), stop=stop_after_attempt(10))
     def get_row_from_index(self, row_index):
-        row_data_frame = pl.read_database_uri(query=rf'select * from main where ROWID = {row_index}',
-                                              uri=self.database_uri)
+        row_data_frame = pl.read_database(query=rf'select * from main where ROWID = {row_index}',
+                                          connection=self.connection)
         row = row_data_frame.row(0)
         return row
 
