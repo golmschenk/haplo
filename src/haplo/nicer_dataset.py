@@ -11,6 +11,7 @@ from torch.utils.data import Dataset, Subset
 from sqlalchemy import create_engine
 
 from haplo.data_column_name import DataColumnName
+from haplo.data_paths import move_path_to_nvme
 
 
 class NicerDataset(Dataset):
@@ -43,6 +44,8 @@ class NicerDataset(Dataset):
     def __getitem__(self, index):
         # TODO: Horrible hack.
         if self.engine is None:
+            self.dataset_path = move_path_to_nvme(self.dataset_path)
+            self.database_uri = f'sqlite:///{self.dataset_path}?mode=ro'
             self.engine = create_engine(self.database_uri)
             self.connection = self.engine.connect()
         row_index = index + 1  # The SQL database auto increments from 1, not 0.
