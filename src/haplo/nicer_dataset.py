@@ -1,16 +1,11 @@
-import mmap
 from pathlib import Path
 from typing import Optional, Callable, List
 
 import numpy as np
 import polars as pl
-import pyarrow
-from pyarrow import feather, MemoryMappedFile
-from tenacity import wait_random, retry, wait_exponential, stop_after_attempt, retry_if_exception_type
-from torch.utils.data import Dataset, Subset
 from sqlalchemy import create_engine
+from torch.utils.data import Dataset, Subset
 
-from haplo.data_column_name import DataColumnName
 from haplo.data_paths import move_path_to_nvme
 
 
@@ -44,7 +39,7 @@ class NicerDataset(Dataset):
     def __getitem__(self, index):
         # TODO: Horrible hack.
         if self.engine is None:
-            self.dataset_path = move_path_to_nvme(self.dataset_path)
+            # self.dataset_path = move_path_to_nvme(self.dataset_path)
             self.database_uri = f'sqlite:///{self.dataset_path}?mode=ro'
             self.engine = create_engine(self.database_uri)
             self.connection = self.engine.connect()

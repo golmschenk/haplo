@@ -43,8 +43,8 @@ def ddp_setup():
 
 
 def default_train_session():
-    train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.db')
-    train_dataset_path = move_path_to_nvme(train_dataset_path)
+    train_dataset_path = Path('data/640m_rotated_parameters_and_phase_amplitudes.db')
+    # train_dataset_path = move_path_to_nvme(train_dataset_path)
     full_train_dataset = NicerDataset.new(
         dataset_path=train_dataset_path,
         parameters_transform=PrecomputedNormalizeParameters(),
@@ -61,9 +61,9 @@ def default_train_session():
     batch_size_per_device = 100
     cycles_to_run = 5000
     model_name = type(model).__name__
-    run_notes = f"{model_name}_old_chi_squared_loss_shuffled_50m_dataloader_shuffled_bs_{batch_size_per_device}" \
-               f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node" \
-               f"_spawn_w10_no_wd_sqlite_db_ro"
+    run_notes = f"{model_name}_old_chi_squared_loss_shuffled_640m_dataloader_shuffled_bs_{batch_size_per_device}" \
+                f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node" \
+                f"_spawn_w10_no_wd_sqlite_db_ro"
     hyperparameter_log_dictionary = {'learning_rate': learning_rate}
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
                   batch_size_per_device, cycles_to_run, run_notes, wandb_project='haplo', wandb_entity='ramjet',
