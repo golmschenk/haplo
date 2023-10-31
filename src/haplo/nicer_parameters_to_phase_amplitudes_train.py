@@ -61,9 +61,9 @@ def default_train_session():
     batch_size_per_device = 100
     cycles_to_run = 5000
     model_name = type(model).__name__
-    run_notes = f"{model_name}_old_chi_squared_loss_shuffled_640m_dataloader_shuffled_bs_{batch_size_per_device}" \
-                f"_copy_on_transform_train_and_val_from_same_corrected2_val_calc_adamw_grad_norm_clip_1_node" \
-                f"_spawn_w10_no_wd_sqlite_db_ro"
+    run_notes = f"{model_name}_old_chi_squared_loss_50m_dataloader_shuffled_bs_{batch_size_per_device}" \
+                f"_train_and_val_from_same_calc_adamw_grad_norm_clip_1_node" \
+                f"_spawn_w10_no_wd_sqlite_db_ro_cont_single_gpu"
     hyperparameter_log_dictionary = {'learning_rate': learning_rate}
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
                   batch_size_per_device, cycles_to_run, run_notes, wandb_project='haplo', wandb_entity='ramjet',
@@ -105,6 +105,7 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
         model = DistributedDataParallel(model, device_ids=[local_rank])
     else:
         model = DistributedDataParallel(model)
+    # model.load_state_dict(torch.load('sessions/ncy8keio_latest_model.pt'))
 
     print(f'{process_rank}: Loading dataset...')
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device, num_workers=10, pin_memory=True,

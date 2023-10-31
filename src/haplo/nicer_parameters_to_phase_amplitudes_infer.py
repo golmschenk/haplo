@@ -1,6 +1,12 @@
+from pathlib import Path
+
 import torch
+from bokeh.io import show
+from bokeh.models import Div, Column
+from torch import Tensor
 from torch.nn import Module, DataParallel
 from torch.utils.data import DataLoader
+from bokeh.plotting import figure as Figure
 
 from haplo.data_paths import rotated_dataset_path, unrotated_dataset_path
 from haplo.losses import PlusOneChiSquaredStatisticMetric
@@ -9,7 +15,7 @@ from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_data
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
 
-def infer_session():
+def infer_session(dataset_path: Path):
     if torch.backends.mps.is_available():
         device = torch.device('mps')
     elif torch.cuda.is_available():
@@ -18,18 +24,18 @@ def infer_session():
         device = torch.device('cpu')
 
     evaluation_dataset = NicerDataset.new(
-        dataset_path=unrotated_dataset_path,
+        dataset_path=dataset_path,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
     validation_dataset, test_dataset = split_dataset_into_fractional_datasets(evaluation_dataset, [0.5, 0.5])
 
-    batch_size = 1000
+    batch_size = 100
 
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
 
     model = DataParallel(LiraTraditionalShape8xWidthWithNoDoNoBn())
     model = model.to(device)
-    model.load_state_dict(torch.load('latest_model.pt'))
+    model.load_state_dict(torch.load('sessions/ncy8keio_latest_model.pt', map_location=device))
     model.eval()
     loss_function = PlusOneChiSquaredStatisticMetric()
 
@@ -41,15 +47,38 @@ def loop_test(dataloader, model_: Module, loss_fn, device):
     test_loss, correct = 0, 0
 
     with torch.no_grad():
-        for X, y in dataloader:
-            X = X.to(device)
-            y = y
-            pred = model_(X)
-            test_loss += loss_fn(pred.to('cpu'), y).to(device).item()
+        for batch_index, (inputs_tensor, targets) in enumerate(dataloader):
+            print(batch_index * dataloader.batch_size)
+            inputs_tensor = inputs_tensor.to(device)
+            targets = targets
+            predicted_targets = model_(inputs_tensor)
+            test_loss += loss_fn(predicted_targets.to('cpu'), targets).to(device).item()
+            show_all(predicted_targets, targets)
+            pass
+
 
     test_loss /= num_batches
     print(f"Test Error: \nAvg loss: {test_loss:>8f} \n")
 
 
+def quick_view(predicted_light_curve: Tensor, light_curve: Tensor):
+    figure = Figure()
+    predicted_light_curve_array = predicted_light_curve.to('cpu').numpy()
+    light_curve_array = light_curve.to('cpu').numpy()
+    figure.line(x=list(range(len(predicted_light_curve_array))), y=predicted_light_curve_array, line_color='firebrick')
+    figure.line(x=list(range(len(light_curve_array))), y=light_curve_array, line_color='mediumblue')
+    return figure
+
+def show_all(x_list, y_list):
+    column_contents = []
+    for x, y in zip(x_list, y_list):
+        column_contents.append(quick_view(x, y))
+    column = Column(*column_contents)
+    show(column)
+
+
+
+
 if __name__ == '__main__':
-    infer_session()
+    dataset_path = Path('data/800k_parameters_and_phase_amplitudes.db')
+    infer_session(dataset_path)
