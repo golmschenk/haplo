@@ -6,7 +6,7 @@ authors = ["golmschenk <greg@olmschenk.com>"]
 readme = "readme.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.11,<3.12"
 stringcase = "^1.2.0"
 filelock = "^3.12.3"
 numpy = "^1.25.2"
@@ -22,6 +22,9 @@ bokeh = "^3.2.2"
 sqlalchemy = "^2.0.21"
 connectorx = "^0.3.2"
 tenacity = "^8.2.3"
+
+[tool.poetry.group.dev.dependencies]
+tensorflow = "^2.14.0"
 
 
 [build-system]
