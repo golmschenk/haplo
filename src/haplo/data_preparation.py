@@ -49,31 +49,35 @@ def arbitrary_constantinos_kalapotharakos_file_handle_to_polars(data_path: Path,
                                                                 ) -> pl.DataFrame:
     with data_path.open() as file_handle:
         file_contents = get_memory_mapped_file_contents(file_handle)
-        value_iterator = re.finditer(rb"[^\s]+", file_contents)
-        list_of_dictionaries: List[Dict] = []
-        data_frame = pl.from_dicts([], schema={str(index): pl.Float32 for index in range(columns_per_row)})
-        count = 0
-        while True:
-            values = []
-            try:
-                values.append(float(next(value_iterator).group(0)))
-            except StopIteration:
-                break
-            for _ in range(columns_per_row - 1):
-                values.append(float(next(value_iterator).group(0)))
-            row_dictionary = {str(index): value for index, value in zip(range(columns_per_row), values)}
-            list_of_dictionaries.append(row_dictionary)
-            count += 1
-            if len(list_of_dictionaries) % 100000 == 0:
-                print(f'{count}', flush=True)
-                chunk_data_frame = pl.from_dicts(list_of_dictionaries,
-                                                 schema={str(index): pl.Float32 for index in range(columns_per_row)})
-                data_frame = data_frame.vstack(chunk_data_frame)
-                list_of_dictionaries = []
-        chunk_data_frame = pl.from_dicts(list_of_dictionaries,
-                                         schema={str(index): pl.Float32 for index in range(columns_per_row)})
-        data_frame = data_frame.vstack(chunk_data_frame)
-        return data_frame
+        return arbitrary_constantinos_kalapotharakos_file_contents_to_polars(file_contents, columns_per_row)
+
+
+def arbitrary_constantinos_kalapotharakos_file_contents_to_polars(file_contents: bytes | mmap.mmap, columns_per_row: int):
+    value_iterator = re.finditer(rb"[^\s]+", file_contents)
+    list_of_dictionaries: List[Dict] = []
+    data_frame = pl.from_dicts([], schema={str(index): pl.Float32 for index in range(columns_per_row)})
+    count = 0
+    while True:
+        values = []
+        try:
+            values.append(float(next(value_iterator).group(0)))
+        except StopIteration:
+            break
+        for _ in range(columns_per_row - 1):
+            values.append(float(next(value_iterator).group(0)))
+        row_dictionary = {str(index): value for index, value in zip(range(columns_per_row), values)}
+        list_of_dictionaries.append(row_dictionary)
+        count += 1
+        if len(list_of_dictionaries) % 100000 == 0:
+            print(f'{count}', flush=True)
+            chunk_data_frame = pl.from_dicts(list_of_dictionaries,
+                                             schema={str(index): pl.Float32 for index in range(columns_per_row)})
+            data_frame = data_frame.vstack(chunk_data_frame)
+            list_of_dictionaries = []
+    chunk_data_frame = pl.from_dicts(list_of_dictionaries,
+                                     schema={str(index): pl.Float32 for index in range(columns_per_row)})
+    data_frame = data_frame.vstack(chunk_data_frame)
+    return data_frame
 
 
 def get_memory_mapped_file_contents(file_handle: TextIO) -> mmap.mmap:

@@ -1,7 +1,9 @@
+from io import StringIO
+
 import pytest
 
 from haplo.data_column_name import DataColumnName
-from haplo.data_preparation import constantinos_kalapotharakos_file_handle_to_polars
+from haplo.data_preparation import arbitrary_constantinos_kalapotharakos_file_contents_to_polars
 
 
 def test_conversion_of_constantinos_kalapotharakos_format_file_handle_to_pandas_dataframe():
@@ -59,9 +61,10 @@ def test_conversion_of_constantinos_kalapotharakos_format_file_handle_to_pandas_
    3858.44869583521        3582.59549752075        3355.65062746198     
    3153.37600771749  
     """
-    data_frame = constantinos_kalapotharakos_file_handle_to_polars(file_contents_stub)
-    assert data_frame[DataColumnName.PARAMETER0][0] == pytest.approx(-0.137349282472716)
-    assert data_frame[DataColumnName.PARAMETER10][0] == pytest.approx(2.77055893884855)
-    assert data_frame[DataColumnName.PHASE_AMPLITUDE2][0] == pytest.approx(2585.23695232772)
-    assert data_frame[DataColumnName.PHASE_AMPLITUDE60][0] == pytest.approx(5805.71893764466)
-    assert data_frame[DataColumnName.PHASE_AMPLITUDE0][1] == pytest.approx(2965.60917973073)
+    data_frame = arbitrary_constantinos_kalapotharakos_file_contents_to_polars(
+        file_contents_stub, columns_per_row=11 + 1 + 64)
+    assert data_frame.row(0)[0] == pytest.approx(-0.137349282472716)
+    assert data_frame.row(0)[10] == pytest.approx(2.77055893884855)
+    assert data_frame.row(0)[11 + 1 + 2] == pytest.approx(2585.23695232772)
+    assert data_frame.row(0)[11 + 1 + 60] == pytest.approx(5805.71893764466)
+    assert data_frame.row(1)[11 + 1 + 0] == pytest.approx(2965.60917973073)
