@@ -6,7 +6,7 @@ from bokeh.models import Column
 from bokeh.plotting import Figure
 from pathlib import Path
 
-from ml4a.losses import PlusOneChiSquaredStatisticLoss, PlusOneChiSquaredStatisticLossNoUnnormalizing
+from ml4a.losses import PlusOneChiBeforeUnnormalizationSquaredStatisticLoss, PlusOneChiSquaredStatisticLossNoUnnormalizing
 from ml4a.nicer_example import NicerExample
 from ml4a.nicer_model import Nyx9Wider, Nyx11, Nyx9Re, Nyx9ReTraditionalShape
 from ml4a.residual_model import Lira, NormalizingModelWrapper, LiraTraditionalShape, \
