@@ -19,7 +19,7 @@ from ml4a.residual_model import ResModel1NoDoAvgPoolEnd8Wider, LiraTraditionalSh
     LiraTraditionalShape8xWidthWith0d5Do, LiraTraditionalShape8xWidthWithNoDoNoBnStrongLeakyReluStartingActivations, \
     LiraNewShapeWithNoDoNoBnStartingActivations, LiraTraditionalShape8xWidthWithNoDoNoBnNoDiDeStrongLeakyRelu, KairaBn, \
     LiraTraditionalShape8xWidthWithBnRe, Kaira20Bn, Kaira50Bn, LiraTraditionalShape8xWidthWithBn, \
-    LiraTraditionalShape8xWidthWithNoDoNoBn
+    LiraTraditionalShape8xWidthWithNoDoNoBn, LiraTraditionalShape8xWidthWithNoDoNoBnNoL2
 
 
 def main():
@@ -27,8 +27,8 @@ def main():
     with mirrored_strategy.scope():
         print("Imports complete.", flush=True)
         wandb.init(project='haplo', entity='ramjet', settings=wandb.Settings(start_method='fork'))
-        model = LiraTraditionalShape8xWidthWithNoDoNoBn()
-        wandb.run.notes = f"tf_{type(model).__name__}_plus_one_chi_squared_loss_pt_50m_dataset_small_batch_unreduced"
+        model = LiraTraditionalShape8xWidthWithNoDoNoBnNoL2()
+        wandb.run.notes = f"tf_{type(model).__name__}_corrected_loss_names_and_removed_l2"
         optimizer = tf.optimizers.Adam(learning_rate=1e-4, clipnorm=1)
         loss_metric = PlusOneChiBeforeUnnormalizationSquaredStatisticLoss()
         metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError(), PlusOneChiBeforeUnnormalizationSquaredStatisticLoss().plus_one_chi_before_unnormalization_squared_statistic, RelativeMeanSquaredErrorLoss.relative_mean_squared_error_loss, PlusOneChiSquaredMeanDenominatorStatisticLoss().loss, PlusOneChiSquaredStatisticLoss().plus_one_chi_squared_statistic]
