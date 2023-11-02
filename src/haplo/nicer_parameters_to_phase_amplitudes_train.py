@@ -12,7 +12,7 @@ from torch import multiprocessing, Tensor
 from torch.distributed import init_process_group, destroy_process_group, Backend
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
-from torch.optim import AdamW, Optimizer
+from torch.optim import AdamW, Optimizer, Adam
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
 
@@ -43,7 +43,7 @@ def ddp_setup():
 
 
 def default_train_session():
-    train_dataset_path = Path('data/640m_rotated_parameters_and_phase_amplitudes.db')
+    train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.db')
     # train_dataset_path = move_path_to_nvme(train_dataset_path)
     full_train_dataset = NicerDataset.new(
         dataset_path=train_dataset_path,
@@ -52,19 +52,33 @@ def default_train_session():
     train_dataset, validation_dataset, test_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
                                                                                              [0.8, 0.1, 0.1])
     model = Cura()
-    for parameter in model.parameters():
-        parameter.register_hook(norm_based_gradient_clip)
+    # for parameter in model.parameters():
+    #     parameter.register_hook(norm_based_gradient_clip)
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     learning_rate = 1e-4
-    optimizer = AdamW(model.parameters(), lr=learning_rate, eps=1e-7)
-    batch_size_per_device = 100
+    weight_decay_parameters = []
+    non_weight_decay_parameters = []
+    for parameter in model.parameters():
+        is_in_wd = False
+        for regularization_parameter in model.regularization_parameters:
+            if parameter is regularization_parameter:
+                is_in_wd = True
+                break
+        if is_in_wd:
+            weight_decay_parameters.append(parameter)
+        else:
+            non_weight_decay_parameters.append(parameter)
+    optimizer = Adam([
+        {'params': weight_decay_parameters, 'weight_decay': 0.0001},
+        {'params': non_weight_decay_parameters, 'weight_decay': 0.0}
+    ], lr=learning_rate, eps=1e-7)
+    batch_size_per_device = 500
     cycles_to_run = 5000
     model_name = type(model).__name__
-    run_notes = f"{model_name}_old_chi_squared_loss_50m_dataloader_shuffled_bs_{batch_size_per_device}" \
-                f"_train_and_val_from_same_calc_adamw_grad_norm_clip_1_node" \
-                f"_spawn_w10_no_wd_sqlite_db_ro_cont_single_gpu"
-    hyperparameter_log_dictionary = {'learning_rate': learning_rate}
+    run_notes = f"pt_clip_norm_after_full_backprop"
+    hyperparameter_log_dictionary = {'model_name': model_name, 'learning_rate': learning_rate,
+                                     'batch_size_per_device': batch_size_per_device}
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
                   batch_size_per_device, cycles_to_run, run_notes, wandb_project='haplo', wandb_entity='ramjet',
                   hyperparameter_log_dictionary=hyperparameter_log_dictionary)
@@ -159,6 +173,8 @@ def train_loop(dataloader: DataLoader, model: Module, loss_function: Callable[[T
             metric_totals[metric_function_index] += batch_metric_value
         optimizer.zero_grad()
         loss.backward()
+        for parameter in model.parameters():
+            torch.nn.utils.clip_grad_norm_(parameter, 1)
         optimizer.step()
 
         if batch % 1 == 0:
