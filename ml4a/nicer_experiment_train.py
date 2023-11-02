@@ -28,7 +28,7 @@ def main():
         wandb.init(project='haplo', entity='ramjet', settings=wandb.Settings(start_method='fork'))
         model = LiraTraditionalShape8xWidthWithNoDoNoBn()
         wandb.run.notes = f"tf_{type(model).__name__}_plus_one_chi_squared_loss_pt_50m_dataset_small_batch_unreduced"
-        optimizer = tf.optimizers.Adam(learning_rate=1e-4)
+        optimizer = tf.optimizers.Adam(learning_rate=1e-4, clipnorm=1)
         loss_metric = PlusOneChiSquaredStatisticLossUnreduced()
         metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError(), PlusOneChiSquaredStatisticLoss().plus_one_chi_squared_statistic, RelativeMeanSquaredErrorLoss.relative_mean_squared_error_loss, PlusOneChiSquaredMeanDenominatorStatisticLoss().loss]
         datetime_string = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
