@@ -27,8 +27,8 @@ def main():
     with mirrored_strategy.scope():
         print("Imports complete.", flush=True)
         wandb.init(project='haplo', entity='ramjet', settings=wandb.Settings(start_method='fork'))
-        model = LiraTraditionalShape8xWidthWithNoDoNoBnNoL2()
-        wandb.run.notes = f"tf_{type(model).__name__}_corrected_loss_names_and_removed_l2"
+        model = LiraTraditionalShape8xWidthWithNoDoNoBn()
+        wandb.run.notes = f"tf_{type(model).__name__}_more_corrected_loss_names"
         optimizer = tf.optimizers.Adam(learning_rate=1e-4, clipnorm=1)
         loss_metric = PlusOneBeforeUnnormalizationChiSquaredStatisticLoss()
         metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError(), PlusOneBeforeUnnormalizationChiSquaredStatisticLoss().plus_one_before_unnormalization_chi_squared_statistic, RelativeMeanSquaredErrorLoss.relative_mean_squared_error_loss, PlusOneChiSquaredMeanDenominatorStatisticLoss().loss, PlusOneChiSquaredStatisticLoss().plus_one_chi_squared_statistic]
