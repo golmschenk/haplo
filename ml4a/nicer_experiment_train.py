@@ -8,7 +8,7 @@ from tensorflow.python.keras import callbacks
 from pathlib import Path
 
 from haplo.nicer_dataset import NicerDataset
-from ml4a.losses import RelativeMeanSquaredErrorLoss, PlusOneChiBeforeUnnormalizationSquaredStatisticLoss, \
+from ml4a.losses import RelativeMeanSquaredErrorLoss, PlusOneBeforeUnnormalizationChiSquaredStatisticLoss, \
     PlusOneChiSquaredMeanDenominatorStatisticLoss, \
     PlusOneChiSquaredStatisticLoss
 from ml4a.nicer_example import NicerExample
@@ -30,8 +30,8 @@ def main():
         model = LiraTraditionalShape8xWidthWithNoDoNoBnNoL2()
         wandb.run.notes = f"tf_{type(model).__name__}_corrected_loss_names_and_removed_l2"
         optimizer = tf.optimizers.Adam(learning_rate=1e-4, clipnorm=1)
-        loss_metric = PlusOneChiBeforeUnnormalizationSquaredStatisticLoss()
-        metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError(), PlusOneChiBeforeUnnormalizationSquaredStatisticLoss().plus_one_chi_before_unnormalization_squared_statistic, RelativeMeanSquaredErrorLoss.relative_mean_squared_error_loss, PlusOneChiSquaredMeanDenominatorStatisticLoss().loss, PlusOneChiSquaredStatisticLoss().plus_one_chi_squared_statistic]
+        loss_metric = PlusOneBeforeUnnormalizationChiSquaredStatisticLoss()
+        metrics = [tf.keras.metrics.MeanSquaredError(), tf.keras.metrics.MeanSquaredLogarithmicError(), PlusOneBeforeUnnormalizationChiSquaredStatisticLoss().plus_one_before_unnormalization_chi_squared_statistic, RelativeMeanSquaredErrorLoss.relative_mean_squared_error_loss, PlusOneChiSquaredMeanDenominatorStatisticLoss().loss, PlusOneChiSquaredStatisticLoss().plus_one_chi_squared_statistic]
         datetime_string = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
         trial_directory = Path("logs").joinpath(f'{wandb.run.notes}')
         best_validation_model_save_path = trial_directory.joinpath('best_validation_model.ckpt')
