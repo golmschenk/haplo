@@ -69,16 +69,21 @@ def default_train_session():
             weight_decay_parameters.append(parameter)
         else:
             non_weight_decay_parameters.append(parameter)
-    optimizer = Adam([
-        {'params': weight_decay_parameters, 'weight_decay': 0.0001},
-        {'params': non_weight_decay_parameters, 'weight_decay': 0.0}
-    ], lr=learning_rate, eps=1e-7)
+    # optimizer = Adam([
+    #     {'params': weight_decay_parameters, 'weight_decay': 0.0001},
+    #     {'params': non_weight_decay_parameters, 'weight_decay': 0.0}
+    # ], lr=learning_rate, eps=1e-7)
+    optimizer_epsilon = 1e-5
+    weight_decay = 0.0
+    optimizer = Adam(params=model.parameters(), weight_decay=weight_decay, lr=learning_rate, eps=optimizer_epsilon)
     batch_size_per_device = 500
     cycles_to_run = 5000
     model_name = type(model).__name__
-    run_notes = f"pt_clip_norm_after_full_backprop"
-    hyperparameter_log_dictionary = {'model_name': model_name, 'learning_rate': learning_rate,
-                                     'batch_size_per_device': batch_size_per_device}
+    run_notes = f"pt_clip_norm_after_full_backprop_no_wd_eps_1e-5"
+    hyperparameter_log_dictionary = {
+        'model_name': model_name, 'learning_rate': learning_rate, 'batch_size_per_device': batch_size_per_device,
+        'optimizer_epsilon': optimizer_epsilon, 'weight_decay': weight_decay
+    }
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
                   batch_size_per_device, cycles_to_run, run_notes, wandb_project='haplo', wandb_entity='ramjet',
                   hyperparameter_log_dictionary=hyperparameter_log_dictionary)
