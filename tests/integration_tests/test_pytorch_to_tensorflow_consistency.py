@@ -36,6 +36,7 @@ def test_consistency_in_number_of_parameters_in_residual_light_curve_generation_
     tf_size = get_total_size_of_parameters_in_tf_model(tf_block)
     pt_size = get_total_size_of_parameters_in_pt_model(pt_block)
     assert tf_size == pt_size
+    assert pt_size == pt_dimension_decrease_layer_size + pt_convolutional_layer_size + pt_dimension_increase_layer_size
 
 
 def test_consistency_of_output_sizes_of_residual_light_curve_generation_block():
