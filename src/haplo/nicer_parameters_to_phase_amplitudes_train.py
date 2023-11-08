@@ -18,9 +18,9 @@ from torch.utils.data import DataLoader, DistributedSampler, Dataset
 from haplo.losses import PlusOneChiSquaredStatisticMetric, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
     norm_based_gradient_clip
 from haplo.models import Cura
-from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
+from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
-from haplo.wandb_liaison import wandb_set_run_name, wandb_init, wandb_log, wandb_commit, \
+from haplo.wandb_liaison import wandb_init, wandb_log, wandb_commit, \
     wandb_log_hyperparameter_dictionary
 
 
@@ -42,16 +42,14 @@ def ddp_setup():
 
 def default_train_session():
     train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.db')
-    # train_dataset_path = move_path_to_nvme(train_dataset_path)
     full_train_dataset = NicerDataset.new(
         dataset_path=train_dataset_path,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
-    test_dataset, validation_dataset, train_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
-                                                                                             [0.1, 0.1, 0.8])
+    test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
+        full_train_dataset, [100_000, 100_000, 500_000])
     model = Cura()
-    for parameter in model.parameters():
-        parameter.register_hook(norm_based_gradient_clip)
+    add_norm_based_gradient_clip_to_all_parameters(model)
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     learning_rate = 1e-4
@@ -88,9 +86,6 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     wandb_init(process_rank=process_rank, project=wandb_project, entity=wandb_entity,
                settings=wandb.Settings(start_method='fork'))
     wandb_log_hyperparameter_dictionary(wandb_log_dictionary, process_rank=process_rank)
-    cpu_count = multiprocessing.cpu_count()
-    gpu_count = torch.cuda.device_count()
-    print(f'GPUs: {gpu_count}')
 
     if torch.cuda.is_available():
         local_rank = int(os.environ['LOCAL_RANK'])
