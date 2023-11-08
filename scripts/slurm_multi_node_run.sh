@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #SBATCH --job-name="¯\\_(ツ)_/¯"
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
+#SBATCH --nodes=4
+#SBATCH --ntasks=4
 #SBATCH --gpus-per-task=4
 #SBATCH --cpus-per-task=40
 #SBATCH --mem=600000
@@ -17,7 +17,7 @@ echo Node IP: $head_node_ip
 export LOGLEVEL=INFO
 
 srun torchrun \
---nnodes 1 \
+--nnodes 4 \
 --nproc_per_node gpu \
 --rdzv_id $RANDOM \
 --rdzv_backend c10d \

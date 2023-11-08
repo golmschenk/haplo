@@ -52,30 +52,14 @@ def default_train_session():
     train_dataset, validation_dataset, test_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
                                                                                              [0.8, 0.1, 0.1])
     model = Cura()
-    # for parameter in model.parameters():
-    #     parameter.register_hook(norm_based_gradient_clip)
+    for parameter in model.parameters():
+        parameter.register_hook(norm_based_gradient_clip)
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     learning_rate = 1e-4
-    weight_decay_parameters = []
-    non_weight_decay_parameters = []
-    for parameter in model.parameters():
-        is_in_wd = False
-        for regularization_parameter in model.regularization_parameters:
-            if parameter is regularization_parameter:
-                is_in_wd = True
-                break
-        if is_in_wd:
-            weight_decay_parameters.append(parameter)
-        else:
-            non_weight_decay_parameters.append(parameter)
-    # optimizer = Adam([
-    #     {'params': weight_decay_parameters, 'weight_decay': 0.0001},
-    #     {'params': non_weight_decay_parameters, 'weight_decay': 0.0}
-    # ], lr=learning_rate, eps=1e-7)
     optimizer_epsilon = 1e-5
     weight_decay = 0.0
-    optimizer = Adam(params=model.parameters(), weight_decay=weight_decay, lr=learning_rate, eps=optimizer_epsilon)
+    optimizer = AdamW(params=model.parameters(), weight_decay=weight_decay, lr=learning_rate, eps=optimizer_epsilon)
     batch_size_per_device = 500
     cycles_to_run = 5000
     model_name = type(model).__name__
@@ -178,8 +162,6 @@ def train_loop(dataloader: DataLoader, model: Module, loss_function: Callable[[T
             metric_totals[metric_function_index] += batch_metric_value
         optimizer.zero_grad()
         loss.backward()
-        for parameter in model.parameters():
-            torch.nn.utils.clip_grad_norm_(parameter, 1)
         optimizer.step()
 
         if batch % 1 == 0:

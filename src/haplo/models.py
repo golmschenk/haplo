@@ -51,7 +51,6 @@ class ResidualGenerationLightCurveNetworkBlock(Module):
                  upsampling_scale_factor: int = 1, batch_normalization: bool = False, dropout_rate: float = 0.0,
                  renorm: bool = False):
         super().__init__()
-        self.regularization_parameters = []
         self.activation = LeakyReLU()
         dimension_decrease_factor = 4
         if batch_normalization:
@@ -61,15 +60,12 @@ class ResidualGenerationLightCurveNetworkBlock(Module):
         reduced_channels = output_channels // dimension_decrease_factor
         self.dimension_decrease_layer = ConvTranspose1d(
             in_channels=input_channels, out_channels=reduced_channels, kernel_size=1)
-        self.regularization_parameters.append(self.dimension_decrease_layer.weight)
         self.convolutional_layer = ConvTranspose1d(
             in_channels=reduced_channels, out_channels=reduced_channels, kernel_size=kernel_size,
             padding=math.floor(kernel_size / 2)
         )
-        self.regularization_parameters.append(self.convolutional_layer.weight)
         self.dimension_increase_layer = ConvTranspose1d(
             in_channels=reduced_channels, out_channels=output_channels, kernel_size=1)
-        self.regularization_parameters.append(self.dimension_increase_layer.weight)
         if upsampling_scale_factor > 1:
             self.upsampling_layer = Upsample(scale_factor=upsampling_scale_factor)
         else:
@@ -126,7 +122,6 @@ class Cura(Module):
         self.dense0 = Conv1d(11, 400, kernel_size=1)
         self.activation = LeakyReLU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
-        self.regularization_parameters = []
         output_channels = 128
         self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
             output_channels=output_channels, input_channels=400, dropout_rate=0.0,
@@ -143,9 +138,6 @@ class Cura(Module):
                     input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
                     batch_normalization=False))
                 input_channels = output_channels
-        for block in self.blocks:
-            for regularization_parameter in block.regularization_parameters:
-                self.regularization_parameters.append(regularization_parameter)
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 
     def forward(self, x):

@@ -1,7 +1,6 @@
 import numpy as np
 import torch
-from torch import nn, Tensor
-from torch.nn.parameter import Parameter
+from torch import Tensor
 
 from haplo.models import ResidualGenerationLightCurveNetworkBlock as PtResidualGenerationLightCurveNetworkBlock
 from integration_tests.pytorch_model_analysis import get_total_size_of_parameters_in_pt_model
