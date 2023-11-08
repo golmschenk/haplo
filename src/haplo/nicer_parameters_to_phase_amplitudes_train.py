@@ -1,3 +1,4 @@
+import math
 import multiprocessing
 import os
 from pathlib import Path
@@ -110,15 +111,20 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device, num_workers=10,
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
+    lowest_validation_cycle_loss = math.inf
 
     print(f'{process_rank}: Starting training loop...')
     for cycle in range(cycles_to_run):
         print(f"Epoch {cycle}\n-------------------------------")
         train_loop(train_dataloader, model, loss_function, optimizer, network_device=network_device,
                    loss_device=loss_device, cycle=cycle, metric_functions=metric_functions, process_rank=process_rank)
-        loop_test(validation_dataloader, model, loss_function, network_device=network_device, loss_device=loss_device,
-                  cycle=cycle, metric_functions=metric_functions, process_rank=process_rank)
-        save_model(model, process_rank=process_rank)
+        validation_cycle_loss = loop_test(validation_dataloader, model, loss_function, network_device=network_device,
+                                          loss_device=loss_device, cycle=cycle, metric_functions=metric_functions,
+                                          process_rank=process_rank)
+        save_model(model, suffix='latest_model', process_rank=process_rank)
+        if validation_cycle_loss < lowest_validation_cycle_loss:
+            lowest_validation_cycle_loss = validation_cycle_loss
+            save_model(model, suffix='lowest_validation_model', process_rank=process_rank)
         wandb_log('epoch', cycle, process_rank=process_rank)
         wandb_log('cycle', cycle, process_rank=process_rank)
         wandb_commit(process_rank=process_rank)
@@ -127,9 +133,12 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     destroy_process_group()
 
 
-def save_model(model: Module, process_rank: int):
+def save_model(model: Module, suffix: str, process_rank: int):
     if process_rank == 0:
-        torch.save(model.state_dict(), Path(f'sessions/{wandb.run.id}_latest_model.pt'))
+        model_name = wandb.run.name
+        if model_name == '':
+            model_name = wandb.run.id
+        torch.save(model.state_dict(), Path(f'sessions/{model_name}_{suffix}.pt'))
 
 
 def train_loop(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
@@ -175,7 +184,7 @@ def get_metric_name(metric_function):
 
 def loop_test(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
               network_device: Device, loss_device: Device, cycle: int,
-              metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int):
+              metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int) -> float:
     number_of_batches = len(dataloader)
     total_cycle_loss = 0
     metric_totals = np.zeros(shape=[len(metric_functions)])
@@ -201,6 +210,7 @@ def loop_test(dataloader: DataLoader, model: Module, loss_function: Callable[[Te
     for metric_function_index, metric_function in enumerate(metric_functions):
         wandb_log(f'val_{get_metric_name(metric_function)}', cycle_metric_values[metric_function_index],
                   process_rank=process_rank)
+    return cycle_loss
 
 
 if __name__ == '__main__':
