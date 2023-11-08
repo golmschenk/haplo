@@ -24,12 +24,20 @@ def example_train_session():
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     learning_rate = 1e-4
-    optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=0.0001, eps=1e-7)
+    optimizer_epsilon = 1e-7
+    weight_decay = 0.0001
     batch_size_per_device = 100
     cycles_to_run = 5000
-    run_notes = f'example_run_bs_{batch_size_per_device}_lr_{learning_rate}'  # Whatever you want to log in a string.
+    optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay, eps=optimizer_epsilon)
+    run_comments = f'example_run'  # Whatever you want to log in a string.
+    hyperparameter_log_dictionary = {
+        'model_name': type(model).__name__, 'learning_rate': learning_rate,
+        'batch_size_per_device': batch_size_per_device,
+        'optimizer_epsilon': optimizer_epsilon, 'weight_decay': weight_decay, 'run_comments': run_comments
+    }
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
-                  batch_size_per_device, cycles_to_run, run_notes, wandb_project='example', wandb_entity='ramjet')
+                  batch_size_per_device, cycles_to_run, wandb_project='example', wandb_entity='ramjet',
+                  hyperparameter_log_dictionary=hyperparameter_log_dictionary)
 
 
 if __name__ == '__main__':

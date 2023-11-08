@@ -67,13 +67,13 @@ def default_train_session():
         'optimizer_epsilon': optimizer_epsilon, 'weight_decay': weight_decay
     }
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
-                  batch_size_per_device, cycles_to_run, run_notes, wandb_project='haplo', wandb_entity='ramjet',
+                  batch_size_per_device, cycles_to_run, wandb_project='haplo', wandb_entity='ramjet',
                   hyperparameter_log_dictionary=hyperparameter_log_dictionary)
 
 
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
                   metric_functions: List[Module], optimizer: Optimizer, batch_size_per_device: int, cycles_to_run: int,
-                  run_notes: str, wandb_project: str, wandb_entity: str,
+                  wandb_project: str, wandb_entity: str,
                   hyperparameter_log_dictionary: Dict[str, Any] | None = None):
     if hyperparameter_log_dictionary is None:
         hyperparameter_log_dictionary = {}
@@ -114,8 +114,6 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device, num_workers=10,
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
-
-    wandb_set_run_name(run_notes, process_rank=process_rank)
 
     print(f'{process_rank}: Starting training loop...')
     for cycle in range(cycles_to_run):
