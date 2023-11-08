@@ -29,15 +29,15 @@ def example_train_session():
     batch_size_per_device = 100
     cycles_to_run = 5000
     optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay, eps=optimizer_epsilon)
-    run_comments = f'example_run'  # Whatever you want to log in a string.
-    hyperparameter_log_dictionary = {
+    run_comments = f'Example run.'  # Whatever you want to log in a string.
+    wandb_log_dictionary = {
         'model_name': type(model).__name__, 'learning_rate': learning_rate,
         'batch_size_per_device': batch_size_per_device,
         'optimizer_epsilon': optimizer_epsilon, 'weight_decay': weight_decay, 'run_comments': run_comments
     }
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
                   batch_size_per_device, cycles_to_run, wandb_project='example', wandb_entity='ramjet',
-                  hyperparameter_log_dictionary=hyperparameter_log_dictionary)
+                  wandb_log_dictionary=wandb_log_dictionary)
 
 
 if __name__ == '__main__':
