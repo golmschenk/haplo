@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "haplo"
-version = "0.3.5"
+version = "0.4.0"
 description = ""
 authors = ["golmschenk <greg@olmschenk.com>"]
 readme = "readme.md"
