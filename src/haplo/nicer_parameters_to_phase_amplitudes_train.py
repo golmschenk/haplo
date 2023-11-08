@@ -61,10 +61,11 @@ def default_train_session():
     batch_size_per_device = 500
     cycles_to_run = 5000
     model_name = type(model).__name__
-    run_notes = f"pt_clip_norm_after_full_backprop_no_wd_eps_1e-5"
+    run_comments = f"pt_clip_norm_after_full_backprop_no_wd_eps_1e-5"
     wandb_log_dictionary = {
         'model_name': model_name, 'learning_rate': learning_rate, 'batch_size_per_device': batch_size_per_device,
-        'optimizer_epsilon': optimizer_epsilon, 'weight_decay': weight_decay, 'run_comments': run_notes
+        'train_dataset_size': len(train_dataset), 'optimizer_epsilon': optimizer_epsilon, 'weight_decay': weight_decay,
+        'run_comments': run_comments
     }
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
                   batch_size_per_device, cycles_to_run, wandb_project='haplo', wandb_entity='ramjet',

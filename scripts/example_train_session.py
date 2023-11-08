@@ -32,7 +32,7 @@ def example_train_session():
     run_comments = f'Example run.'  # Whatever you want to log in a string.
     wandb_log_dictionary = {
         'model_name': type(model).__name__, 'learning_rate': learning_rate,
-        'batch_size_per_device': batch_size_per_device,
+        'batch_size_per_device': batch_size_per_device, 'train_dataset_size': len(train_dataset),
         'optimizer_epsilon': optimizer_epsilon, 'weight_decay': weight_decay, 'run_comments': run_comments
     }
     train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
