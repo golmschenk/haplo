@@ -1,5 +1,4 @@
 import multiprocessing
-import multiprocessing
 import os
 from pathlib import Path
 from typing import Callable, List, Dict, Any
@@ -12,11 +11,10 @@ from torch import multiprocessing, Tensor
 from torch.distributed import init_process_group, destroy_process_group, Backend
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
-from torch.optim import AdamW, Optimizer, Adam
+from torch.optim import AdamW, Optimizer
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
 
-from haplo.data_paths import move_path_to_nvme
 from haplo.losses import PlusOneChiSquaredStatisticMetric, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
     norm_based_gradient_clip
 from haplo.models import Cura
@@ -108,7 +106,6 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
         model = DistributedDataParallel(model, device_ids=[local_rank])
     else:
         model = DistributedDataParallel(model)
-    # model.load_state_dict(torch.load('sessions/ncy8keio_latest_model.pt'))
 
     print(f'{process_rank}: Loading dataset...')
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device, num_workers=10, pin_memory=True,

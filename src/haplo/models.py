@@ -1,5 +1,3 @@
-# TODO: I just quickly ported the TensorFlow version to PyTorch without much testing.
-# TODO: The various components should be tested.
 import math
 
 
@@ -181,7 +179,7 @@ class LiraTraditionalShape8xWidthWith0d5DoNoBnOldFirstLayers(Module):
     def forward(self, x):
         x = x.reshape([-1, 11, 1])
         x = self.dense0(x)
-        # x = self.activation(x)
+        x = self.activation(x)
         x = self.dense1(x)
         x = self.activation(x)
         for index, block in enumerate(self.blocks):
