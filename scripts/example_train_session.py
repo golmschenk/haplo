@@ -2,11 +2,12 @@ from pathlib import Path
 
 from torch.optim import AdamW
 
-from haplo.losses import norm_based_gradient_clip, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
+from haplo.losses import PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
     PlusOneChiSquaredStatisticMetric
 from haplo.models import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
-from haplo.nicer_parameters_to_phase_amplitudes_train import train_session
+from haplo.nicer_parameters_to_phase_amplitudes_train import train_session, \
+    add_norm_based_gradient_clip_to_all_parameters
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
 
@@ -19,8 +20,7 @@ def example_train_session():
     train_dataset, validation_dataset, test_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
                                                                                              [0.8, 0.1, 0.1])
     model = Cura()
-    for parameter in model.parameters():
-        parameter.register_hook(norm_based_gradient_clip)
+    add_norm_based_gradient_clip_to_all_parameters(model)
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     learning_rate = 1e-4

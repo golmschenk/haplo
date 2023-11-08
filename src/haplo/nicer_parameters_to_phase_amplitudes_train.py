@@ -211,3 +211,8 @@ def loop_test(dataloader: DataLoader, model: Module, loss_function: Callable[[Te
 
 if __name__ == '__main__':
     default_train_session()
+
+
+def add_norm_based_gradient_clip_to_all_parameters(model):
+    for parameter in model.parameters():
+        parameter.register_hook(norm_based_gradient_clip)
