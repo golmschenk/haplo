@@ -17,7 +17,7 @@ from torch.utils.data import DataLoader, DistributedSampler, Dataset
 from haplo.losses import PlusOneChiSquaredStatisticMetric, PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
     norm_based_gradient_clip
 from haplo.models import Cura
-from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
+from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets, split_dataset_into_fractional_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 from haplo.wandb_liaison import wandb_init, wandb_log, wandb_commit, \
     wandb_log_hyperparameter_dictionary
@@ -45,20 +45,20 @@ def default_train_session():
         dataset_path=train_dataset_path,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
-    test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
-        full_train_dataset, [100_000, 100_000, 500_000])
+    test_dataset, validation_dataset, train_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
+                                                                                             [0.1, 0.1, 0.8])
     model = Cura()
     add_norm_based_gradient_clip_to_all_parameters(model)
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     learning_rate = 1e-4
-    optimizer_epsilon = 1e-5
-    weight_decay = 0.0
+    optimizer_epsilon = 1e-7
+    weight_decay = 0.0001
     optimizer = AdamW(params=model.parameters(), weight_decay=weight_decay, lr=learning_rate, eps=optimizer_epsilon)
-    batch_size_per_device = 500
+    batch_size_per_device = 100
     cycles_to_run = 5000
     model_name = type(model).__name__
-    run_comments = f"pt_clip_norm_after_full_backprop_no_wd_eps_1e-5"
+    run_comments = f"pt"
     wandb_log_dictionary = {
         'model_name': model_name, 'learning_rate': learning_rate, 'batch_size_per_device': batch_size_per_device,
         'train_dataset_size': len(train_dataset), 'optimizer_epsilon': optimizer_epsilon, 'weight_decay': weight_decay,
@@ -145,11 +145,11 @@ def save_model(model: Module, suffix: str, process_rank: int):
 def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
                 optimizer: Optimizer, network_device: Device, loss_device: Device, cycle: int,
                 metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int, world_size: int):
-    number_of_batches = len(dataloader)
     model.train()
     total_cycle_loss = tensor(0, dtype=torch.float32)
     metric_totals = torch.zeros(size=[len(metric_functions)])
     assert isinstance(dataloader.sampler, DistributedSampler)
+    number_of_batches = len(dataloader.sampler)
     dataloader.sampler.set_epoch(cycle)
     for batch, (parameters, light_curves) in enumerate(dataloader):
         parameters = parameters.to(network_device, non_blocking=True)
@@ -168,7 +168,7 @@ def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[
         total_cycle_loss += loss.to('cpu', non_blocking=True)
         if batch % 1 == 0:
             current = (batch + 1) * len(parameters)
-            print(f"loss: {loss.item():>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]", flush=True)
+            print(f"loss: {loss.item():>7f}  [{current:>5d}/{number_of_batches:>5d}]", flush=True)
     log_metrics(total_cycle_loss, metric_functions, metric_totals, '', number_of_batches, world_size, process_rank)
 
 
@@ -176,11 +176,11 @@ def validation_phase(dataloader: DataLoader, model: Module, loss_function: Calla
                      network_device: Device, loss_device: Device, cycle: int,
                      metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int, world_size: int
                      ) -> float:
-    number_of_batches = len(dataloader)
     total_cycle_loss = tensor(0, dtype=torch.float32)
     metric_totals = torch.zeros(size=[len(metric_functions)])
     model.eval()
     assert isinstance(dataloader.sampler, DistributedSampler)
+    number_of_batches = len(dataloader.sampler)
     dataloader.sampler.set_epoch(cycle)
     with torch.no_grad():
         for parameters, light_curves in dataloader:

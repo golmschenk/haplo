@@ -37,7 +37,7 @@ class NicerDataset(Dataset):
         return self.length
 
     def __getitem__(self, index):
-        # TODO: Horrible hack.
+        # TODO: Horrible hack. This should happen on the initialization of each worker's dataset, not in the getitem.
         if self.engine is None:
             # self.dataset_path = move_path_to_nvme(self.dataset_path)
             self.database_uri = f'sqlite:///{self.dataset_path}?mode=ro'
