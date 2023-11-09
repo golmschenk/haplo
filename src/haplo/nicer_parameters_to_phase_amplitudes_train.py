@@ -223,10 +223,10 @@ def get_metric_name(metric_function):
     return metric_name
 
 
-if __name__ == '__main__':
-    default_train_session()
-
-
 def add_norm_based_gradient_clip_to_all_parameters(model):
     for parameter in model.parameters():
         parameter.register_hook(norm_based_gradient_clip)
+
+
+if __name__ == '__main__':
+    default_train_session()
