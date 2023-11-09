@@ -1,15 +1,13 @@
 import math
-import multiprocessing
 import os
 from pathlib import Path
 from typing import Callable, List, Dict, Any
 
-import numpy as np
 import stringcase
 import torch
 import wandb as wandb
-from torch import multiprocessing, Tensor
-from torch.distributed import init_process_group, destroy_process_group, Backend
+from torch import Tensor, tensor
+from torch.distributed import init_process_group, destroy_process_group, Backend, ReduceOp
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.optim import AdamW, Optimizer
@@ -88,8 +86,9 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
                settings=wandb.Settings(start_method='fork'))
     wandb_log_hyperparameter_dictionary(wandb_log_dictionary, process_rank=process_rank)
 
+    local_rank = int(os.environ['LOCAL_RANK'])
+    world_size = int(os.environ['WORLD_SIZE'])
     if torch.cuda.is_available():
-        local_rank = int(os.environ['LOCAL_RANK'])
         network_device = torch.device(f'cuda:{local_rank}')
         loss_device = network_device
     else:
@@ -99,7 +98,6 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     print(f'{process_rank}: Moving model to device...')
     model = model.to(network_device, non_blocking=True)
     if torch.cuda.is_available():
-        local_rank = int(os.environ['LOCAL_RANK'])
         model = DistributedDataParallel(model, device_ids=[local_rank])
     else:
         model = DistributedDataParallel(model)
@@ -111,16 +109,19 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device, num_workers=10,
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
-    lowest_validation_cycle_loss = math.inf
+    lowest_validation_cycle_loss = tensor(math.inf)
 
     print(f'{process_rank}: Starting training loop...')
     for cycle in range(cycles_to_run):
         print(f"Epoch {cycle}\n-------------------------------")
-        train_loop(train_dataloader, model, loss_function, optimizer, network_device=network_device,
-                   loss_device=loss_device, cycle=cycle, metric_functions=metric_functions, process_rank=process_rank)
-        validation_cycle_loss = loop_test(validation_dataloader, model, loss_function, network_device=network_device,
-                                          loss_device=loss_device, cycle=cycle, metric_functions=metric_functions,
-                                          process_rank=process_rank)
+        train_phase(train_dataloader, model, loss_function, optimizer, network_device=network_device,
+                    loss_device=loss_device, cycle=cycle, metric_functions=metric_functions, process_rank=process_rank,
+                    world_size=world_size)
+        validation_cycle_loss = validation_phase(validation_dataloader, model, loss_function,
+                                                 network_device=network_device,
+                                                 loss_device=loss_device, cycle=cycle,
+                                                 metric_functions=metric_functions,
+                                                 process_rank=process_rank, world_size=world_size)
         save_model(model, suffix='latest_model', process_rank=process_rank)
         if validation_cycle_loss < lowest_validation_cycle_loss:
             lowest_validation_cycle_loss = validation_cycle_loss
@@ -141,13 +142,13 @@ def save_model(model: Module, suffix: str, process_rank: int):
         torch.save(model.state_dict(), Path(f'sessions/{model_name}_{suffix}.pt'))
 
 
-def train_loop(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
-               optimizer: Optimizer, network_device: Device, loss_device: Device, cycle: int,
-               metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int):
+def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
+                optimizer: Optimizer, network_device: Device, loss_device: Device, cycle: int,
+                metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int, world_size: int):
     number_of_batches = len(dataloader)
     model.train()
-    total_cycle_loss = 0
-    metric_totals = np.zeros(shape=[len(metric_functions)])
+    total_cycle_loss = tensor(0, dtype=torch.float32).to(loss_device)
+    metric_totals = torch.zeros(size=[len(metric_functions)])
     assert isinstance(dataloader.sampler, DistributedSampler)
     dataloader.sampler.set_epoch(cycle)
     for batch, (parameters, light_curves) in enumerate(dataloader):
@@ -158,36 +159,26 @@ def train_loop(dataloader: DataLoader, model: Module, loss_function: Callable[[T
                                                                                                          non_blocking=True)
         for metric_function_index, metric_function in enumerate(metric_functions):
             batch_metric_value = metric_function(predicted_light_curves.to(loss_device, non_blocking=True),
-                                                 light_curves).item()
+                                                 light_curves)
             metric_totals[metric_function_index] += batch_metric_value
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
+        total_cycle_loss += loss
         if batch % 1 == 0:
-            loss_value, current = loss.item(), (batch + 1) * len(parameters)
-            total_cycle_loss += loss_value
-            print(f"loss: {loss_value:>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]", flush=True)
-    wandb_log('loss', total_cycle_loss / number_of_batches, process_rank=process_rank)
-    cycle_metric_values = metric_totals / number_of_batches
-    for metric_function_index, metric_function in enumerate(metric_functions):
-        wandb_log(f'{get_metric_name(metric_function)}', cycle_metric_values[metric_function_index],
-                  process_rank=process_rank)
+            current = (batch + 1) * len(parameters)
+            print(f"loss: {loss.item():>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]", flush=True)
+    log_metrics(total_cycle_loss, metric_functions, metric_totals, '', number_of_batches, world_size, process_rank)
 
 
-def get_metric_name(metric_function):
-    metric_name = type(metric_function).__name__
-    metric_name = stringcase.snakecase(metric_name)
-    metric_name = metric_name.replace('_metric', '').replace('_loss', '')
-    return metric_name
-
-
-def loop_test(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
-              network_device: Device, loss_device: Device, cycle: int,
-              metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int) -> float:
+def validation_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
+                     network_device: Device, loss_device: Device, cycle: int,
+                     metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int, world_size: int
+                     ) -> float:
     number_of_batches = len(dataloader)
-    total_cycle_loss = 0
-    metric_totals = np.zeros(shape=[len(metric_functions)])
+    total_cycle_loss = tensor(0, dtype=torch.float32).to(loss_device)
+    metric_totals = torch.zeros(size=[len(metric_functions)])
     model.eval()
     assert isinstance(dataloader.sampler, DistributedSampler)
     dataloader.sampler.set_epoch(cycle)
@@ -197,20 +188,39 @@ def loop_test(dataloader: DataLoader, model: Module, loss_function: Callable[[Te
             light_curves = light_curves.to(loss_device, non_blocking=True)
             predicted_light_curves = model(parameters)
             total_cycle_loss += loss_function(predicted_light_curves.to(loss_device, non_blocking=True), light_curves
-                                              ).to(network_device, non_blocking=True).item()
+                                              ).to(network_device, non_blocking=True)
             for metric_function_index, metric_function in enumerate(metric_functions):
                 batch_metric_value = metric_function(predicted_light_curves.to(loss_device, non_blocking=True),
-                                                     light_curves).item()
+                                                     light_curves)
                 metric_totals[metric_function_index] += batch_metric_value
 
+    cycle_loss = log_metrics(total_cycle_loss, metric_functions, metric_totals, 'val_', number_of_batches, world_size,
+                             process_rank)
+    return cycle_loss
+
+
+def log_metrics(total_cycle_loss: Tensor, metric_functions: List[Callable[[Tensor, Tensor], Tensor]],
+                metric_totals: Tensor, prefix: str, number_of_batches: int, world_size: int, process_rank: int
+                ) -> float:
     cycle_loss = total_cycle_loss / number_of_batches
-    print(f"Test Error: \nAvg loss: {cycle_loss:>8f} \n", flush=True)
-    wandb_log('val_plus_one_chi_squared_statistic', cycle_loss, process_rank=process_rank)
+    torch.distributed.reduce(cycle_loss, dst=0, op=ReduceOp.SUM)
+    cycle_loss /= world_size
+    wandb_log(f'{prefix}loss', cycle_loss, process_rank=process_rank)
     cycle_metric_values = metric_totals / number_of_batches
     for metric_function_index, metric_function in enumerate(metric_functions):
-        wandb_log(f'val_{get_metric_name(metric_function)}', cycle_metric_values[metric_function_index],
+        cycle_metric_value = cycle_metric_values[metric_function_index]
+        torch.distributed.reduce(cycle_metric_value, dst=0, op=ReduceOp.SUM)
+        cycle_metric_value /= world_size
+        wandb_log(f'{prefix}{get_metric_name(metric_function)}', cycle_metric_value,
                   process_rank=process_rank)
     return cycle_loss
+
+
+def get_metric_name(metric_function):
+    metric_name = type(metric_function).__name__
+    metric_name = stringcase.snakecase(metric_name)
+    metric_name = metric_name.replace('_metric', '').replace('_loss', '')
+    return metric_name
 
 
 if __name__ == '__main__':
