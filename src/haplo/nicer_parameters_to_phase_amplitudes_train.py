@@ -145,11 +145,11 @@ def save_model(model: Module, suffix: str, process_rank: int):
 def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
                 optimizer: Optimizer, network_device: Device, loss_device: Device, cycle: int,
                 metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int, world_size: int):
+    number_of_batches = len(dataloader)
     model.train()
     total_cycle_loss = tensor(0, dtype=torch.float32)
     metric_totals = torch.zeros(size=[len(metric_functions)])
     assert isinstance(dataloader.sampler, DistributedSampler)
-    number_of_batches = len(dataloader.sampler)
     dataloader.sampler.set_epoch(cycle)
     for batch, (parameters, light_curves) in enumerate(dataloader):
         parameters = parameters.to(network_device, non_blocking=True)
@@ -168,7 +168,7 @@ def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[
         total_cycle_loss += loss.to('cpu', non_blocking=True)
         if batch % 1 == 0:
             current = (batch + 1) * len(parameters)
-            print(f"loss: {loss.item():>7f}  [{current:>5d}/{number_of_batches:>5d}]", flush=True)
+            print(f"loss: {loss.item():>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]", flush=True)
     log_metrics(total_cycle_loss, metric_functions, metric_totals, '', number_of_batches, world_size, process_rank)
 
 
@@ -176,11 +176,11 @@ def validation_phase(dataloader: DataLoader, model: Module, loss_function: Calla
                      network_device: Device, loss_device: Device, cycle: int,
                      metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int, world_size: int
                      ) -> float:
+    number_of_batches = len(dataloader)
     total_cycle_loss = tensor(0, dtype=torch.float32)
     metric_totals = torch.zeros(size=[len(metric_functions)])
     model.eval()
     assert isinstance(dataloader.sampler, DistributedSampler)
-    number_of_batches = len(dataloader.sampler)
     dataloader.sampler.set_epoch(cycle)
     with torch.no_grad():
         for parameters, light_curves in dataloader:
