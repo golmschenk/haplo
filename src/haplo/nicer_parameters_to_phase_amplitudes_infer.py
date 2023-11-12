@@ -39,10 +39,10 @@ def infer_session(dataset_path: Path):
     model.eval()
     loss_function = PlusOneChiSquaredStatisticMetric()
 
-    loop_test(test_dataloader, model, loss_function, device=device)
+    test_phase(test_dataloader, model, loss_function, device=device)
 
 
-def loop_test(dataloader, model_: Module, loss_fn, device):
+def test_phase(dataloader, model_: Module, loss_fn, device):
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
 
@@ -53,7 +53,6 @@ def loop_test(dataloader, model_: Module, loss_fn, device):
             targets = targets
             predicted_targets = model_(inputs_tensor)
             test_loss += loss_fn(predicted_targets.to('cpu'), targets).to(device).item()
-            show_all(predicted_targets, targets)
             pass
 
 
