@@ -111,6 +111,9 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
                                        sampler=DistributedSampler(validation_dataset))
     lowest_validation_cycle_loss = tensor(math.inf)
 
+    sessions_directory = Path('sessions')
+    sessions_directory.mkdir(parents=True, exist_ok=True)
+
     print(f'{process_rank}: Starting training loop...')
     for cycle in range(cycles_to_run):
         print(f"Epoch {cycle}\n-------------------------------")
