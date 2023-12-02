@@ -7,7 +7,7 @@ from bokeh.plotting import figure
 
 from haplo.export_onnx import WrappedModel
 from haplo.models import Cura
-from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
+from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
 
@@ -17,8 +17,8 @@ def example_infer_session():
         dataset_path=full_dataset_path,
         parameters_transform=PrecomputedNormalizeParameters(),
         phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
-    train_dataset, validation_dataset, test_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
-                                                                                             [0.8, 0.1, 0.1])
+    test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
+        full_train_dataset, [100_000, 100_000, 500_000])
 
     model = Cura()
     model = WrappedModel(model)  # The DDP module requires an extra wrapping. This emulates that.

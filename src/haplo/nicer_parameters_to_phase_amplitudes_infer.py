@@ -10,15 +10,13 @@ from bokeh.plotting import figure as Figure
 
 from haplo.data_paths import rotated_dataset_path, unrotated_dataset_path
 from haplo.losses import PlusOneChiSquaredStatisticMetric
-from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBn
+from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBn, Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
 
 def infer_session(dataset_path: Path):
-    if torch.backends.mps.is_available():
-        device = torch.device('mps')
-    elif torch.cuda.is_available():
+    if torch.cuda.is_available():
         device = torch.device('cuda')
     else:
         device = torch.device('cpu')
@@ -33,16 +31,16 @@ def infer_session(dataset_path: Path):
 
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size)
 
-    model = DataParallel(LiraTraditionalShape8xWidthWithNoDoNoBn())
+    model = DataParallel(Cura())
     model = model.to(device)
-    model.load_state_dict(torch.load('sessions/ncy8keio_latest_model.pt', map_location=device))
+    model.load_state_dict(torch.load('sessions/rural-totem-623_lowest_validation_model.pt', map_location=device))
     model.eval()
     loss_function = PlusOneChiSquaredStatisticMetric()
 
-    test_phase(test_dataloader, model, loss_function, device=device)
+    phase_test(test_dataloader, model, loss_function, device=device)
 
 
-def test_phase(dataloader, model_: Module, loss_fn, device):
+def phase_test(dataloader, model_: Module, loss_fn, device):
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
 
@@ -55,18 +53,18 @@ def test_phase(dataloader, model_: Module, loss_fn, device):
             test_loss += loss_fn(predicted_targets.to('cpu'), targets).to(device).item()
             pass
 
-
     test_loss /= num_batches
     print(f"Test Error: \nAvg loss: {test_loss:>8f} \n")
 
 
-def quick_view(predicted_light_curve: Tensor, light_curve: Tensor):
+def quick_view(predicted_light_curve: Tensor, light_curve: Tensor) -> Figure:
     figure = Figure()
     predicted_light_curve_array = predicted_light_curve.to('cpu').numpy()
     light_curve_array = light_curve.to('cpu').numpy()
     figure.line(x=list(range(len(predicted_light_curve_array))), y=predicted_light_curve_array, line_color='firebrick')
     figure.line(x=list(range(len(light_curve_array))), y=light_curve_array, line_color='mediumblue')
     return figure
+
 
 def show_all(x_list, y_list):
     column_contents = []
