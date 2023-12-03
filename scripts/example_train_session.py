@@ -6,7 +6,7 @@ from haplo.losses import PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, 
     PlusOneChiSquaredStatisticMetric
 from haplo.models import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
-from haplo.nicer_parameters_to_phase_amplitudes_train import train_session, \
+from haplo.train_session import train_session, \
     add_norm_based_gradient_clip_to_all_parameters
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
