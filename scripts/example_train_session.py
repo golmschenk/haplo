@@ -28,7 +28,7 @@ def example_train_session():
     weight_decay = 0.0001
     batch_size_per_device = 100
     cycles_to_run = 5000
-    optimizer = AdamW(model.parameters(), lr=learning_rate, weight_decay=weight_decay, eps=optimizer_epsilon)
+    optimizer = AdamW(params=model.parameters(), lr=learning_rate, weight_decay=weight_decay, eps=optimizer_epsilon)
     run_comments = f'Example run.'  # Whatever you want to log in a string.
     wandb_log_dictionary = {
         'model_name': type(model).__name__, 'learning_rate': learning_rate,

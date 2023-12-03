@@ -39,36 +39,6 @@ def ddp_setup():
     init_process_group(backend=distributed_back_end)
 
 
-def default_train_session():
-    train_dataset_path = Path('data/50m_rotated_parameters_and_phase_amplitudes.db')
-    full_train_dataset = NicerDataset.new(
-        dataset_path=train_dataset_path,
-        parameters_transform=PrecomputedNormalizeParameters(),
-        phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
-    test_dataset, validation_dataset, train_dataset = split_dataset_into_fractional_datasets(full_train_dataset,
-                                                                                             [0.1, 0.1, 0.8])
-    model = Cura()
-    add_norm_based_gradient_clip_to_all_parameters(model)
-    loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
-    metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
-    learning_rate = 1e-4
-    optimizer_epsilon = 1e-7
-    weight_decay = 0.0001
-    optimizer = AdamW(params=model.parameters(), weight_decay=weight_decay, lr=learning_rate, eps=optimizer_epsilon)
-    batch_size_per_device = 100
-    cycles_to_run = 5000
-    model_name = type(model).__name__
-    run_comments = f"pt"
-    wandb_log_dictionary = {
-        'model_name': model_name, 'learning_rate': learning_rate, 'batch_size_per_device': batch_size_per_device,
-        'train_dataset_size': len(train_dataset), 'optimizer_epsilon': optimizer_epsilon, 'weight_decay': weight_decay,
-        'run_comments': run_comments
-    }
-    train_session(train_dataset, validation_dataset, model, loss_function, metric_functions, optimizer,
-                  batch_size_per_device, cycles_to_run, wandb_project='haplo', wandb_entity='ramjet',
-                  wandb_log_dictionary=wandb_log_dictionary)
-
-
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
                   metric_functions: List[Module], optimizer: Optimizer, batch_size_per_device: int, cycles_to_run: int,
                   wandb_project: str, wandb_entity: str,
