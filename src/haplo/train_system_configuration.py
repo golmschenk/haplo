@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class SystemConfiguration:
+class TrainSystemConfiguration:
     """
     Configuration settings for the system of a train session.
 
@@ -10,4 +10,8 @@ class SystemConfiguration:
         per train process. The train session will create this many processes for each the train data and the validation
         data.
     """
-    preprocessing_processes_per_train_process: int = 10
+    preprocessing_processes_per_train_process: int
+
+    @classmethod
+    def new(cls, preprocessing_processes_per_train_process: int = 10):
+        return cls(preprocessing_processes_per_train_process=preprocessing_processes_per_train_process)

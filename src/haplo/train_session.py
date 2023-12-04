@@ -14,17 +14,19 @@ from torch.optim import Optimizer
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
 
+from haplo.train_logging_configuration import TrainLoggingConfiguration
 from haplo.losses import norm_based_gradient_clip
+from haplo.train_system_configuration import TrainSystemConfiguration
+from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
 from haplo.wandb_liaison import wandb_init, wandb_log, wandb_commit, \
-    wandb_log_hyperparameter_dictionary
+    wandb_log_dictionary, wandb_log_data_class
 
 
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
-                  metric_functions: List[Module], optimizer: Optimizer, batch_size_per_device: int, cycles_to_run: int,
-                  wandb_project: str, wandb_entity: str,
-                  wandb_log_dictionary: Dict[str, Any] | None = None):
-    if wandb_log_dictionary is None:
-        wandb_log_dictionary = {}
+                  metric_functions: List[Module], optimizer: Optimizer,
+                  hyperparameter_configuration: TrainHyperparameterConfiguration,
+                  system_configuration: TrainSystemConfiguration,
+                  logging_configuration: TrainLoggingConfiguration):
     print('Starting training...')
     print('Starting process spawning...')
     torch.multiprocessing.set_start_method('spawn')
@@ -32,30 +34,37 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     ddp_setup()
     local_rank, process_rank, world_size = get_distributed_world_information()
     print(f'{process_rank}: Starting wandb...')
-    wandb_init(process_rank=process_rank, project=wandb_project, entity=wandb_entity,
-               settings=wandb.Settings(start_method='fork'))
-    wandb_log_hyperparameter_dictionary(wandb_log_dictionary, process_rank=process_rank)
+    wandb_init(process_rank=process_rank, project=logging_configuration.wandb_project,
+               entity=logging_configuration.wandb_entity, settings=wandb.Settings(start_method='fork'))
+    wandb_log_data_class(hyperparameter_configuration, process_rank=process_rank)
+    wandb_log_data_class(system_configuration, process_rank=process_rank)
+    wandb_log_dictionary(logging_configuration.additional_log_dictionary, process_rank=process_rank)
 
     loss_device, network_device = get_devices(local_rank)
 
-    print(f'{process_rank}: Moving model to device...')
-    model = model.to(network_device, non_blocking=True)
-    if torch.cuda.is_available():
-        model = DistributedDataParallel(model, device_ids=[local_rank])
-    else:
-        model = DistributedDataParallel(model)
+    model = distribute_model_across_devices(model, network_device, local_rank)
 
     print(f'{process_rank}: Loading dataset...')
     train_dataloader, validation_dataloader = create_data_loaders(train_dataset, validation_dataset,
-                                                                  batch_size_per_device)
+                                                                  hyperparameter_configuration.batch_size,
+                                                                  system_configuration)
 
     sessions_directory = Path('sessions')
     sessions_directory.mkdir(parents=True, exist_ok=True)
 
     train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_function, metric_functions,
-               cycles_to_run, network_device, loss_device, process_rank, world_size)
+               hyperparameter_configuration.cycles, network_device, loss_device, process_rank, world_size)
 
     destroy_process_group()
+
+
+def distribute_model_across_devices(model, device, local_rank):
+    model = model.to(device, non_blocking=True)
+    if torch.cuda.is_available():
+        model = DistributedDataParallel(model, device_ids=[local_rank])
+    else:
+        model = DistributedDataParallel(model)
+    return model
 
 
 def ddp_setup():
@@ -115,11 +124,14 @@ def get_distributed_world_information():
     return local_rank, process_rank, world_size
 
 
-def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device):
-    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device, num_workers=10, pin_memory=True,
-                                  persistent_workers=True, prefetch_factor=10, shuffle=False,
+def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device,
+                        system_configuration: TrainSystemConfiguration):
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device,
+                                  num_workers=system_configuration.preprocessing_processes_per_train_process,
+                                  pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                   sampler=DistributedSampler(train_dataset))
-    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device, num_workers=10,
+    validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device,
+                                       num_workers=system_configuration.preprocessing_processes_per_train_process,
                                        pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
     return train_dataloader, validation_dataloader

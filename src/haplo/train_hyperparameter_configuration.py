@@ -1,0 +1,30 @@
+from dataclasses import dataclass
+
+
+@dataclass
+class TrainHyperparameterConfiguration:
+    """
+    Hyperparameter configuration settings for a train session.
+
+    :ivar batch_size: The size of the batch for each train process. Each training step will use a number of examples
+        equal to this value multiplied by the number of train processes.
+    :ivar cycles: The number of train cycles to run.
+    """
+    learning_rate: float
+    optimizer_epsilon: float
+    weight_decay: float
+    batch_size: int
+    cycles: int
+
+    @classmethod
+    def new(cls,
+            learning_rate: float = 1e-4,
+            optimizer_epsilon: float = 1e-7,
+            weight_decay: float = 0.0001,
+            batch_size: int = 100,
+            cycles: int = 5000):
+        return cls(learning_rate=learning_rate,
+                   optimizer_epsilon=optimizer_epsilon,
+                   weight_decay=weight_decay,
+                   batch_size=batch_size,
+                   cycles=cycles)
