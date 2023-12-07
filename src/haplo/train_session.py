@@ -148,56 +148,60 @@ def save_model(model: Module, suffix: str, process_rank: int):
 def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
                 optimizer: Optimizer, network_device: Device, loss_device: Device, cycle: int,
                 metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int, world_size: int):
-    number_of_batches = len(dataloader)
     model.train()
-    total_cycle_loss = tensor(0, dtype=torch.float32)
-    metric_totals = torch.zeros(size=[len(metric_functions)])
+    total_cycle_loss = tensor(0, dtype=torch.float32, device='cpu')
+    metric_totals = torch.zeros(size=[len(metric_functions)], device='cpu')
     assert isinstance(dataloader.sampler, DistributedSampler)
     dataloader.sampler.set_epoch(cycle)
+    batch_count = 0
     for batch, (parameters, light_curves) in enumerate(dataloader):
         parameters = parameters.to(network_device, non_blocking=True)
         light_curves = light_curves.to(loss_device, non_blocking=True)
         predicted_light_curves = model(parameters)
-        loss = loss_function(predicted_light_curves.to(loss_device, non_blocking=True), light_curves).to(network_device,
-                                                                                                         non_blocking=True)
-        for metric_function_index, metric_function in enumerate(metric_functions):
-            batch_metric_value = metric_function(predicted_light_curves.to(loss_device, non_blocking=True),
-                                                 light_curves)
-            metric_totals[metric_function_index] += batch_metric_value.to('cpu', non_blocking=True)
+        loss, total_cycle_loss = record_metrics(predicted_light_curves, light_curves, loss_function, total_cycle_loss,
+                                                metric_functions, metric_totals, loss_device)
         optimizer.zero_grad()
-        loss.backward()
+        loss.to(network_device, non_blocking=True).backward()
         optimizer.step()
 
-        total_cycle_loss += loss.to('cpu', non_blocking=True)
         if batch % 1 == 0:
             current = (batch + 1) * len(parameters)
             print(f"loss: {loss.item():>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]", flush=True)
-    log_metrics(total_cycle_loss, metric_functions, metric_totals, '', number_of_batches, world_size, process_rank)
+        batch_count += 1
+    log_metrics(total_cycle_loss, metric_functions, metric_totals, '', batch_count, world_size, process_rank)
+
+
+def record_metrics(predicted_light_curves, light_curves, loss_function, total_cycle_loss, metric_functions,
+                   metric_totals, loss_device):
+    loss = loss_function(predicted_light_curves.to(loss_device, non_blocking=True), light_curves)
+    total_cycle_loss += loss.to('cpu', non_blocking=True)
+    for metric_function_index, metric_function in enumerate(metric_functions):
+        batch_metric_value = metric_function(predicted_light_curves.to(loss_device, non_blocking=True),
+                                             light_curves)
+        metric_totals[metric_function_index] += batch_metric_value.to('cpu', non_blocking=True)
+    return loss, total_cycle_loss
 
 
 def validation_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
                      network_device: Device, loss_device: Device, cycle: int,
                      metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int, world_size: int
                      ) -> float:
-    number_of_batches = len(dataloader)
-    total_cycle_loss = tensor(0, dtype=torch.float32)
-    metric_totals = torch.zeros(size=[len(metric_functions)])
+    total_cycle_loss = tensor(0, dtype=torch.float32, device='cpu')
+    metric_totals = torch.zeros(size=[len(metric_functions)], device='cpu')
     model.eval()
     assert isinstance(dataloader.sampler, DistributedSampler)
     dataloader.sampler.set_epoch(cycle)
     with torch.no_grad():
+        batch_count = 0
         for parameters, light_curves in dataloader:
             parameters = parameters.to(network_device, non_blocking=True)
             light_curves = light_curves.to(loss_device, non_blocking=True)
             predicted_light_curves = model(parameters)
-            total_cycle_loss += loss_function(predicted_light_curves.to(loss_device, non_blocking=True), light_curves
-                                              ).to('cpu', non_blocking=True)
-            for metric_function_index, metric_function in enumerate(metric_functions):
-                batch_metric_value = metric_function(predicted_light_curves.to(loss_device, non_blocking=True),
-                                                     light_curves)
-                metric_totals[metric_function_index] += batch_metric_value.to('cpu', non_blocking=True)
+            loss, total_cycle_loss = record_metrics(predicted_light_curves, light_curves, loss_function, total_cycle_loss,
+                                                    metric_functions, metric_totals, loss_device)
+            batch_count += 1
 
-    cycle_loss = log_metrics(total_cycle_loss, metric_functions, metric_totals, 'val_', number_of_batches, world_size,
+    cycle_loss = log_metrics(total_cycle_loss, metric_functions, metric_totals, 'val_', batch_count, world_size,
                              process_rank)
     return cycle_loss
 
@@ -210,10 +214,10 @@ def log_metrics(total_cycle_loss: Tensor, metric_functions: List[Callable[[Tenso
     cycle_loss /= world_size
     wandb_log(f'{prefix}loss', cycle_loss, process_rank=process_rank)
     cycle_metric_values = metric_totals / number_of_batches
+    torch.distributed.reduce(cycle_metric_values, dst=0, op=ReduceOp.SUM)
+    cycle_metric_values /= world_size
     for metric_function_index, metric_function in enumerate(metric_functions):
         cycle_metric_value = cycle_metric_values[metric_function_index]
-        torch.distributed.reduce(cycle_metric_value, dst=0, op=ReduceOp.SUM)
-        cycle_metric_value /= world_size
         wandb_log(f'{prefix}{get_metric_name(metric_function)}', cycle_metric_value,
                   process_rank=process_rank)
     return cycle_loss
