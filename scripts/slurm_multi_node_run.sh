@@ -22,4 +22,4 @@ srun torchrun \
 --rdzv_id $RANDOM \
 --rdzv_backend c10d \
 --rdzv_endpoint $head_node_ip:36484 \
--m haplo.nicer_parameters_to_phase_amplitudes_train
+scripts/example_train_session.py

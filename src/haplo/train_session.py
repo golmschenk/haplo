@@ -106,6 +106,8 @@ def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_f
         wandb_commit(process_rank=process_rank)
     print("Done!")
 
+    destroy_process_group()
+
 
 def get_devices(local_rank):
     if torch.cuda.is_available():
