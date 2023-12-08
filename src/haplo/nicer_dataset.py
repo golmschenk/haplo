@@ -6,7 +6,7 @@ import polars as pl
 from sqlalchemy import create_engine
 from torch.utils.data import Dataset, Subset
 
-from haplo.data_paths import move_path_to_nvme
+from haplo.data_paths import move_path_to_nvme, move_to_tmp_on_pbs
 
 
 class NicerDataset(Dataset):
@@ -39,7 +39,7 @@ class NicerDataset(Dataset):
     def __getitem__(self, index):
         # TODO: Horrible hack. This should happen on the initialization of each worker's dataset, not in the getitem.
         if self.engine is None:
-            # self.dataset_path = move_path_to_nvme(self.dataset_path)
+            self.dataset_path = move_to_tmp_on_pbs(self.dataset_path)  # TODO: Shouldn't be here generally.
             self.database_uri = f'sqlite:///{self.dataset_path}?mode=ro'
             self.engine = create_engine(self.database_uri)
             self.connection = self.engine.connect()

@@ -1,3 +1,4 @@
+import os
 import re
 import shutil
 import socket
@@ -19,6 +20,23 @@ def move_path_to_nvme(path: Path) -> Path:
                     shutil.copy(path, nvme_tmp_path)
                     nvme_tmp_path.rename(nvme_path)
         return nvme_path
+    else:
+        return path
+
+
+def move_to_tmp_on_pbs(path: Path) -> Path:
+    if 'PBS_JOBID' in os.environ:
+        new_path = Path("/tmp").joinpath(path)
+        if not new_path.exists():
+            new_path.parent.mkdir(exist_ok=True, parents=True)
+            nvme_lock_path = new_path.parent.joinpath(new_path.name + '.lock')
+            lock = FileLock(str(nvme_lock_path))
+            with lock.acquire():
+                if not new_path.exists():
+                    nvme_tmp_path = new_path.parent.joinpath(new_path.name + '.tmp')
+                    shutil.copy(path, nvme_tmp_path)
+                    nvme_tmp_path.rename(new_path)
+        return new_path
     else:
         return path
 
