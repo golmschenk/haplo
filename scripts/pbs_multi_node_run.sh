@@ -8,7 +8,6 @@ source /usr/local/lib/init/global.profile
 
 module use -a /swbuild/analytix/tools/modulefiles
 module load miniconda3/v4
-export CONDA_PKGS_DIRS=/nobackup/$USER/.conda/pkgs
 source activate haplo_env
 
 module load mpi-hpe/mpt
@@ -16,6 +15,7 @@ module load mpi-hpe/mpt
 head_node_hostname=`/bin/hostname -s`
 
 export MPI_SHEPHERD=true
+export MPI_DSM_DISTRIBUTE=0
 
 mpiexec -perhost 1 python -m torch.distributed.run \
 --nnodes 2 \

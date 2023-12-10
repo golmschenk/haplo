@@ -1,7 +1,9 @@
 from dataclasses import fields, dataclass
+from pathlib import Path
 from typing import Any, Dict
 
 import wandb as wandb
+import yaml
 
 
 def wandb_log(name: str, value: Any, process_rank: int):
@@ -36,3 +38,16 @@ def wandb_log_dictionary(log_dictionary: Dict[str, Any], process_rank: int):
 def wandb_log_data_class(data_class: dataclass, process_rank: int):
     for field in fields(data_class):
         wandb_log_hyperparameter(field.name, getattr(data_class, field.name), process_rank)
+
+
+def wandb_save_file(path: Path, process_rank: int):
+    if process_rank == 0:  # Only log for the first process.
+        wandb.save(str(path))
+
+
+def wandb_save_manual_config_file(process_rank):
+    if process_rank == 0:
+        manual_config_path = Path(wandb.run.dir).joinpath('manual_config.yaml')
+        with manual_config_path.open('w') as manual_config_file:
+            yaml.dump(wandb.config, manual_config_file)
+        wandb_save_file(manual_config_path, process_rank=process_rank)

@@ -1,7 +1,7 @@
 import math
 import os
 from pathlib import Path
-from typing import Callable, List, Dict, Any
+from typing import Callable, List
 
 import stringcase
 import torch
@@ -19,7 +19,7 @@ from haplo.losses import norm_based_gradient_clip
 from haplo.train_system_configuration import TrainSystemConfiguration
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
 from haplo.wandb_liaison import wandb_init, wandb_log, wandb_commit, \
-    wandb_log_dictionary, wandb_log_data_class
+    wandb_log_dictionary, wandb_log_data_class, wandb_save_manual_config_file
 
 
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
@@ -39,6 +39,8 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     wandb_log_data_class(hyperparameter_configuration, process_rank=process_rank)
     wandb_log_data_class(system_configuration, process_rank=process_rank)
     wandb_log_dictionary(logging_configuration.additional_log_dictionary, process_rank=process_rank)
+    print(wandb.config)
+    wandb_save_manual_config_file(process_rank)
 
     loss_device, network_device = get_devices(local_rank)
 
