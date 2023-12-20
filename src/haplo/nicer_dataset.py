@@ -39,7 +39,6 @@ class NicerDataset(Dataset):
     def __getitem__(self, index):
         # TODO: Horrible hack. This should happen on the initialization of each worker's dataset, not in the getitem.
         if self.engine is None:
-            self.dataset_path = move_to_tmp_on_pbs(self.dataset_path)  # TODO: Shouldn't be here generally.
             self.database_uri = f'sqlite:///{self.dataset_path}?mode=ro'
             self.engine = create_engine(self.database_uri)
             self.connection = self.engine.connect()
