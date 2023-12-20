@@ -15,6 +15,7 @@ class TrainHyperparameterConfiguration:
     weight_decay: float
     batch_size: int
     cycles: int
+    norm_based_gradient_clip: float
 
     @classmethod
     def new(cls,
@@ -22,9 +23,11 @@ class TrainHyperparameterConfiguration:
             optimizer_epsilon: float = 1e-7,
             weight_decay: float = 0.0001,
             batch_size: int = 100,
-            cycles: int = 5000):
+            cycles: int = 5000,
+            norm_based_gradient_clip: float = 1.0):
         return cls(learning_rate=learning_rate,
                    optimizer_epsilon=optimizer_epsilon,
                    weight_decay=weight_decay,
                    batch_size=batch_size,
-                   cycles=cycles)
+                   cycles=cycles,
+                   norm_based_gradient_clip=norm_based_gradient_clip)

@@ -23,7 +23,6 @@ def example_train_session():
     test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
         full_train_dataset, [100_000, 100_000, 500_000])
     model = Cura()
-    add_norm_based_gradient_clip_to_all_parameters(model)
     loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
     hyperparameter_configuration = TrainHyperparameterConfiguration.new()

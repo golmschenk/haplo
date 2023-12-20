@@ -10,6 +10,7 @@ from torch import Tensor, tensor
 from torch.distributed import init_process_group, destroy_process_group, Backend, ReduceOp
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
+from torch.nn.utils import clip_grad_norm_
 from torch.optim import Optimizer
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
@@ -166,6 +167,7 @@ def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[
                                                 metric_functions, metric_totals, loss_device)
         optimizer.zero_grad()
         loss.to(network_device, non_blocking=True).backward()
+        apply_norm_based_gradient_clip_to_all_parameters(model)
         optimizer.step()
 
         if batch % 1 == 0:
@@ -237,3 +239,7 @@ def get_metric_name(metric_function):
 def add_norm_based_gradient_clip_to_all_parameters(model):
     for parameter in model.parameters():
         parameter.register_hook(norm_based_gradient_clip)
+
+def apply_norm_based_gradient_clip_to_all_parameters(model):
+    for parameter in model.parameters():
+        clip_grad_norm_(parameter, 1.0)
