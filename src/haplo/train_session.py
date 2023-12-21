@@ -40,6 +40,7 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     wandb_log_data_class(hyperparameter_configuration, process_rank=process_rank)
     wandb_log_data_class(system_configuration, process_rank=process_rank)
     wandb_log_dictionary(logging_configuration.additional_log_dictionary, process_rank=process_rank)
+    log_distributed_settings(system_configuration, process_rank)
     print(wandb.config)
     wandb_save_manual_config_file(process_rank)
 
@@ -59,6 +60,19 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
                hyperparameter_configuration.cycles, network_device, loss_device, process_rank, world_size)
 
     destroy_process_group()
+
+
+def log_distributed_settings(system_configuration: TrainSystemConfiguration, process_rank: int):
+    training_processes = int(os.environ.get('WORLD_SIZE'))
+    training_processes_per_node = int(os.environ.get('LOCAL_WORLD_SIZE'))
+    wandb_log_dictionary(
+        {
+            'training_processes': training_processes,
+            'training_processes_per_node': training_processes_per_node,
+            'nodes': training_processes // training_processes_per_node,
+            'preprocessing_processes': training_processes * system_configuration.preprocessing_processes_per_train_process
+        },
+        process_rank=process_rank)
 
 
 def distribute_model_across_devices(model, device, local_rank):
@@ -81,6 +95,7 @@ def ddp_setup():
         os.environ['RANK'] = str(0)
         os.environ['LOCAL_RANK'] = str(0)
         os.environ['WORLD_SIZE'] = str(1)
+        os.environ['LOCAL_WORLD_SIZE'] = str(1)
         os.environ["MASTER_ADDR"] = "localhost"
         os.environ["MASTER_PORT"] = "35728"
     init_process_group(backend=distributed_back_end)
@@ -203,7 +218,8 @@ def validation_phase(dataloader: DataLoader, model: Module, loss_function: Calla
             parameters = parameters.to(network_device, non_blocking=True)
             light_curves = light_curves.to(loss_device, non_blocking=True)
             predicted_light_curves = model(parameters)
-            loss, total_cycle_loss = record_metrics(predicted_light_curves, light_curves, loss_function, total_cycle_loss,
+            loss, total_cycle_loss = record_metrics(predicted_light_curves, light_curves, loss_function,
+                                                    total_cycle_loss,
                                                     metric_functions, metric_totals, loss_device)
             batch_count += 1
 
@@ -239,6 +255,7 @@ def get_metric_name(metric_function):
 def add_norm_based_gradient_clip_to_all_parameters(model):
     for parameter in model.parameters():
         parameter.register_hook(norm_based_gradient_clip)
+
 
 def apply_norm_based_gradient_clip_to_all_parameters(model):
     for parameter in model.parameters():
