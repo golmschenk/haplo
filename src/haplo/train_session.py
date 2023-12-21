@@ -40,7 +40,7 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     wandb_log_data_class(hyperparameter_configuration, process_rank=process_rank)
     wandb_log_data_class(system_configuration, process_rank=process_rank)
     wandb_log_dictionary(logging_configuration.additional_log_dictionary, process_rank=process_rank)
-    log_distributed_settings(system_configuration, process_rank)
+    log_distributed_settings(hyperparameter_configuration, system_configuration, process_rank)
     print(wandb.config)
     wandb_save_manual_config_file(process_rank)
 
@@ -62,7 +62,8 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     destroy_process_group()
 
 
-def log_distributed_settings(system_configuration: TrainSystemConfiguration, process_rank: int):
+def log_distributed_settings(hyperparameter_configuration: TrainHyperparameterConfiguration,
+                             system_configuration: TrainSystemConfiguration, process_rank: int) -> None:
     training_processes = int(os.environ.get('WORLD_SIZE'))
     training_processes_per_node = int(os.environ.get('LOCAL_WORLD_SIZE'))
     wandb_log_dictionary(
@@ -70,7 +71,8 @@ def log_distributed_settings(system_configuration: TrainSystemConfiguration, pro
             'training_processes': training_processes,
             'training_processes_per_node': training_processes_per_node,
             'nodes': training_processes // training_processes_per_node,
-            'preprocessing_processes': training_processes * system_configuration.preprocessing_processes_per_train_process
+            'preprocessing_processes': training_processes * system_configuration.preprocessing_processes_per_train_process,
+            'global_batch_size': training_processes * hyperparameter_configuration.batch_size
         },
         process_rank=process_rank)
 
