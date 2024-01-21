@@ -1,12 +1,12 @@
 [tool.poetry]
 name = "haplo"
-version = "0.6.0"
+version = "0.6.1"
 description = ""
 authors = ["golmschenk <greg@olmschenk.com>"]
 readme = "readme.md"
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.12"
+python = ">=3.11,<3.13"
 stringcase = "^1.2.0"
 filelock = "^3.12.3"
 numpy = "^1.25.2"

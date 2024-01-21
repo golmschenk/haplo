@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from torch.distributed import Backend
+
 
 @dataclass
 class TrainSystemConfiguration:
@@ -11,7 +13,11 @@ class TrainSystemConfiguration:
         data.
     """
     preprocessing_processes_per_train_process: int
+    distributed_back_end: Backend
 
     @classmethod
-    def new(cls, preprocessing_processes_per_train_process: int = 10):
-        return cls(preprocessing_processes_per_train_process=preprocessing_processes_per_train_process)
+    def new(cls,
+            preprocessing_processes_per_train_process: int = 10,
+            distributed_back_end: Backend = Backend.GLOO):
+        return cls(preprocessing_processes_per_train_process=preprocessing_processes_per_train_process,
+                   distributed_back_end=distributed_back_end)

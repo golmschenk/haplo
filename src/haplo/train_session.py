@@ -32,7 +32,7 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     print('Starting process spawning...')
     torch.multiprocessing.set_start_method('spawn')
     print('Starting DDP setup...')
-    ddp_setup()
+    ddp_setup(system_configuration)
     local_rank, process_rank, world_size = get_distributed_world_information()
     print(f'{process_rank}: Starting wandb...')
     wandb_init(process_rank=process_rank, project=logging_configuration.wandb_project,
@@ -86,12 +86,8 @@ def distribute_model_across_devices(model, device, local_rank):
     return model
 
 
-def ddp_setup():
-    if torch.cuda.is_available():
-        distributed_back_end = Backend.NCCL
-    else:
-        distributed_back_end = Backend.GLOO
-    distributed_back_end = Backend.GLOO
+def ddp_setup(system_configuration: TrainSystemConfiguration):
+    distributed_back_end = system_configuration.distributed_back_end
     if 'RANK' not in os.environ:
         # The script was not called with `torchrun` and environment variables need to be set manually.
         os.environ['RANK'] = str(0)
