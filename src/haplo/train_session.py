@@ -185,8 +185,11 @@ def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[
 
         if batch % 1 == 0:
             current = (batch + 1) * len(parameters)
-            print(f"loss: {loss.item():>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]", flush=True)
+            if cycle == 0:  # TODO: This is a quick hack remove it.
+                print(f"loss: {loss.item():>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]", flush=True)
         batch_count += 1
+    if cycle == 0:  # TODO: This is a quick hack remove it.
+        print(f'Will not continue printing loss for later epochs.')
     log_metrics(total_cycle_loss, metric_functions, metric_totals, '', batch_count, world_size, process_rank)
 
 
