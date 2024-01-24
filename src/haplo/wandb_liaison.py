@@ -1,9 +1,12 @@
+import logging
 from dataclasses import fields, dataclass
 from pathlib import Path
 from typing import Any, Dict
 
 import wandb as wandb
 import yaml
+
+logger = logging.getLogger(__name__)
 
 
 def wandb_log(name: str, value: Any, process_rank: int):
@@ -23,6 +26,7 @@ def wandb_set_run_name(run_name: str, process_rank: int):
 
 def wandb_init(process_rank: int, **kwargs):
     if process_rank == 0:  # Only log for the first process.
+        logger.info(f'{process_rank}: Starting wandb...')
         wandb.init(**kwargs)
 
 
@@ -34,6 +38,7 @@ def wandb_log_hyperparameter(name: str, value: Any, process_rank: int):
 def wandb_log_dictionary(log_dictionary: Dict[str, Any], process_rank: int):
     for key, value in log_dictionary.items():
         wandb_log_hyperparameter(key, value, process_rank)
+
 
 def wandb_log_data_class(data_class: dataclass, process_rank: int):
     for field in fields(data_class):

@@ -1,3 +1,5 @@
+import logging
+import logging
 import math
 import os
 from pathlib import Path
@@ -7,7 +9,7 @@ import stringcase
 import torch
 import wandb as wandb
 from torch import Tensor, tensor
-from torch.distributed import init_process_group, destroy_process_group, Backend, ReduceOp
+from torch.distributed import init_process_group, destroy_process_group, ReduceOp
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.nn.utils import clip_grad_norm_
@@ -15,12 +17,15 @@ from torch.optim import Optimizer
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
 
-from haplo.train_logging_configuration import TrainLoggingConfiguration
+from haplo.logging import set_up_default_logger
 from haplo.losses import norm_based_gradient_clip
-from haplo.train_system_configuration import TrainSystemConfiguration
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
+from haplo.train_logging_configuration import TrainLoggingConfiguration
+from haplo.train_system_configuration import TrainSystemConfiguration
 from haplo.wandb_liaison import wandb_init, wandb_log, wandb_commit, \
     wandb_log_dictionary, wandb_log_data_class, wandb_save_manual_config_file
+
+logger = logging.getLogger(__name__)
 
 
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
@@ -28,27 +33,26 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
                   hyperparameter_configuration: TrainHyperparameterConfiguration,
                   system_configuration: TrainSystemConfiguration,
                   logging_configuration: TrainLoggingConfiguration):
-    print('Starting training...')
-    print('Starting process spawning...')
     torch.multiprocessing.set_start_method('spawn')
-    print('Starting DDP setup...')
     ddp_setup(system_configuration)
+    set_up_default_logger()
+    logger.info('Starting training...')
+    logging_configuration.session_directory.mkdir(exist_ok=True, parents=True)
     local_rank, process_rank, world_size = get_distributed_world_information()
-    print(f'{process_rank}: Starting wandb...')
     wandb_init(process_rank=process_rank, project=logging_configuration.wandb_project,
                entity=logging_configuration.wandb_entity, settings=wandb.Settings(start_method='fork'))
     wandb_log_data_class(hyperparameter_configuration, process_rank=process_rank)
     wandb_log_data_class(system_configuration, process_rank=process_rank)
     wandb_log_dictionary(logging_configuration.additional_log_dictionary, process_rank=process_rank)
     log_distributed_settings(hyperparameter_configuration, system_configuration, process_rank)
-    print(wandb.config)
+    logger.info(wandb.config)
     wandb_save_manual_config_file(process_rank)
 
     loss_device, network_device = get_devices(local_rank)
 
     model = distribute_model_across_devices(model, network_device, local_rank)
 
-    print(f'{process_rank}: Loading dataset...')
+    logger.info(f'{process_rank}: Loading dataset...')
     train_dataloader, validation_dataloader = create_data_loaders(train_dataset, validation_dataset,
                                                                   hyperparameter_configuration.batch_size,
                                                                   system_configuration)
@@ -57,7 +61,8 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     sessions_directory.mkdir(parents=True, exist_ok=True)
 
     train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_function, metric_functions,
-               hyperparameter_configuration.cycles, network_device, loss_device, process_rank, world_size)
+               hyperparameter_configuration.cycles, network_device, loss_device, process_rank, world_size,
+               logging_configuration)
 
     destroy_process_group()
 
@@ -100,11 +105,12 @@ def ddp_setup(system_configuration: TrainSystemConfiguration):
 
 
 def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_function, metric_functions,
-               cycles_to_run, network_device, loss_device, process_rank, world_size):
+               cycles_to_run, network_device, loss_device, process_rank, world_size,
+               logging_configuration: TrainLoggingConfiguration):
     lowest_validation_cycle_loss = tensor(math.inf)
-    print(f'{process_rank}: Starting training loop...')
+    logger.info(f'{process_rank}: Starting training loop...')
     for cycle in range(cycles_to_run):
-        print(f"Epoch {cycle}\n-------------------------------")
+        logger.info(f"Epoch {cycle}\n-------------------------------")
         train_phase(train_dataloader, model, loss_function, optimizer, network_device=network_device,
                     loss_device=loss_device, cycle=cycle, metric_functions=metric_functions, process_rank=process_rank,
                     world_size=world_size)
@@ -113,14 +119,14 @@ def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_f
                                                  loss_device=loss_device, cycle=cycle,
                                                  metric_functions=metric_functions,
                                                  process_rank=process_rank, world_size=world_size)
-        save_model(model, suffix='latest_model', process_rank=process_rank)
+        save_model(model, logging_configuration, model_name='latest_model', process_rank=process_rank)
         if validation_cycle_loss < lowest_validation_cycle_loss:
             lowest_validation_cycle_loss = validation_cycle_loss
-            save_model(model, suffix='lowest_validation_model', process_rank=process_rank)
+            save_model(model, logging_configuration, model_name='lowest_validation_model', process_rank=process_rank)
         wandb_log('epoch', cycle, process_rank=process_rank)
         wandb_log('cycle', cycle, process_rank=process_rank)
         wandb_commit(process_rank=process_rank)
-    print("Done!")
+    logger.info("Done!")
 
     destroy_process_group()
 
@@ -155,12 +161,9 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
     return train_dataloader, validation_dataloader
 
 
-def save_model(model: Module, suffix: str, process_rank: int):
+def save_model(model: Module, logging_configuration: TrainLoggingConfiguration, model_name: str, process_rank: int):
     if process_rank == 0:
-        model_name = wandb.run.name
-        if model_name == '':
-            model_name = wandb.run.id
-        torch.save(model.state_dict(), Path(f'sessions/{model_name}_{suffix}.pt'))
+        torch.save(model.state_dict(), logging_configuration.output_directory.joinpath(f'{model_name}.pt'))
 
 
 def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
@@ -185,13 +188,8 @@ def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[
 
         if batch % 1 == 0:
             current = (batch + 1) * len(parameters)
-            if cycle == 0 and batch < 100:  # TODO: This is a quick hack remove it.
-                print(f"loss: {loss.item():>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]", flush=True)
-            if batch == 100:
-                print(f'Will not continue printing loss for later steps.')
+            logger.info(f"loss: {loss.item():>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]")
         batch_count += 1
-    if cycle == 0:  # TODO: This is a quick hack remove it.
-        print(f'Will not continue printing loss for later epochs.')
     log_metrics(total_cycle_loss, metric_functions, metric_totals, '', batch_count, world_size, process_rank)
 
 

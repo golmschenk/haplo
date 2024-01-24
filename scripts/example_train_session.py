@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from torch.optim import AdamW
@@ -7,12 +6,11 @@ from haplo.losses import PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, 
     PlusOneChiSquaredStatisticMetric
 from haplo.models import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
+from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
 from haplo.train_logging_configuration import TrainLoggingConfiguration
+from haplo.train_session import train_session
 from haplo.train_system_configuration import TrainSystemConfiguration
-from haplo.train_session import train_session, \
-    add_norm_based_gradient_clip_to_all_parameters
-from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
 
 def example_train_session():
