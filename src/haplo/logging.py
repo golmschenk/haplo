@@ -15,4 +15,5 @@ def set_up_default_logger():
     handler.setFormatter(formatter)
     logger = logging.getLogger('haplo')
     logger.addHandler(handler)
+    logger.setLevel(logging.DEBUG)
     logger.propagate = False

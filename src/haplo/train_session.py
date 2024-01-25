@@ -1,5 +1,4 @@
 import logging
-import logging
 import math
 import os
 from pathlib import Path
@@ -110,7 +109,7 @@ def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_f
     lowest_validation_cycle_loss = tensor(math.inf)
     logger.info(f'{process_rank}: Starting training loop...')
     for cycle in range(cycles_to_run):
-        logger.info(f"Epoch {cycle}\n-------------------------------")
+        logger.info(f"Epoch {cycle} -------------------------------")
         train_phase(train_dataloader, model, loss_function, optimizer, network_device=network_device,
                     loss_device=loss_device, cycle=cycle, metric_functions=metric_functions, process_rank=process_rank,
                     world_size=world_size)
@@ -150,20 +149,28 @@ def get_distributed_world_information():
 
 def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device,
                         system_configuration: TrainSystemConfiguration):
+    if system_configuration.preprocessing_processes_per_train_process > 0:
+        prefetch_factor = 10
+        persistent_workers = True
+    else:
+        prefetch_factor = None
+        persistent_workers = False
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device,
                                   num_workers=system_configuration.preprocessing_processes_per_train_process,
-                                  pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
+                                  pin_memory=True, persistent_workers=persistent_workers,
+                                  prefetch_factor=prefetch_factor, shuffle=False,
                                   sampler=DistributedSampler(train_dataset))
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device,
                                        num_workers=system_configuration.preprocessing_processes_per_train_process,
-                                       pin_memory=True, persistent_workers=True, prefetch_factor=10, shuffle=False,
+                                       pin_memory=True, persistent_workers=persistent_workers,
+                                       prefetch_factor=prefetch_factor, shuffle=False,
                                        sampler=DistributedSampler(validation_dataset))
     return train_dataloader, validation_dataloader
 
 
 def save_model(model: Module, logging_configuration: TrainLoggingConfiguration, model_name: str, process_rank: int):
     if process_rank == 0:
-        torch.save(model.state_dict(), logging_configuration.output_directory.joinpath(f'{model_name}.pt'))
+        torch.save(model.state_dict(), logging_configuration.session_directory.joinpath(f'{model_name}.pt'))
 
 
 def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
