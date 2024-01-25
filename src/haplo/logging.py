@@ -1,6 +1,5 @@
 import logging
 import sys
-from pathlib import Path
 
 
 def create_default_formatter() -> logging.Formatter:
@@ -17,3 +16,5 @@ def set_up_default_logger():
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
     logger.propagate = False
+
+

@@ -16,6 +16,7 @@ from torch.optim import Optimizer
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
 
+from haplo.distributed import ddp_setup
 from haplo.logging import set_up_default_logger
 from haplo.losses import norm_based_gradient_clip
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
@@ -88,19 +89,6 @@ def distribute_model_across_devices(model, device, local_rank):
     else:
         model = DistributedDataParallel(model)
     return model
-
-
-def ddp_setup(system_configuration: TrainSystemConfiguration):
-    distributed_back_end = system_configuration.distributed_back_end
-    if 'RANK' not in os.environ:
-        # The script was not called with `torchrun` and environment variables need to be set manually.
-        os.environ['RANK'] = str(0)
-        os.environ['LOCAL_RANK'] = str(0)
-        os.environ['WORLD_SIZE'] = str(1)
-        os.environ['LOCAL_WORLD_SIZE'] = str(1)
-        os.environ["MASTER_ADDR"] = "localhost"
-        os.environ["MASTER_PORT"] = "35728"
-    init_process_group(backend=distributed_back_end)
 
 
 def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_function, metric_functions,
