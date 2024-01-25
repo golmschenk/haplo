@@ -2,6 +2,7 @@ from pathlib import Path
 
 from torch.optim import AdamW
 
+from haplo.distributed import distributed_logging
 from haplo.losses import PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
     PlusOneChiSquaredStatisticMetric
 from haplo.models import Cura
@@ -13,6 +14,7 @@ from haplo.train_session import train_session
 from haplo.train_system_configuration import TrainSystemConfiguration
 
 
+@distributed_logging
 def example_train_session():
     full_dataset_path = Path('data/800k_parameters_and_phase_amplitudes.db')
     full_train_dataset = NicerDataset.new(
