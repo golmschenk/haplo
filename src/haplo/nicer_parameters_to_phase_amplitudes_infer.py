@@ -1,21 +1,25 @@
+import logging
 from pathlib import Path
 
 import torch
 from bokeh.io import show
-from bokeh.models import Div, Column
+from bokeh.models import Column
+from bokeh.plotting import figure as Figure
 from torch import Tensor
 from torch.nn import Module, DataParallel
 from torch.utils.data import DataLoader
-from bokeh.plotting import figure as Figure
 
-from haplo.data_paths import rotated_dataset_path, unrotated_dataset_path
+from haplo.logging import set_up_default_logger
 from haplo.losses import PlusOneChiSquaredStatisticMetric
-from haplo.models import LiraTraditionalShape8xWidthWithNoDoNoBn, Cura
+from haplo.models import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_fractional_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
+logger = logging.getLogger(__name__)
+
 
 def infer_session(dataset_path: Path):
+    set_up_default_logger()
     if torch.cuda.is_available():
         device = torch.device('cuda')
     else:
@@ -46,7 +50,7 @@ def phase_test(dataloader, model_: Module, loss_fn, device):
 
     with torch.no_grad():
         for batch_index, (inputs_tensor, targets) in enumerate(dataloader):
-            print(batch_index * dataloader.batch_size)
+            logger.info(f'Processed {batch_index * dataloader.batch_size} examples.')
             inputs_tensor = inputs_tensor.to(device)
             targets = targets
             predicted_targets = model_(inputs_tensor)
@@ -54,7 +58,7 @@ def phase_test(dataloader, model_: Module, loss_fn, device):
             pass
 
     test_loss /= num_batches
-    print(f"Test Error: \nAvg loss: {test_loss:>8f} \n")
+    logger.info(f"Test Error: \nAvg loss: {test_loss:>8f} \n")
 
 
 def quick_view(predicted_light_curve: Tensor, light_curve: Tensor) -> Figure:

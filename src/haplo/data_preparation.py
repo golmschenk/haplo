@@ -1,17 +1,20 @@
-import re
+import logging
 import mmap
+import re
 from pathlib import Path
 from typing import TextIO, Dict, List
 
 import polars as pl
 
 from haplo.data_column_name import DataColumnName
-from haplo.data_paths import constantinos_kalapotharakos_format_rotated_dataset_path, rotated_dataset_path, \
-    constantinos_kalapotharakos_format_unrotated_dataset_path, unrotated_dataset_path
+from haplo.logging import set_up_default_logger
+
+logger = logging.getLogger(__name__)
 
 
 def constantinos_kalapotharakos_file_handle_to_sqlite(file_contents: bytes | mmap.mmap, output_file_path: Path
                                                       ):
+    set_up_default_logger()
     output_file_path.unlink(missing_ok=True)
     Path(str(output_file_path) + '-shm').unlink(missing_ok=True)
     Path(str(output_file_path) + '-wal').unlink(missing_ok=True)
@@ -37,7 +40,7 @@ def constantinos_kalapotharakos_file_handle_to_sqlite(file_contents: bytes | mma
         list_of_dictionaries.append(row_dictionary)
         count += 1
         if len(list_of_dictionaries) % 100000 == 0:
-            print(f'{count}', flush=True)
+            logger.info(f'Processed {count} lines.')
             chunk_data_frame = pl.from_dicts(list_of_dictionaries, schema={str(name): pl.Float32 for name in DataColumnName})
             chunk_data_frame.write_database('main', f'sqlite:///{output_file_path}', if_exists='append')
             list_of_dictionaries = []
@@ -53,6 +56,7 @@ def arbitrary_constantinos_kalapotharakos_file_handle_to_polars(data_path: Path,
 
 
 def arbitrary_constantinos_kalapotharakos_file_contents_to_polars(file_contents: bytes | mmap.mmap, columns_per_row: int):
+    set_up_default_logger()
     value_iterator = re.finditer(rb"[^\s]+", file_contents)
     list_of_dictionaries: List[Dict] = []
     data_frame = pl.from_dicts([], schema={str(index): pl.Float32 for index in range(columns_per_row)})
@@ -69,7 +73,7 @@ def arbitrary_constantinos_kalapotharakos_file_contents_to_polars(file_contents:
         list_of_dictionaries.append(row_dictionary)
         count += 1
         if len(list_of_dictionaries) % 100000 == 0:
-            print(f'{count}', flush=True)
+            logger.info(f'Processed {count} lines.')
             chunk_data_frame = pl.from_dicts(list_of_dictionaries,
                                              schema={str(index): pl.Float32 for index in range(columns_per_row)})
             data_frame = data_frame.vstack(chunk_data_frame)
