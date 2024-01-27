@@ -1,3 +1,4 @@
+import datetime
 import logging
 import sys
 
@@ -21,4 +22,12 @@ def set_up_default_logger():
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)
         logger.propagate = False
+        sys.excepthook = excepthook
         logger_initialized = True
+
+
+def excepthook(exc_type, exc_value, exc_traceback):
+    logger = logging.getLogger('haplo')
+    logger.critical(f'Uncaught exception at {datetime.datetime.now()}:')
+    logger.handlers[0].flush()
+    sys.__excepthook__(exc_type, exc_value, exc_traceback)
