@@ -1,9 +1,12 @@
+import ctypes
 import logging
 import math
 import os
 from pathlib import Path
 from typing import Callable, List
 
+import numpy as np
+import pandas as pd
 import stringcase
 import torch
 import wandb as wandb
@@ -15,10 +18,13 @@ from torch.nn.utils import clip_grad_norm_
 from torch.optim import Optimizer
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
+from torch.multiprocessing import Array
 
 from haplo.distributed import ddp_setup
 from haplo.logging import set_up_default_logger
 from haplo.losses import norm_based_gradient_clip
+from haplo.nicer_dataset import nicer_dataset_worker_initialization_function, disconnect
+from haplo.rank_constant_distributed_sampler import RankConstantDistributedSampler
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
 from haplo.train_logging_configuration import TrainLoggingConfiguration
 from haplo.train_system_configuration import TrainSystemConfiguration
@@ -143,16 +149,40 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
     else:
         prefetch_factor = None
         persistent_workers = False
+    # TODO: Hacked way of passing samplers to init functions.
+    train_sampler = RankConstantDistributedSampler(train_dataset)
+    validation_sampler = RankConstantDistributedSampler(validation_dataset)
+    if train_dataset.dataset.in_memory:
+        train_indexes = list(iter(train_sampler))
+        validation_indexes = list(iter(validation_sampler))
+        train_subset_indexes = np.array(train_dataset.indices)[train_indexes].tolist()
+        validation_subset_indexes = np.array(validation_dataset.indices)[validation_indexes].tolist()
+        indexes = train_subset_indexes + validation_subset_indexes
+        train_df = train_dataset.dataset.get_rows_from_indexes_with_row_id_column(indexes)
+        train_df_dtypes_dict = dict(list(zip(train_df.columns, train_df.dtypes)))
+        train_mparr = Array(ctypes.c_double, train_df.values.reshape(-1))
+        index_df_dtype = train_df.index.dtype
+        index_mparr = Array(ctypes.c_double, train_df.index.values)
+        train_df_shared = pd.DataFrame(np.frombuffer(train_mparr.get_obj()).reshape(train_df.shape),
+                                       columns=train_df.columns,
+                                       index=np.frombuffer(index_mparr.get_obj()).astype(index_df_dtype)
+                                       ).astype(train_df_dtypes_dict)
+
+        train_dataset.dataset.shared_data_frame = train_df_shared
+        disconnect(train_dataset.dataset)
+        disconnect(validation_dataset.dataset)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device,
                                   num_workers=system_configuration.preprocessing_processes_per_train_process,
                                   pin_memory=True, persistent_workers=persistent_workers,
                                   prefetch_factor=prefetch_factor, shuffle=False,
-                                  sampler=DistributedSampler(train_dataset))
+                                  sampler=train_sampler,
+                                  worker_init_fn=nicer_dataset_worker_initialization_function)
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device,
                                        num_workers=system_configuration.preprocessing_processes_per_train_process,
                                        pin_memory=True, persistent_workers=persistent_workers,
                                        prefetch_factor=prefetch_factor, shuffle=False,
-                                       sampler=DistributedSampler(validation_dataset))
+                                       sampler=validation_sampler,
+                                       worker_init_fn=nicer_dataset_worker_initialization_function)
     return train_dataloader, validation_dataloader
 
 
@@ -167,7 +197,8 @@ def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[
     model.train()
     total_cycle_loss = tensor(0, dtype=torch.float32, device='cpu')
     metric_totals = torch.zeros(size=[len(metric_functions)], device='cpu')
-    assert isinstance(dataloader.sampler, DistributedSampler)
+    assert (isinstance(dataloader.sampler, DistributedSampler) or
+            isinstance(dataloader.sampler, RankConstantDistributedSampler))
     dataloader.sampler.set_epoch(cycle)
     batch_count = 0
     for batch, (parameters, light_curves) in enumerate(dataloader):
