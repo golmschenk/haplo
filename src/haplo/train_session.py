@@ -237,7 +237,8 @@ def validation_phase(dataloader: DataLoader, model: Module, loss_function: Calla
     total_cycle_loss = tensor(0, dtype=torch.float32, device='cpu')
     metric_totals = torch.zeros(size=[len(metric_functions)], device='cpu')
     model.eval()
-    assert isinstance(dataloader.sampler, DistributedSampler)
+    assert (isinstance(dataloader.sampler, DistributedSampler) or
+            isinstance(dataloader.sampler, RankConstantDistributedSampler))
     dataloader.sampler.set_epoch(cycle)
     with torch.no_grad():
         batch_count = 0
