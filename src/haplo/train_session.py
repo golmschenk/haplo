@@ -158,6 +158,7 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
         train_subset_indexes = np.array(train_dataset.indices)[train_indexes].tolist()
         validation_subset_indexes = np.array(validation_dataset.indices)[validation_indexes].tolist()
         indexes = train_subset_indexes + validation_subset_indexes
+        logger.info(f'Number of indexes on process: {len(indexes)}')
         train_df = train_dataset.dataset.get_rows_from_indexes_with_row_id_column(indexes)
         train_df_dtypes_dict = dict(list(zip(train_df.columns, train_df.dtypes)))
         train_mparr = Array(ctypes.c_double, train_df.values.reshape(-1))
