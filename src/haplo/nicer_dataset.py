@@ -15,7 +15,7 @@ from haplo.data_paths import move_path_to_nvme, move_to_tmp_on_pbs
 class NicerDataset(Dataset):
     def __init__(self, database_uri: str, length: int, parameters_transform: Optional[Callable] = None,
                  phase_amplitudes_transform: Optional[Callable] = None, in_memory: bool = False):
-        self.database_uri = database_uri
+        self.database_uri: str = database_uri
         self.parameters_transform: Callable = parameters_transform
         self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
         # TODO: Quick hack. Should not being doing logic in init. Move this to factory method.
@@ -88,7 +88,6 @@ def nicer_dataset_worker_initialization_function(worker_id: int) -> None:
 
 def initialize_connection(dataset: NicerDataset):
     if dataset.engine is None:
-        dataset.database_uri = f'sqlite:///{dataset.dataset_path}?mode=ro'
         dataset.engine = create_engine(dataset.database_uri)
         dataset.connection = dataset.engine.connect()
 
