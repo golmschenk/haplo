@@ -13,19 +13,13 @@ from haplo.data_paths import move_path_to_nvme, move_to_tmp_on_pbs
 
 
 class NicerDataset(Dataset):
-    def __init__(self, dataset_path: Path, parameters_transform: Optional[Callable] = None,
+    def __init__(self, database_uri: str, length: int, parameters_transform: Optional[Callable] = None,
                  phase_amplitudes_transform: Optional[Callable] = None, in_memory: bool = False):
-        self.dataset_path: Path = dataset_path
+        self.database_uri = database_uri
         self.parameters_transform: Callable = parameters_transform
         self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
-        self.database_uri = f'sqlite:///{self.dataset_path}?mode=ro'
         # TODO: Quick hack. Should not being doing logic in init. Move this to factory method.
-        engine = create_engine(self.database_uri)
-        connection = engine.connect()
-        count_data_frame = pl.read_database(query='select count(1) from main', connection=connection)
-        count_row = count_data_frame.row(0)
-        count = count_row[0]
-        self.length: int = count
+        self.length: int = length
         self.engine = None
         self.connection = None
         self.in_memory = in_memory
@@ -33,8 +27,16 @@ class NicerDataset(Dataset):
 
     @classmethod
     def new(cls, dataset_path: Path, parameters_transform: Optional[Callable] = None,
-            phase_amplitudes_transform: Optional[Callable] = None, in_memory: bool = False):
-        instance = cls(dataset_path=dataset_path, parameters_transform=parameters_transform,
+            phase_amplitudes_transform: Optional[Callable] = None, in_memory: bool = False,
+            length: Optional[int] = None):
+        database_uri = f'sqlite:///{dataset_path}?mode=ro'
+        if length is None:
+            engine = create_engine(database_uri)
+            connection = engine.connect()
+            count_data_frame = pl.read_database(query='select count(1) from main', connection=connection)
+            count_row = count_data_frame.row(0)
+            length = count_row[0]
+        instance = cls(database_uri=database_uri, length=length, parameters_transform=parameters_transform,
                        phase_amplitudes_transform=phase_amplitudes_transform, in_memory=in_memory)
         return instance
 
