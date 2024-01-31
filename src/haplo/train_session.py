@@ -91,8 +91,10 @@ def log_distributed_settings(hyperparameter_configuration: TrainHyperparameterCo
 def distribute_model_across_devices(model, device, local_rank):
     model = model.to(device, non_blocking=True)
     if torch.cuda.is_available():
+        logger.info(f'Device: {local_rank}')
         model = DistributedDataParallel(model, device_ids=[local_rank])
     else:
+        logger.info(f'Device: cpu')
         model = DistributedDataParallel(model)
     return model
 
