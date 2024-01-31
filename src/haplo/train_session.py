@@ -29,6 +29,7 @@ from haplo.rank_constant_distributed_sampler import RankConstantDistributedSampl
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
 from haplo.train_logging_configuration import TrainLoggingConfiguration
 from haplo.train_system_configuration import TrainSystemConfiguration
+from haplo.unwrap_model import unwrap_model
 from haplo.wandb_liaison import wandb_init, wandb_log, wandb_commit, \
     wandb_log_dictionary, wandb_log_data_class, wandb_save_manual_config_file
 
@@ -61,7 +62,7 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
 
     loss_device, network_device = get_devices(local_rank)
 
-    model = distribute_model_across_devices(model, network_device, local_rank)
+    model = distribute_model_across_devices(model, optimizer, network_device, local_rank)
 
     logger.info(f'{process_rank}: Loading dataset...')
     train_dataloader, validation_dataloader = create_data_loaders(train_dataset, validation_dataset,
@@ -93,8 +94,9 @@ def log_distributed_settings(hyperparameter_configuration: TrainHyperparameterCo
         process_rank=process_rank)
 
 
-def distribute_model_across_devices(model, device, local_rank):
+def distribute_model_across_devices(model, optimizer, device, local_rank):
     model = model.to(device, non_blocking=non_blocking)
+    optimizer_to_device(optimizer, device)
     if torch.cuda.is_available():
         logger.info(f'Device: {local_rank}')
         model = DistributedDataParallel(model, device_ids=[local_rank])
@@ -119,10 +121,11 @@ def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_f
                                                  loss_device=loss_device, cycle=cycle,
                                                  metric_functions=metric_functions,
                                                  process_rank=process_rank, world_size=world_size)
-        save_model(model, logging_configuration, model_name='latest_model', process_rank=process_rank)
+        save_state(model, optimizer, logging_configuration, state_name_prefix='latest', process_rank=process_rank)
         if validation_cycle_loss < lowest_validation_cycle_loss:
             lowest_validation_cycle_loss = validation_cycle_loss
-            save_model(model, logging_configuration, model_name='lowest_validation_model', process_rank=process_rank)
+            save_state(model, optimizer, logging_configuration, state_name_prefix='lowest_validation',
+                       process_rank=process_rank)
         wandb_log('epoch', cycle, process_rank=process_rank)
         wandb_log('cycle', cycle, process_rank=process_rank)
         wandb_commit(process_rank=process_rank)
@@ -194,9 +197,19 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
     return train_dataloader, validation_dataloader
 
 
-def save_model(model: Module, logging_configuration: TrainLoggingConfiguration, model_name: str, process_rank: int):
+def save_state(model: Module, optimizer: Optimizer, logging_configuration: TrainLoggingConfiguration,
+               state_name_prefix: str, process_rank: int):
     if process_rank == 0:
-        torch.save(model.state_dict(), logging_configuration.session_directory.joinpath(f'{model_name}.pt'))
+        torch.save(model.state_dict(),
+                   logging_configuration.session_directory.joinpath(f'{state_name_prefix}_model.pt'))
+        torch.save(optimizer.state_dict(), logging_configuration.session_directory.joinpath(
+            f'{state_name_prefix}_optimizer.pt'))
+
+
+def load_latest_state(model: Module, optimizer: Optimizer, session_directory: Path):
+    model.load_state_dict(unwrap_model(torch.load(session_directory.joinpath('latest_model.pt'), map_location='cpu')))
+    optimizer.load_state_dict(
+        unwrap_model(torch.load(session_directory.joinpath('latest_optimizer.pt'), map_location='cpu')))
 
 
 def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
@@ -296,3 +309,17 @@ def add_norm_based_gradient_clip_to_all_parameters(model):
 def apply_norm_based_gradient_clip_to_all_parameters(model):
     for parameter in model.parameters():
         clip_grad_norm_(parameter, 1.0)
+
+
+def optimizer_to_device(optimizer, device):
+    for param in optimizer.state.values():
+        if isinstance(param, torch.Tensor):
+            param.data = param.data.to(device, non_blocking=non_blocking)
+            if param._grad is not None:
+                param._grad.data = param._grad.data.to(device, non_blocking=non_blocking)
+        elif isinstance(param, dict):
+            for subparam in param.values():
+                if isinstance(subparam, torch.Tensor):
+                    subparam.data = subparam.data.to(device, non_blocking=non_blocking)
+                    if subparam._grad is not None:
+                        subparam._grad.data = subparam._grad.data.to(device, non_blocking=non_blocking)
