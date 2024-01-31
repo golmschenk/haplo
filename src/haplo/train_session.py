@@ -32,6 +32,7 @@ from haplo.wandb_liaison import wandb_init, wandb_log, wandb_commit, \
     wandb_log_dictionary, wandb_log_data_class, wandb_save_manual_config_file
 
 logger = logging.getLogger(__name__)
+non_blocking = True
 
 
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
@@ -89,7 +90,7 @@ def log_distributed_settings(hyperparameter_configuration: TrainHyperparameterCo
 
 
 def distribute_model_across_devices(model, device, local_rank):
-    model = model.to(device, non_blocking=True)
+    model = model.to(device, non_blocking=non_blocking)
     if torch.cuda.is_available():
         logger.info(f'Device: {local_rank}')
         model = DistributedDataParallel(model, device_ids=[local_rank])
@@ -205,13 +206,13 @@ def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[
     dataloader.sampler.set_epoch(cycle)
     batch_count = 0
     for batch, (parameters, light_curves) in enumerate(dataloader):
-        parameters = parameters.to(network_device, non_blocking=True)
-        light_curves = light_curves.to(loss_device, non_blocking=True)
+        parameters = parameters.to(network_device, non_blocking=non_blocking)
+        light_curves = light_curves.to(loss_device, non_blocking=non_blocking)
         predicted_light_curves = model(parameters)
         loss, total_cycle_loss = record_metrics(predicted_light_curves, light_curves, loss_function, total_cycle_loss,
                                                 metric_functions, metric_totals, loss_device)
         optimizer.zero_grad()
-        loss.to(network_device, non_blocking=True).backward()
+        loss.to(network_device, non_blocking=non_blocking).backward()
         apply_norm_based_gradient_clip_to_all_parameters(model)
         optimizer.step()
 
@@ -224,12 +225,12 @@ def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[
 
 def record_metrics(predicted_light_curves, light_curves, loss_function, total_cycle_loss, metric_functions,
                    metric_totals, loss_device):
-    loss = loss_function(predicted_light_curves.to(loss_device, non_blocking=True), light_curves)
-    total_cycle_loss += loss.to('cpu', non_blocking=True)
+    loss = loss_function(predicted_light_curves.to(loss_device, non_blocking=non_blocking), light_curves)
+    total_cycle_loss += loss.to('cpu', non_blocking=non_blocking)
     for metric_function_index, metric_function in enumerate(metric_functions):
-        batch_metric_value = metric_function(predicted_light_curves.to(loss_device, non_blocking=True),
+        batch_metric_value = metric_function(predicted_light_curves.to(loss_device, non_blocking=non_blocking),
                                              light_curves)
-        metric_totals[metric_function_index] += batch_metric_value.to('cpu', non_blocking=True)
+        metric_totals[metric_function_index] += batch_metric_value.to('cpu', non_blocking=non_blocking)
     return loss, total_cycle_loss
 
 
@@ -246,8 +247,8 @@ def validation_phase(dataloader: DataLoader, model: Module, loss_function: Calla
     with torch.no_grad():
         batch_count = 0
         for parameters, light_curves in dataloader:
-            parameters = parameters.to(network_device, non_blocking=True)
-            light_curves = light_curves.to(loss_device, non_blocking=True)
+            parameters = parameters.to(network_device, non_blocking=non_blocking)
+            light_curves = light_curves.to(loss_device, non_blocking=non_blocking)
             predicted_light_curves = model(parameters)
             loss, total_cycle_loss = record_metrics(predicted_light_curves, light_curves, loss_function,
                                                     total_cycle_loss,
