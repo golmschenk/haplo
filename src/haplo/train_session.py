@@ -32,7 +32,8 @@ from haplo.wandb_liaison import wandb_init, wandb_log, wandb_commit, \
     wandb_log_dictionary, wandb_log_data_class, wandb_save_manual_config_file
 
 logger = logging.getLogger(__name__)
-non_blocking = True
+non_blocking = True  # TODO: Should probably be elsewhere.
+pin_memory = True  # TODO: Should probably be elsewhere.
 
 
 def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Module, loss_function: Module,
@@ -177,13 +178,13 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
         disconnect(validation_dataset.dataset)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device,
                                   num_workers=system_configuration.preprocessing_processes_per_train_process,
-                                  pin_memory=True, persistent_workers=persistent_workers,
+                                  pin_memory=pin_memory, persistent_workers=persistent_workers,
                                   prefetch_factor=prefetch_factor, shuffle=False,
                                   sampler=train_sampler,
                                   worker_init_fn=nicer_dataset_worker_initialization_function)
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device,
                                        num_workers=system_configuration.preprocessing_processes_per_train_process,
-                                       pin_memory=True, persistent_workers=persistent_workers,
+                                       pin_memory=pin_memory, persistent_workers=persistent_workers,
                                        prefetch_factor=prefetch_factor, shuffle=False,
                                        sampler=validation_sampler,
                                        worker_init_fn=nicer_dataset_worker_initialization_function)
