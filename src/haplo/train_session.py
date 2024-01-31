@@ -2,6 +2,7 @@ import ctypes
 import logging
 import math
 import os
+import socket
 from pathlib import Path
 from typing import Callable, List
 
@@ -44,6 +45,8 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     torch.multiprocessing.set_start_method('spawn')
     ddp_setup(system_configuration)
     set_up_default_logger()
+    logger.info(f'Host: {socket.gethostname()}')
+    logger.info(f'Host IP: {socket.gethostbyname(socket.gethostname())}')
     logger.info('Starting training...')
     logging_configuration.session_directory.mkdir(exist_ok=True, parents=True)
     local_rank, process_rank, world_size = get_distributed_world_information()
