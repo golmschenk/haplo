@@ -20,7 +20,7 @@ def set_up_default_logger():
         handler.setFormatter(formatter)
         logger = logging.getLogger('haplo')
         logger.addHandler(handler)
-        logger.setLevel(logging.DEBUG)
+        logger.setLevel(logging.INFO)
         logger.propagate = False
         sys.excepthook = excepthook
         logger_initialized = True
