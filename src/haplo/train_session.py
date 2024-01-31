@@ -62,7 +62,7 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
 
     loss_device, network_device = get_devices(local_rank)
 
-    model = distribute_model_across_devices(model, optimizer, network_device, local_rank)
+    model = distribute_model_across_devices(model, optimizer, network_device)
 
     logger.info(f'{process_rank}: Loading dataset...')
     train_dataloader, validation_dataloader = create_data_loaders(train_dataset, validation_dataset,
@@ -94,12 +94,15 @@ def log_distributed_settings(hyperparameter_configuration: TrainHyperparameterCo
         process_rank=process_rank)
 
 
-def distribute_model_across_devices(model, optimizer, device, local_rank):
+def distribute_model_across_devices(model, optimizer, device):
     model = model.to(device, non_blocking=non_blocking)
     optimizer_to_device(optimizer, device)
     if torch.cuda.is_available():
-        logger.info(f'Device: {local_rank}')
-        model = DistributedDataParallel(model, device_ids=[local_rank])
+        logger.info(f'Number of CUDA devices found on host: {torch.cuda.device_count()}')
+        logger.info(f'Device: {device}')
+        model = DistributedDataParallel(model, device_ids=[device])
+        if logger.isEnabledFor(logging.DEBUG):
+            logger.debug(f'First model parameter device: {model.parameters()[0].device}')
     else:
         logger.info(f'Device: cpu')
         model = DistributedDataParallel(model)

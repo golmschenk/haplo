@@ -74,7 +74,7 @@ class NicerDataset(Dataset):
         row_indexes = list(np.asarray(row_indexes) + 1)
         indexes_sql_string = ', '.join(map(str, row_indexes))
         data_frame = pl.read_database(query=rf'select ROWID, * from main where ROWID in ({indexes_sql_string})',
-                                          connection=self.connection)
+                                      connection=self.connection)
         pandas_data_frame = data_frame.to_pandas()
         pandas_data_frame.set_index('rowid', inplace=True)
         return pandas_data_frame
@@ -85,6 +85,7 @@ def nicer_dataset_worker_initialization_function(worker_id: int) -> None:
     worker_info = get_worker_info()
     dataset: NicerDataset = worker_info.dataset.dataset
     initialize_connection(dataset)
+
 
 def initialize_connection(dataset: NicerDataset):
     if dataset.engine is None:
