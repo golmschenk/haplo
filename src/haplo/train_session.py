@@ -47,7 +47,7 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     ddp_setup(system_configuration)
     set_up_default_logger()
     logger.info(f'Host: {socket.gethostname()}')
-    logger.info(f'Host IP: {socket.gethostbyname(socket.gethostname())}')
+    # logger.info(f'Host IP: {socket.gethostbyname(socket.gethostname())}')
     logger.info('Starting training...')
     logging_configuration.session_directory.mkdir(exist_ok=True, parents=True)
     local_rank, process_rank, world_size = get_distributed_world_information()
