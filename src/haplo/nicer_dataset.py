@@ -4,18 +4,17 @@ from typing import Optional, Callable, List
 import numpy as np
 import pandas as pd
 import polars as pl
-from sqlalchemy import create_engine
-from torch.distributed import get_rank
-from torch.utils.data import Dataset, Subset, get_worker_info, Sampler
-from torch.multiprocessing import Manager
-
-from haplo.data_paths import move_path_to_nvme, move_to_tmp_on_pbs
+import torch
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker
+from torch.utils.data import Dataset, Subset, get_worker_info
 
 
 class NicerDataset(Dataset):
-    def __init__(self, database_uri: str, length: int, parameters_transform: Optional[Callable] = None,
+    def __init__(self, database_uri: str, database_path: Path, length: int, parameters_transform: Optional[Callable] = None,
                  phase_amplitudes_transform: Optional[Callable] = None, in_memory: bool = False):
         self.database_uri: str = database_uri
+        self.database_path: Path = database_path
         self.parameters_transform: Callable = parameters_transform
         self.phase_amplitudes_transform: Callable = phase_amplitudes_transform
         # TODO: Quick hack. Should not being doing logic in init. Move this to factory method.
@@ -30,13 +29,14 @@ class NicerDataset(Dataset):
             phase_amplitudes_transform: Optional[Callable] = None, in_memory: bool = False,
             length: Optional[int] = None):
         database_uri = f'sqlite:///{dataset_path}?mode=ro'
+        database_path = dataset_path
         if length is None:
             engine = create_engine(database_uri)
             connection = engine.connect()
             count_data_frame = pl.read_database(query='select count(1) from main', connection=connection)
             count_row = count_data_frame.row(0)
             length = count_row[0]
-        instance = cls(database_uri=database_uri, length=length, parameters_transform=parameters_transform,
+        instance = cls(database_uri=database_uri, database_path=database_path, length=length, parameters_transform=parameters_transform,
                        phase_amplitudes_transform=phase_amplitudes_transform, in_memory=in_memory)
         return instance
 
@@ -46,12 +46,9 @@ class NicerDataset(Dataset):
     def __getitem__(self, index):
         initialize_connection(self)  # TODO: Probably shouldn't be necessary.
         row_index = index + 1  # The SQL database auto increments from 1, not 0.
-        if self.in_memory:
-            row = self.get_row_from_in_memory(row_index)
-        else:
-            row = self.get_row_from_index(row_index)
-        parameters = np.array(row[:11], dtype=np.float32)
-        phase_amplitudes = np.array(row[11:], dtype=np.float32)
+        row = self.get_row_from_index(row_index)
+        parameters = np.array(row[-11-64:-64], dtype=np.float32)
+        phase_amplitudes = np.array(row[-64:], dtype=np.float32)
         if self.parameters_transform is not None:
             parameters = self.parameters_transform(parameters)
         if self.phase_amplitudes_transform is not None:
@@ -138,3 +135,22 @@ def split_dataset_into_count_datasets(dataset: NicerDataset, counts: List[int]) 
     indexes = torch.Tensor(range(previous_index, len(dataset)))
     count_datasets.append(Subset(dataset, indexes))
     return count_datasets
+
+
+def move_sqlite_subset_to_new_file(source_database_path: Path, target_database_path: Path, row_indexes: List[int]):
+    source_database_uri = f'sqlite:///{source_database_path}?mode=ro'
+    target_database_uri = f'sqlite:///{target_database_path}'
+    row_ids = list(np.asarray(row_indexes) + 1)
+    ids_sql_string = ', '.join(map(str, row_ids))
+    source_engine = create_engine(source_database_uri)
+    source_connection = source_engine.connect()
+    data_frame = pl.read_database(query=rf'select ROWID, * from main where ROWID in ({ids_sql_string})',
+                                  connection=source_connection)
+    source_connection.close()
+    data_frame.rename({'rowid': 'ROWID'})
+    data_frame.write_database(table_name='main', connection=target_database_uri, if_exists='append')
+    target_engine = create_engine(target_database_uri)
+    Session = sessionmaker(bind=target_engine)
+    session = Session()
+    session.execute(text('CREATE INDEX index_rowid ON main(rowid);'))
+    session.close()

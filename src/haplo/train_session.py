@@ -1,13 +1,12 @@
-import ctypes
 import logging
 import math
 import os
 import socket
 from pathlib import Path
 from typing import Callable, List
+import getpass
 
 import numpy as np
-import pandas as pd
 import stringcase
 import torch
 import wandb as wandb
@@ -19,12 +18,11 @@ from torch.nn.utils import clip_grad_norm_
 from torch.optim import Optimizer
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
-from torch.multiprocessing import Array
 
 from haplo.distributed import ddp_setup
 from haplo.logging import set_up_default_logger
 from haplo.losses import norm_based_gradient_clip
-from haplo.nicer_dataset import nicer_dataset_worker_initialization_function, disconnect
+from haplo.nicer_dataset import nicer_dataset_worker_initialization_function, disconnect, move_sqlite_subset_to_new_file
 from haplo.rank_constant_distributed_sampler import RankConstantDistributedSampler
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
 from haplo.train_logging_configuration import TrainLoggingConfiguration
@@ -47,7 +45,6 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     ddp_setup(system_configuration)
     set_up_default_logger()
     logger.info(f'Host: {socket.gethostname()}')
-    # logger.info(f'Host IP: {socket.gethostbyname(socket.gethostname())}')
     logger.info('Starting training...')
     logging_configuration.session_directory.mkdir(exist_ok=True, parents=True)
     local_rank, process_rank, world_size = get_distributed_world_information()
@@ -61,14 +58,15 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     wandb_save_manual_config_file(process_rank)
 
     loss_device, network_device = get_devices(local_rank)
+    loss_function = loss_function.to(loss_device)
 
     model = distribute_model_across_devices(model, optimizer, network_device)
 
     logger.info(f'{process_rank}: Loading dataset...')
+    optimizer.zero_grad()
     train_dataloader, validation_dataloader = create_data_loaders(train_dataset, validation_dataset,
                                                                   hyperparameter_configuration.batch_size,
                                                                   system_configuration)
-
     sessions_directory = Path('sessions')
     sessions_directory.mkdir(parents=True, exist_ok=True)
 
@@ -100,9 +98,8 @@ def distribute_model_across_devices(model, optimizer, device):
     if torch.cuda.is_available():
         logger.info(f'Number of CUDA devices found on host: {torch.cuda.device_count()}')
         logger.info(f'Device: {device}')
+        torch.cuda.set_device(device)
         model = DistributedDataParallel(model, device_ids=[device])
-        if logger.isEnabledFor(logging.DEBUG):
-            logger.debug(f'First model parameter device: {model.parameters()[0].device}')
     else:
         logger.info(f'Device: cpu')
         model = DistributedDataParallel(model)
@@ -166,37 +163,43 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
     train_sampler = RankConstantDistributedSampler(train_dataset)
     validation_sampler = RankConstantDistributedSampler(validation_dataset)
     if train_dataset.dataset.in_memory:
+        # TODO: Hacked way of moving dataset to tmp.
+        logger.info(f'Start of in memory branch...')
+        local_rank, process_rank, world_size = get_distributed_world_information()
         train_indexes = list(iter(train_sampler))
         validation_indexes = list(iter(validation_sampler))
         train_subset_indexes = np.array(train_dataset.indices)[train_indexes].tolist()
         validation_subset_indexes = np.array(validation_dataset.indices)[validation_indexes].tolist()
         indexes = train_subset_indexes + validation_subset_indexes
         logger.info(f'Number of indexes on process: {len(indexes)}')
-        train_df = train_dataset.dataset.get_rows_from_indexes_with_row_id_column(indexes)
-        train_df_dtypes_dict = dict(list(zip(train_df.columns, train_df.dtypes)))
-        train_mparr = Array(ctypes.c_double, train_df.values.reshape(-1))
-        index_df_dtype = train_df.index.dtype
-        index_mparr = Array(ctypes.c_double, train_df.index.values)
-        train_df_shared = pd.DataFrame(np.frombuffer(train_mparr.get_obj()).reshape(train_df.shape),
-                                       columns=train_df.columns,
-                                       index=np.frombuffer(index_mparr.get_obj()).astype(index_df_dtype)
-                                       ).astype(train_df_dtypes_dict)
-
-        train_dataset.dataset.shared_data_frame = train_df_shared
+        # TODO: This hardcoded path changes depending on system.
+        local_directory = Path(f'/tmp/{getpass.getuser()}')
+        local_directory.mkdir(parents=True, exist_ok=True)
+        local_database_path = local_directory.joinpath(f'qusi_{local_rank}.db')
+        move_sqlite_subset_to_new_file(train_dataset.dataset.database_path, local_database_path, indexes)
+        database_path = local_database_path
+        database_uri = f'sqlite:///{database_path}?mode=ro'
+        train_dataset.dataset.database_path = database_path
+        validation_dataset.dataset.database_path = database_path
+        train_dataset.dataset.database_uri = database_uri
+        validation_dataset.dataset.database_uri = database_uri
         disconnect(train_dataset.dataset)
         disconnect(validation_dataset.dataset)
+    logger.info(f'Creating train data loader...')
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device,
                                   num_workers=system_configuration.preprocessing_processes_per_train_process,
                                   pin_memory=pin_memory, persistent_workers=persistent_workers,
                                   prefetch_factor=prefetch_factor, shuffle=False,
                                   sampler=train_sampler,
                                   worker_init_fn=nicer_dataset_worker_initialization_function)
+    logger.info(f'Creating validation data loader...')
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device,
                                        num_workers=system_configuration.preprocessing_processes_per_train_process,
                                        pin_memory=pin_memory, persistent_workers=persistent_workers,
                                        prefetch_factor=prefetch_factor, shuffle=False,
                                        sampler=validation_sampler,
                                        worker_init_fn=nicer_dataset_worker_initialization_function)
+    logger.info(f'Data loaders created.')
     return train_dataloader, validation_dataloader
 
 
@@ -232,11 +235,12 @@ def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[
         loss, total_cycle_loss = record_metrics(predicted_light_curves, light_curves, loss_function, total_cycle_loss,
                                                 metric_functions, metric_totals, loss_device)
         optimizer.zero_grad()
-        loss.to(network_device, non_blocking=non_blocking).backward()
+        loss_on_loss_device = loss.to(network_device, non_blocking=non_blocking)
+        loss_on_loss_device.backward()
         apply_norm_based_gradient_clip_to_all_parameters(model)
         optimizer.step()
 
-        if batch % 1 == 0:
+        if batch % 100 == 0:
             current = (batch + 1) * len(parameters)
             logger.info(f"loss: {loss.item():>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]")
             torch.cuda.empty_cache()

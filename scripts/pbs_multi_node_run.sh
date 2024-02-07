@@ -22,6 +22,8 @@ head_node_hostname=`/bin/hostname -s`
 
 export MPI_SHEPHERD=true
 export MPI_DSM_DISTRIBUTE=0
+export OMP_NUM_THREADS=11
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 mpiexec -perhost 1 python -m torch.distributed.run \
 --nnodes 2 \

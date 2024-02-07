@@ -8,13 +8,19 @@
 #SBATCH --mem=600000
 #SBATCH --time=5-00:00:00
 
+session_name="session_name"
+current_time=$(date "+%Y_%m_%d_%H_%M_%S")
+export HAPLO_SESSION_DIRECTORY="sessions/${current_time}_${session_name}"
+mkdir -p "${HAPLO_SESSION_DIRECTORY}"
+
 nodes=( $( scontrol show hostnames $SLURM_JOB_NODELIST ) )
 nodes_array=($nodes)
 head_node=${nodes_array[0]}
 head_node_ip=$(srun --nodes=1 --ntasks=1 -w "$head_node" hostname --ip-address)
 
 echo Node IP: $head_node_ip
-export LOGLEVEL=INFO
+
+export OMP_NUM_THREADS=11
 
 srun torchrun \
 --nnodes 4 \
