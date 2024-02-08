@@ -175,7 +175,8 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
         # TODO: This hardcoded path changes depending on system.
         local_directory = Path(f'/tmp/{getpass.getuser()}')
         local_directory.mkdir(parents=True, exist_ok=True)
-        local_database_path = local_directory.joinpath(f'qusi_{local_rank}.db')
+        local_database_path = local_directory.joinpath(f'qusi_{process_rank}.db')
+        local_database_path.unlink(missing_ok=True)
         move_sqlite_subset_to_new_file(train_dataset.dataset.database_path, local_database_path, indexes)
         database_path = local_database_path
         database_uri = f'sqlite:///{database_path}?mode=ro'
