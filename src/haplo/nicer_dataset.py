@@ -1,3 +1,6 @@
+import itertools
+import logging
+import math
 from pathlib import Path
 from typing import Optional, Callable, List
 
@@ -8,6 +11,8 @@ import torch
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from torch.utils.data import Dataset, Subset, get_worker_info
+
+logger = logging.getLogger(__name__)
 
 
 class NicerDataset(Dataset):
@@ -56,6 +61,7 @@ class NicerDataset(Dataset):
         return parameters, phase_amplitudes
 
     def get_row_from_index(self, row_index):
+        # logger.info(f'Accessing rowid {row_index} from {self.database_uri}.')
         row_data_frame = pl.read_database(query=rf'select * from main where ROWID = {row_index}',
                                           connection=self.connection)
         row = row_data_frame.row(0)
@@ -114,7 +120,7 @@ def split_dataset_into_fractional_datasets(dataset: NicerDataset, fractions: Lis
             next_index = len(dataset)
         else:
             next_index = round(len(dataset) * cumulative_fraction)
-        indexes = torch.Tensor(range(previous_index, next_index))
+        indexes = torch.tensor(range(previous_index, next_index), dtype=torch.int64)
         fractional_dataset: NicerDataset = Subset(dataset, indexes)
         fractional_datasets.append(fractional_dataset)
         previous_index = next_index
@@ -128,11 +134,11 @@ def split_dataset_into_count_datasets(dataset: NicerDataset, counts: List[int]) 
     previous_index = 0
     for count in counts:
         next_index += count
-        indexes = torch.Tensor(range(previous_index, next_index))
+        indexes = torch.tensor(range(previous_index, next_index), dtype=torch.int64)
         count_dataset: NicerDataset = Subset(dataset, indexes)
         count_datasets.append(count_dataset)
         previous_index = next_index
-    indexes = torch.Tensor(range(previous_index, len(dataset)))
+    indexes = torch.tensor(range(previous_index, len(dataset)), dtype=torch.int64)
     count_datasets.append(Subset(dataset, indexes))
     return count_datasets
 
@@ -146,11 +152,14 @@ def move_sqlite_subset_to_new_file(source_database_path: Path, target_database_p
     source_connection = source_engine.connect()
     data_frame = pl.read_database(query=rf'select ROWID, * from main where ROWID in ({ids_sql_string})',
                                   connection=source_connection)
+    row_count = data_frame.select(pl.count()).item()
+    logger.info(f'Loaded {row_count} rows.')
     source_connection.close()
     data_frame.rename({'rowid': 'ROWID'})
     data_frame.write_database(table_name='main', connection=target_database_uri, if_exists='append')
     target_engine = create_engine(target_database_uri)
     Session = sessionmaker(bind=target_engine)
     session = Session()
+    logger.info(f'Creating index for local file...')
     session.execute(text('CREATE INDEX index_rowid ON main(rowid);'))
     session.close()
