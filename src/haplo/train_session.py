@@ -187,7 +187,6 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
         validation_dataset.dataset.database_uri = database_uri
         disconnect(train_dataset.dataset)
         disconnect(validation_dataset.dataset)
-        torch.distributed.monitored_barrier(timeout=datetime.timedelta(hours=5))
     logger.info(f'Creating train data loader...')
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device,
                                   num_workers=system_configuration.preprocessing_processes_per_train_process,
