@@ -120,7 +120,7 @@ def split_dataset_into_fractional_datasets(dataset: NicerDataset, fractions: Lis
             next_index = len(dataset)
         else:
             next_index = round(len(dataset) * cumulative_fraction)
-        indexes = torch.tensor(range(previous_index, next_index), dtype=torch.int64)
+        indexes = torch.tensor(range(previous_index, next_index), dtype=torch.int32)
         fractional_dataset: NicerDataset = Subset(dataset, indexes)
         fractional_datasets.append(fractional_dataset)
         previous_index = next_index
@@ -134,11 +134,11 @@ def split_dataset_into_count_datasets(dataset: NicerDataset, counts: List[int]) 
     previous_index = 0
     for count in counts:
         next_index += count
-        indexes = torch.tensor(range(previous_index, next_index), dtype=torch.int64)
+        indexes = torch.tensor(range(previous_index, next_index), dtype=torch.int32)
         count_dataset: NicerDataset = Subset(dataset, indexes)
         count_datasets.append(count_dataset)
         previous_index = next_index
-    indexes = torch.tensor(range(previous_index, len(dataset)), dtype=torch.int64)
+    indexes = torch.tensor(range(previous_index, len(dataset)), dtype=torch.int32)
     count_datasets.append(Subset(dataset, indexes))
     return count_datasets
 
