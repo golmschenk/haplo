@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import os
 from dataclasses import dataclass
@@ -18,13 +20,15 @@ class TrainLoggingConfiguration:
     wandb_entity: str
     additional_log_dictionary: Dict[str, Any]
     session_directory: Path
+    model_save_cycle_frequency: int | None = None
 
     @classmethod
     def new(cls,
             wandb_project: str = 'ramjet',
             wandb_entity: str = 'example',
             additional_log_dictionary: Dict[str, Any] | None = None,
-            session_directory: Path | None = None):
+            session_directory: Path | None = None,
+            model_save_cycle_frequency: int | None = None):
         if additional_log_dictionary is None:
             additional_log_dictionary = {}
         session_directory_environment_variable = os.environ.get('HAPLO_SESSION_DIRECTORY')
@@ -40,4 +44,5 @@ class TrainLoggingConfiguration:
         return cls(wandb_project=wandb_project,
                    wandb_entity=wandb_entity,
                    additional_log_dictionary=additional_log_dictionary,
-                   session_directory=session_directory)
+                   session_directory=session_directory,
+                   model_save_cycle_frequency=model_save_cycle_frequency)

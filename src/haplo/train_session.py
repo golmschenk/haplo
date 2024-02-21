@@ -123,6 +123,13 @@ def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_f
                                                  metric_functions=metric_functions,
                                                  process_rank=process_rank, world_size=world_size)
         save_state(model, optimizer, logging_configuration, state_name_prefix='latest', process_rank=process_rank)
+        if (
+                logging_configuration.model_save_cycle_frequency is not None and
+                cycle != 0 and
+                cycle % logging_configuration.model_save_cycle_frequency == 0
+        ):
+            save_state(model, optimizer, logging_configuration, state_name_prefix=f'cycle_{cycle}',
+                       process_rank=process_rank)
         if validation_cycle_loss < lowest_validation_cycle_loss:
             lowest_validation_cycle_loss = validation_cycle_loss
             save_state(model, optimizer, logging_configuration, state_name_prefix='lowest_validation',
