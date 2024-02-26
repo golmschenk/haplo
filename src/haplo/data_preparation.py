@@ -6,7 +6,6 @@ from typing import TextIO, Dict, List
 
 import polars as pl
 
-from haplo.data_column_name import DataColumnName
 from haplo.logging import set_up_default_logger
 
 logger = logging.getLogger(__name__)
@@ -20,8 +19,12 @@ def constantinos_kalapotharakos_file_handle_to_sqlite(file_contents: bytes | mma
     Path(str(output_file_path) + '-wal').unlink(missing_ok=True)
     Path(str(output_file_path) + '-journal').unlink(missing_ok=True)
     value_iterator = re.finditer(rb"[^\s]+", file_contents)
+    phase_amplitude_count = 64
+    parameter_column_names = [f'parameter{index}' for index in range(parameter_count)]
+    phase_amplitude_column_names = [f'phase_amplitude{index}' for index in range(phase_amplitude_count)]
+    data_column_names = parameter_column_names + phase_amplitude_column_names
     list_of_dictionaries: List[Dict] = []
-    data_frame = pl.from_dicts([], schema={str(name): pl.Float32 for name in DataColumnName})
+    data_frame = pl.from_dicts([], schema={name: pl.Float32 for name in data_column_names})
     count = 0
     while True:
         parameters = []
@@ -33,18 +36,18 @@ def constantinos_kalapotharakos_file_handle_to_sqlite(file_contents: bytes | mma
             parameters.append(float(next(value_iterator).group(0)))
         _ = float(next(value_iterator).group(0))  # Likelihood in Constantinos' output which has no meaning here.
         phase_amplitudes = []
-        for _ in range(64):
+        for _ in range(phase_amplitude_count):
             phase_amplitudes.append(float(next(value_iterator).group(0)))
         row_values = parameters + phase_amplitudes
-        row_dictionary = {str(name): value for name, value in zip(DataColumnName, row_values)}
+        row_dictionary = {name: value for name, value in zip(data_column_names, row_values)}
         list_of_dictionaries.append(row_dictionary)
         count += 1
         if len(list_of_dictionaries) % 100000 == 0:
             logger.info(f'Processed {count} lines.')
-            chunk_data_frame = pl.from_dicts(list_of_dictionaries, schema={str(name): pl.Float32 for name in DataColumnName})
+            chunk_data_frame = pl.from_dicts(list_of_dictionaries, schema={name: pl.Float32 for name in data_column_names})
             chunk_data_frame.write_database('main', f'sqlite:///{output_file_path}', if_exists='append')
             list_of_dictionaries = []
-    chunk_data_frame = pl.from_dicts(list_of_dictionaries, schema={str(name): pl.Float32 for name in DataColumnName})
+    chunk_data_frame = pl.from_dicts(list_of_dictionaries, schema={name: pl.Float32 for name in data_column_names})
     chunk_data_frame.write_database('main', f'sqlite:///{output_file_path}', if_exists='append')
 
 
