@@ -114,10 +114,11 @@ class ResidualGenerationLightCurveNetworkBlock(Module):
 
 
 class Cura(Module):
-    def __init__(self):
+    def __init__(self, input_features: int = 11):
         super().__init__()
+        self.input_features = input_features
         self.blocks = ModuleList()
-        self.dense0 = Conv1d(11, 400, kernel_size=1)
+        self.dense0 = Conv1d(self.input_features, 400, kernel_size=1)
         self.activation = LeakyReLU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
@@ -139,7 +140,7 @@ class Cura(Module):
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 
     def forward(self, x):
-        x = x.reshape([-1, 11, 1])
+        x = x.reshape([-1, self.input_features, 1])
         x = self.dense0(x)
         # x = self.activation(x)
         x = self.dense1(x)
