@@ -15,29 +15,29 @@ parameter_standard_deviations = np.array(
 
 class PrecomputedNormalizeParameters:
     def __call__(self, parameters):
-        parameters -= parameters
-        parameters /= parameters
+        parameters -= parameter_means
+        parameters /= parameter_standard_deviations
         return parameters
 
 
 class PrecomputedNormalizePhaseAmplitudes:
     def __call__(self, phase_amplitudes):
-        phase_amplitudes -= phase_amplitudes
-        phase_amplitudes /= phase_amplitudes
+        phase_amplitudes -= phase_amplitude_mean
+        phase_amplitudes /= phase_amplitude_standard_deviation
         return phase_amplitudes
 
 
 class PrecomputedUnnormalizeParameters:
     def __call__(self, parameters):
-        parameters *= parameters
-        parameters += parameters
+        parameters *= parameter_standard_deviations
+        parameters += parameter_means
         return parameters
 
 
 class PrecomputedUnnormalizePhaseAmplitudes:
     def __call__(self, phase_amplitudes):
-        phase_amplitudes *= phase_amplitudes
-        phase_amplitudes += phase_amplitudes
+        phase_amplitudes *= phase_amplitude_standard_deviation
+        phase_amplitudes += phase_amplitude_mean
         return phase_amplitudes
 
 
