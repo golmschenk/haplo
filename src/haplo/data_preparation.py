@@ -12,8 +12,8 @@ from haplo.logging import set_up_default_logger
 logger = logging.getLogger(__name__)
 
 
-def constantinos_kalapotharakos_file_handle_to_sqlite(file_contents: bytes | mmap.mmap, output_file_path: Path
-                                                      ):
+def constantinos_kalapotharakos_file_handle_to_sqlite(file_contents: bytes | mmap.mmap, output_file_path: Path,
+                                                      parameter_count: int = 11):
     set_up_default_logger()
     output_file_path.unlink(missing_ok=True)
     Path(str(output_file_path) + '-shm').unlink(missing_ok=True)
@@ -29,7 +29,7 @@ def constantinos_kalapotharakos_file_handle_to_sqlite(file_contents: bytes | mma
             parameters.append(float(next(value_iterator).group(0)))
         except StopIteration:
             break
-        for _ in range(10):
+        for _ in range(parameter_count - 1):
             parameters.append(float(next(value_iterator).group(0)))
         _ = float(next(value_iterator).group(0))  # Likelihood in Constantinos' output which has no meaning here.
         phase_amplitudes = []
@@ -90,7 +90,8 @@ def get_memory_mapped_file_contents(file_handle: TextIO) -> mmap.mmap:
     return file_contents
 
 
-def constantinos_kalapotharakos_format_file_to_sqlite(input_file_path: Path, output_file_path: Path) -> None:
+def constantinos_kalapotharakos_format_file_to_sqlite(input_file_path: Path, output_file_path: Path,
+                                                      parameter_count: int = 11) -> None:
     """
     Produces an SQLite database from a Constantinos Kalapotharakos format file. The expected input format includes
     11 parameters, 1 likelihood value (which is ignored), and 64 phase amplitude values for each entry.
@@ -100,7 +101,7 @@ def constantinos_kalapotharakos_format_file_to_sqlite(input_file_path: Path, out
     """
     with input_file_path.open() as file_handle:
         file_contents = get_memory_mapped_file_contents(file_handle)
-        constantinos_kalapotharakos_file_handle_to_sqlite(file_contents, output_file_path)
+        constantinos_kalapotharakos_file_handle_to_sqlite(file_contents, output_file_path, parameter_count)
 
 
 if __name__ == '__main__':
