@@ -1,11 +1,10 @@
-import datetime
+import getpass
 import logging
 import math
 import os
 import socket
 from pathlib import Path
 from typing import Callable, List
-import getpass
 
 import numpy as np
 import stringcase
@@ -58,8 +57,9 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     logger.info(wandb.config)
     wandb_save_manual_config_file(process_rank)
 
-    loss_device, network_device = get_devices(local_rank)
-    loss_function = loss_function.to(loss_device)
+    network_device = get_device(local_rank)
+    loss_function = loss_function.to(network_device)
+    metric_functions = [metric_function.to(network_device) for metric_function in metric_functions]
 
     model = distribute_model_across_devices(model, optimizer, network_device)
 
@@ -72,7 +72,7 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     sessions_directory.mkdir(parents=True, exist_ok=True)
 
     train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_function, metric_functions,
-               hyperparameter_configuration.cycles, network_device, loss_device, process_rank, world_size,
+               hyperparameter_configuration.cycles, network_device, process_rank, world_size,
                logging_configuration)
 
     destroy_process_group()
@@ -108,18 +108,18 @@ def distribute_model_across_devices(model, optimizer, device):
 
 
 def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_function, metric_functions,
-               cycles_to_run, network_device, loss_device, process_rank, world_size,
+               cycles_to_run, network_device, process_rank, world_size,
                logging_configuration: TrainLoggingConfiguration):
     lowest_validation_cycle_loss = tensor(math.inf)
     logger.info(f'{process_rank}: Starting training loop...')
     for cycle in range(cycles_to_run):
         logger.info(f"Epoch {cycle} -------------------------------")
         train_phase(train_dataloader, model, loss_function, optimizer, network_device=network_device,
-                    loss_device=loss_device, cycle=cycle, metric_functions=metric_functions, process_rank=process_rank,
+                    cycle=cycle, metric_functions=metric_functions, process_rank=process_rank,
                     world_size=world_size)
         validation_cycle_loss = validation_phase(validation_dataloader, model, loss_function,
                                                  network_device=network_device,
-                                                 loss_device=loss_device, cycle=cycle,
+                                                 cycle=cycle,
                                                  metric_functions=metric_functions,
                                                  process_rank=process_rank, world_size=world_size)
         save_state(model, optimizer, logging_configuration, state_name_prefix='latest', process_rank=process_rank)
@@ -142,14 +142,12 @@ def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_f
     destroy_process_group()
 
 
-def get_devices(local_rank):
+def get_device(local_rank):
     if torch.cuda.is_available():
         network_device = torch.device(f'cuda:{local_rank}')
-        loss_device = network_device
     else:
         network_device = torch.device('cpu')
-        loss_device = network_device
-    return loss_device, network_device
+    return network_device
 
 
 def get_distributed_world_information():
@@ -228,21 +226,21 @@ def load_latest_state(model: Module, optimizer: Optimizer, session_directory: Pa
 
 
 def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
-                optimizer: Optimizer, network_device: Device, loss_device: Device, cycle: int,
+                optimizer: Optimizer, network_device: Device, cycle: int,
                 metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int, world_size: int):
     model.train()
-    total_cycle_loss = tensor(0, dtype=torch.float32, device='cpu').detach()
-    metric_totals = torch.zeros(size=[len(metric_functions)], device='cpu').detach()
+    total_cycle_loss = tensor(0, dtype=torch.float32, device='cpu', requires_grad=False)
+    metric_totals = torch.zeros(size=[len(metric_functions)], device='cpu', requires_grad=False)
     assert (isinstance(dataloader.sampler, DistributedSampler) or
             isinstance(dataloader.sampler, RankConstantDistributedSampler))
     dataloader.sampler.set_epoch(cycle)
     batch_count = 0
     for batch, (parameters, light_curves) in enumerate(dataloader):
         parameters = parameters.to(network_device, non_blocking=non_blocking)
-        light_curves = light_curves.to(loss_device, non_blocking=non_blocking)
+        light_curves = light_curves.to(network_device, non_blocking=non_blocking)
         predicted_light_curves = model(parameters)
         loss, total_cycle_loss = record_metrics(predicted_light_curves, light_curves, loss_function, total_cycle_loss,
-                                                metric_functions, metric_totals, loss_device)
+                                                metric_functions, metric_totals)
         optimizer.zero_grad()
         loss_on_loss_device = loss.to(network_device, non_blocking=non_blocking)
         loss_on_loss_device.backward()
@@ -252,28 +250,26 @@ def train_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[
         if batch % 100 == 0:
             current = (batch + 1) * len(parameters)
             logger.info(f"loss: {loss.item():>7f}  [{current:>5d}/{len(dataloader.sampler):>5d}]")
-            torch.cuda.empty_cache()
         batch_count += 1
     log_metrics(total_cycle_loss, metric_functions, metric_totals, '', batch_count, world_size, process_rank)
 
 
 def record_metrics(predicted_light_curves, light_curves, loss_function, total_cycle_loss, metric_functions,
-                   metric_totals, loss_device):
-    loss = loss_function(predicted_light_curves.to(loss_device, non_blocking=non_blocking), light_curves)
-    total_cycle_loss += loss.to('cpu', non_blocking=non_blocking).detach().item()
+                   metric_totals):
+    loss = loss_function(predicted_light_curves, light_curves)
+    total_cycle_loss += loss.item()
     for metric_function_index, metric_function in enumerate(metric_functions):
-        batch_metric_value = metric_function(predicted_light_curves.to(loss_device, non_blocking=non_blocking),
-                                             light_curves)
-        metric_totals[metric_function_index] += batch_metric_value.to('cpu', non_blocking=non_blocking).detach().item()
+        batch_metric_value = metric_function(predicted_light_curves.detach(), light_curves)
+        metric_totals[metric_function_index] += batch_metric_value.item()
     return loss, total_cycle_loss
 
 
 def validation_phase(dataloader: DataLoader, model: Module, loss_function: Callable[[Tensor, Tensor], Tensor],
-                     network_device: Device, loss_device: Device, cycle: int,
+                     network_device: Device, cycle: int,
                      metric_functions: List[Callable[[Tensor, Tensor], Tensor]], process_rank: int, world_size: int
                      ) -> float:
-    total_cycle_loss = tensor(0, dtype=torch.float32, device='cpu').detach()
-    metric_totals = torch.zeros(size=[len(metric_functions)], device='cpu').detach()
+    total_cycle_loss = tensor(0, dtype=torch.float32, device='cpu', requires_grad=False)
+    metric_totals = torch.zeros(size=[len(metric_functions)], device='cpu', requires_grad=False)
     model.eval()
     assert (isinstance(dataloader.sampler, DistributedSampler) or
             isinstance(dataloader.sampler, RankConstantDistributedSampler))
@@ -282,13 +278,12 @@ def validation_phase(dataloader: DataLoader, model: Module, loss_function: Calla
         batch_count = 0
         for parameters, light_curves in dataloader:
             parameters = parameters.to(network_device, non_blocking=non_blocking)
-            light_curves = light_curves.to(loss_device, non_blocking=non_blocking)
+            light_curves = light_curves.to(network_device, non_blocking=non_blocking)
             predicted_light_curves = model(parameters)
             loss, total_cycle_loss = record_metrics(predicted_light_curves, light_curves, loss_function,
                                                     total_cycle_loss,
-                                                    metric_functions, metric_totals, loss_device)
+                                                    metric_functions, metric_totals)
             batch_count += 1
-            torch.cuda.empty_cache()
 
     cycle_loss = log_metrics(total_cycle_loss, metric_functions, metric_totals, 'val_', batch_count, world_size,
                              process_rank)
