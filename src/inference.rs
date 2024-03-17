@@ -3,14 +3,22 @@ use std::{fs, slice};
 use tract_onnx::prelude::tract_ndarray::{Array1, s};
 use tract_onnx::prelude::{Datum, Framework, Graph, InferenceFact, InferenceModelExt, RunnableModel, Tensor, TractResult, tvec, TypedFact, TypedOp};
 use toml::Table;
+
 extern crate libc;
+
 use tract_onnx::prelude::*;
 
+
+static CONFIGURATION_TABLE: LazyLock<Table> =
+    LazyLock::new(|| {
+        let filename = "haplo_configuration.toml";
+        let configuration_file_contents = fs::read_to_string(filename).unwrap();
+        let table = configuration_file_contents.parse::<Table>().unwrap();
+        return table;
+    });
+
 pub static MODEL: LazyLock<RunnableModel<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>> = LazyLock::new(|| {
-    let filename = "haplo_configuration.toml";
-    let configuration_file_contents = fs::read_to_string(filename).unwrap();
-    let value = configuration_file_contents.parse::<Table>().unwrap();
-    let onnx_path_string = value["onnx_model_path"].as_str().unwrap();
+    let onnx_path_string = CONFIGURATION_TABLE["onnx_model_path"].as_str().unwrap();
     let model = tract_onnx::onnx()
         .model_for_path(onnx_path_string).unwrap()
         .with_input_fact(0, InferenceFact::dt_shape(f32::datum_type(), tvec!(1, 11))).unwrap()
