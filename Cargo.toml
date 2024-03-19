@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 image = "0.23.14"
-tract-onnx = "*"
+tract-onnx = "^0.21.1"
 anyhow = "1.0"
 libc = "*"
 toml = "0.7.2"
