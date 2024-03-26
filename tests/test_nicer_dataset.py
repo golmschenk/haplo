@@ -27,7 +27,7 @@ def create_fake_data(rows: int = 3):
 
 def test_getitem():
     create_fake_data()
-    dataset = NicerDataset(database_path)
+    dataset = NicerDataset.new(database_path)
     parameters1, phase_amplitudes1 = dataset[1]
     assert parameters1[3] == 67
     assert phase_amplitudes1[3] == 78
@@ -35,13 +35,13 @@ def test_getitem():
 
 def test_len():
     create_fake_data()
-    dataset = NicerDataset(database_path)
+    dataset = NicerDataset.new(database_path)
     assert len(dataset) == 3
 
 
 def test_len_after_factional_split():
     create_fake_data(rows=8)
-    full_dataset = NicerDataset(database_path)
+    full_dataset = NicerDataset.new(database_path)
     fractional_dataset0, fractional_dataset1 = split_dataset_into_fractional_datasets(full_dataset, [0.25, 0.75])
     assert len(fractional_dataset0) == 2
     assert len(fractional_dataset1) == 6
@@ -49,7 +49,7 @@ def test_len_after_factional_split():
 
 def test_len_after_count_split():
     create_fake_data(rows=8)
-    full_dataset = NicerDataset(database_path)
+    full_dataset = NicerDataset.new(database_path)
     count_dataset0, count_dataset1, count_dataset2 = split_dataset_into_count_datasets(full_dataset, [2, 5])
     assert len(count_dataset0) == 2
     assert len(count_dataset1) == 5
