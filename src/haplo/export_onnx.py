@@ -17,9 +17,9 @@ class WrappedModel(Module):
         return self.module(x)
 
 
-def export_onnx(model: Module, output_onnx_model_path: Path):
+def export_onnx(model: Module, output_onnx_model_path: Path, input_features: int = 11):
     model.eval()
-    fake_input = torch.randn(1, 11, requires_grad=True)
+    fake_input = torch.randn(1, input_features, requires_grad=True)
     _ = model(fake_input)  # Model must be run to trace.
     torch.onnx.export(model,
                       fake_input,
