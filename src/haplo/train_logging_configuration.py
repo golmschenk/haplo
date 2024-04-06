@@ -35,7 +35,8 @@ class TrainLoggingConfiguration:
         if session_directory_environment_variable is not None and session_directory is not None:
             raise ValueError(f'Passing a `session_directory` is not allowed when the environment variable '
                              f'`HAPLO_SESSION_DIRECTORY` is set.')
-        session_directory = session_directory_environment_variable
+        if session_directory is None:
+            session_directory = session_directory_environment_variable
         if session_directory is None:
             datetime_string = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
             session_directory = Path(f'sessions/{datetime_string}')
