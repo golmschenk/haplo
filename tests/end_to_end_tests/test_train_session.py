@@ -1,14 +1,11 @@
-import tempfile
-
-from pathlib import Path
-
 import os
-from functools import partial
+import tempfile
+from pathlib import Path
 from torch.optim import AdamW
 
 from haplo.losses import SumDifferenceSquaredOverMedianExpectedSquaredMetric, PlusOneChiSquaredStatisticMetric, \
     PlusOneBeforeUnnormalizationChiSquaredStatisticMetric
-from haplo.models import Cura
+from haplo.models import SingleDenseNetwork
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
@@ -29,7 +26,7 @@ def test_simple_train_session():
     )
     test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
         full_train_dataset, [10, 10, 100])
-    model = Cura()
+    model = SingleDenseNetwork()
     loss_function = SumDifferenceSquaredOverMedianExpectedSquaredMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric(),
                         SumDifferenceSquaredOverMedianExpectedSquaredMetric()]
