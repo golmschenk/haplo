@@ -7,7 +7,7 @@ from haplo.train_logging_configuration import TrainLoggingConfiguration
 
 def test_passing_no_session_directory_to_new_creates_one_based_on_the_datetime():
     configuration = TrainLoggingConfiguration.new()
-    match = re.search('\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}', configuration.session_directory.name)
+    match = re.search(r'\d{4}_\d{2}_\d{2}_\d{2}_\d{2}_\d{2}', configuration.session_directory.name)
     assert match is not None
 
 

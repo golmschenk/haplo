@@ -1,32 +1,103 @@
-[tool.poetry]
+[project]
 name = "haplo"
-version = "0.13.0"
+dynamic = ["version"]
 description = ""
-authors = ["golmschenk <greg@olmschenk.com>"]
-readme = "readme.md"
+authors = [
+    { name = "Greg Olmschenk", email = "greg@olmschenk.com" },
+]
+readme = "README.md"
+requires-python = ">=3.9"
 
-[tool.poetry.dependencies]
-python = ">=3.11,<3.13"
-stringcase = "^1.2.0"
-filelock = "^3.12.3"
-numpy = "^1.25.2"
-onnx = "^1.14.1"
-onnxruntime = "^1.15.1"
-pandas = "^2.1.0"
-polars = ">=0.19.2,<0.19.6"
-pyarrow = "^13.0.0"
-torch = "^2.0.1"
-wandb = "^0.15.10"
-pytest = "^7.4.2"
-bokeh = "^3.2.2"
-sqlalchemy = "^2.0.21"
-connectorx = "^0.3.2"
-tenacity = "^8.2.3"
-
-[tool.poetry.group.dev.dependencies]
-tensorflow = "^2.14.0"
-
+dependencies = [
+    "stringcase>=1.2.0",
+    "filelock>=3.12.3",
+    "numpy>=1.25.2",
+    "onnx>=1.14.1",
+    "onnxruntime>=1.15.1",
+    "pandas>=2.1.0",
+    "polars>=0.19.2,<0.19.6",
+    "pyarrow>=13.0.0",
+    "torch>=2.0.1",
+    "wandb>=0.15.10",
+    "pytest>=7.4.2",
+    "bokeh>=3.2.2",
+    "sqlalchemy>=2.0.21",
+    "connectorx>=0.3.2",
+    "tenacity>=8.2.3",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/haplo/__about__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "src/haplo",
+]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "coverage[toml]>=6.5",
+    "pytest",
+]
+[tool.hatch.envs.default.scripts]
+test = "pytest {args:tests}"
+test-cov = "coverage run -m pytest {args:tests}"
+cov-report = [
+    "- coverage combine",
+    "coverage report",
+]
+cov = [
+    "test-cov",
+    "cov-report",
+]
+
+[[tool.hatch.envs.all.matrix]]
+python = ["3.9", "3.10", "3.11"]
+
+[tool.hatch.envs.types]
+dependencies = [
+    "mypy>=1.0.0",
+]
+[tool.hatch.envs.types.scripts]
+check = "mypy --install-types --non-interactive {args:src/haplo tests}"
+
+[tool.coverage.run]
+source_pkgs = ["haplo", "tests"]
+branch = true
+parallel = true
+omit = [
+    "src/haplo/__about__.py",
+]
+
+[tool.coverage.paths]
+haplo = ["src/haplo", "*/haplo/src/haplo"]
+tests = ["tests", "*/haplo/tests"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "no cov",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[tool.ruff]
+extend-exclude = ["examples"]
+
+[tool.ruff.lint]
+ignore = [
+    "RET504", # Subjective but, naming the returned value often seems to help readability.
+    "SIM108", # Subjective but, ternary operators are often too confusing.
+    # We don't expect use cases of the frame to need to worry about security issues.
+    "S608",
+    "S301",
+    "S311",
+    "EM102", # The improved source readability is worth the loss in readibility of the traceback in my opinion.
+    "TRY003", # Disabling EM102 makes this rule trigger in areas it shouldn't.
+    "G004", # The improved source readability is worth the extra string evaluation cost in my opinion.
+    "N812", # Bokeh uses lowercase for its figure class, and not changing that messes with other conventions.
+]
+isort.known-first-party = ["haplo", "ramjet", "qusi"]

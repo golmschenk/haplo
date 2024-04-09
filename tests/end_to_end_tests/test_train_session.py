@@ -16,7 +16,8 @@ from haplo.train_system_configuration import TrainSystemConfiguration
 
 def test_simple_train_session():
     os.environ["WANDB_MODE"] = "disabled"
-    full_dataset_path = Path(__file__).parent.joinpath('test_train_session_resources/300_parameters_and_phase_amplitudes.db')
+    full_dataset_path = Path(__file__).parent.joinpath(
+        'test_train_session_resources/300_parameters_and_phase_amplitudes.db')
     full_train_dataset = NicerDataset.new(
         dataset_path=full_dataset_path,
         length=300,
@@ -35,7 +36,7 @@ def test_simple_train_session():
     optimizer = AdamW(params=model.parameters(), lr=hyperparameter_configuration.learning_rate,
                       weight_decay=hyperparameter_configuration.weight_decay,
                       eps=hyperparameter_configuration.optimizer_epsilon)
-    run_comments = f'run_comments_placeholder'  # Whatever you want to log in a string.
+    run_comments = 'run_comments_placeholder'  # Whatever you want to log in a string.
     additional_log_dictionary = {
         'model_name': type(model).__name__, 'train_dataset_size': len(train_dataset), 'run_comments': run_comments
     }
