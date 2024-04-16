@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 class NicerDataset(Dataset):
     def __init__(self, database_uri: str, database_path: Path, length: int, parameter_count: int,
+                 phase_amplitudes_count: int,
                  parameters_transform: Optional[Callable] = None, phase_amplitudes_transform: Optional[Callable] = None,
                  *, in_memory: bool = False):
         self.database_uri: str = database_uri
@@ -32,11 +33,12 @@ class NicerDataset(Dataset):
         self.in_memory = in_memory
         self.shared_data_frame = None
         self.parameter_count: int = parameter_count
+        self.phase_amplitudes_count: int = phase_amplitudes_count
 
     @classmethod
     def new(cls, dataset_path: Path, parameters_transform: Optional[Callable] = None,
             phase_amplitudes_transform: Optional[Callable] = None, in_memory: bool = False,
-            length: Optional[int] = None, parameter_count: int = 11):
+            length: Optional[int] = None, parameter_count: int = 11, phase_amplitudes_count: int = 64):
         database_uri = f'sqlite:///{dataset_path}?mode=ro'
         database_path = dataset_path
         if length is None:
@@ -47,7 +49,8 @@ class NicerDataset(Dataset):
             length = count_row[0]
         instance = cls(database_uri=database_uri, database_path=database_path, length=length,
                        parameter_count=parameter_count, parameters_transform=parameters_transform,
-                       phase_amplitudes_transform=phase_amplitudes_transform, in_memory=in_memory)
+                       phase_amplitudes_transform=phase_amplitudes_transform, in_memory=in_memory,
+                       phase_amplitudes_count=phase_amplitudes_count)
         return instance
 
     def __len__(self):
@@ -57,8 +60,9 @@ class NicerDataset(Dataset):
         initialize_connection(self)  # TODO: Probably shouldn't be necessary.
         row_index = index + 1  # The SQL database auto increments from 1, not 0.
         row = self.get_row_from_index(row_index)
-        parameters = np.array(row[-self.parameter_count-64:-64], dtype=np.float32)
-        phase_amplitudes = np.array(row[-64:], dtype=np.float32)
+        parameters = np.array(row[-self.parameter_count-self.phase_amplitudes_count:-self.phase_amplitudes_count],
+                              dtype=np.float32)
+        phase_amplitudes = np.array(row[-self.phase_amplitudes_count:], dtype=np.float32)
         if self.parameters_transform is not None:
             parameters = self.parameters_transform(parameters)
         if self.phase_amplitudes_transform is not None:
