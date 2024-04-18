@@ -5,7 +5,7 @@ description = ""
 authors = [
     { name = "Greg Olmschenk", email = "greg@olmschenk.com" },
 ]
-readme = "README.md"
+readme = "readme.md"
 requires-python = ">=3.9"
 
 dependencies = [
