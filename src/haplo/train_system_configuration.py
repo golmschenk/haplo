@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from dataclasses import dataclass
 
 from torch.distributed import Backend
@@ -14,10 +16,13 @@ class TrainSystemConfiguration:
     """
     preprocessing_processes_per_train_process: int
     distributed_back_end: Backend
+    data_loader_creation_barrier_timeout: timedelta
 
     @classmethod
     def new(cls,
             preprocessing_processes_per_train_process: int = 10,
-            distributed_back_end: Backend = Backend.GLOO):
+            distributed_back_end: Backend = Backend.GLOO,
+            data_loader_creation_barrier_timeout: timedelta = timedelta(hours=1.0)):
         return cls(preprocessing_processes_per_train_process=preprocessing_processes_per_train_process,
-                   distributed_back_end=distributed_back_end)
+                   distributed_back_end=distributed_back_end,
+                   data_loader_creation_barrier_timeout=data_loader_creation_barrier_timeout)

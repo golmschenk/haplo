@@ -205,6 +205,7 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
                                        sampler=validation_sampler,
                                        worker_init_fn=nicer_dataset_worker_initialization_function)
     logger.info(f'Data loaders created.')
+    torch.distributed.monitored_barrier(timeout=system_configuration.data_loader_creation_barrier_timeout)
     return train_dataloader, validation_dataloader
 
 
