@@ -22,7 +22,8 @@ from torch.utils.data import DataLoader, DistributedSampler, Dataset
 from haplo.distributed import ddp_setup
 from haplo.logging import set_up_default_logger
 from haplo.losses import norm_based_gradient_clip
-from haplo.nicer_dataset import nicer_dataset_worker_initialization_function, disconnect, move_sqlite_subset_to_new_file
+from haplo.nicer_dataset import nicer_dataset_worker_initialization_function, disconnect, \
+    move_sqlite_subset_to_new_file, NicerDataset
 from haplo.rank_constant_distributed_sampler import RankConstantDistributedSampler
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
 from haplo.train_logging_configuration import TrainLoggingConfiguration
@@ -166,44 +167,48 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
     # TODO: Hacked way of passing samplers to init functions.
     train_sampler = RankConstantDistributedSampler(train_dataset)
     validation_sampler = RankConstantDistributedSampler(validation_dataset)
-    if train_dataset.dataset.in_memory:
-        # TODO: Hacked way of moving dataset to tmp.
-        logger.info(f'Start of in memory branch...')
-        local_rank, process_rank, world_size = get_distributed_world_information()
-        train_indexes = list(iter(train_sampler))
-        validation_indexes = list(iter(validation_sampler))
-        train_subset_indexes = np.array(train_dataset.indices)[train_indexes].tolist()
-        validation_subset_indexes = np.array(validation_dataset.indices)[validation_indexes].tolist()
-        indexes = train_subset_indexes + validation_subset_indexes
-        logger.info(f'Number of indexes on process: {len(indexes)}')
-        # TODO: This hardcoded path changes depending on system.
-        local_directory = Path(f'/tmp/{getpass.getuser()}')
-        local_directory.mkdir(parents=True, exist_ok=True)
-        local_database_path = local_directory.joinpath(f'qusi_{process_rank}.db')
-        local_database_path.unlink(missing_ok=True)
-        move_sqlite_subset_to_new_file(train_dataset.dataset.database_path, local_database_path, indexes)
-        database_path = local_database_path
-        database_uri = f'sqlite:///{database_path}?mode=ro'
-        train_dataset.dataset.database_path = database_path
-        validation_dataset.dataset.database_path = database_path
-        train_dataset.dataset.database_uri = database_uri
-        validation_dataset.dataset.database_uri = database_uri
-        disconnect(train_dataset.dataset)
-        disconnect(validation_dataset.dataset)
+    if issubclass(NicerDataset, train_dataset.dataset):
+        if train_dataset.dataset.in_memory:
+            # TODO: Hacked way of moving dataset to tmp.
+            logger.info(f'Start of in memory branch...')
+            local_rank, process_rank, world_size = get_distributed_world_information()
+            train_indexes = list(iter(train_sampler))
+            validation_indexes = list(iter(validation_sampler))
+            train_subset_indexes = np.array(train_dataset.indices)[train_indexes].tolist()
+            validation_subset_indexes = np.array(validation_dataset.indices)[validation_indexes].tolist()
+            indexes = train_subset_indexes + validation_subset_indexes
+            logger.info(f'Number of indexes on process: {len(indexes)}')
+            # TODO: This hardcoded path changes depending on system.
+            local_directory = Path(f'/tmp/{getpass.getuser()}')
+            local_directory.mkdir(parents=True, exist_ok=True)
+            local_database_path = local_directory.joinpath(f'qusi_{process_rank}.db')
+            local_database_path.unlink(missing_ok=True)
+            move_sqlite_subset_to_new_file(train_dataset.dataset.database_path, local_database_path, indexes)
+            database_path = local_database_path
+            database_uri = f'sqlite:///{database_path}?mode=ro'
+            train_dataset.dataset.database_path = database_path
+            validation_dataset.dataset.database_path = database_path
+            train_dataset.dataset.database_uri = database_uri
+            validation_dataset.dataset.database_uri = database_uri
+            disconnect(train_dataset.dataset)
+            disconnect(validation_dataset.dataset)
+        worker_init_fn = nicer_dataset_worker_initialization_function
+    else:
+        worker_init_fn = None
     logger.info(f'Creating train data loader...')
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size_per_device,
                                   num_workers=system_configuration.preprocessing_processes_per_train_process,
                                   pin_memory=pin_memory, persistent_workers=persistent_workers,
                                   prefetch_factor=prefetch_factor, shuffle=False,
                                   sampler=train_sampler,
-                                  worker_init_fn=nicer_dataset_worker_initialization_function)
+                                  worker_init_fn=worker_init_fn)
     logger.info(f'Creating validation data loader...')
     validation_dataloader = DataLoader(validation_dataset, batch_size=batch_size_per_device,
                                        num_workers=system_configuration.preprocessing_processes_per_train_process,
                                        pin_memory=pin_memory, persistent_workers=persistent_workers,
                                        prefetch_factor=prefetch_factor, shuffle=False,
                                        sampler=validation_sampler,
-                                       worker_init_fn=nicer_dataset_worker_initialization_function)
+                                       worker_init_fn=worker_init_fn)
     logger.info(f'Data loaders created.')
     torch.distributed.monitored_barrier(timeout=system_configuration.data_loader_creation_barrier_timeout)
     return train_dataloader, validation_dataloader
