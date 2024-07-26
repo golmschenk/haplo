@@ -167,7 +167,7 @@ def create_data_loaders(train_dataset, validation_dataset, batch_size_per_device
     # TODO: Hacked way of passing samplers to init functions.
     train_sampler = RankConstantDistributedSampler(train_dataset)
     validation_sampler = RankConstantDistributedSampler(validation_dataset)
-    if issubclass(NicerDataset, train_dataset.dataset):
+    if issubclass(NicerDataset, type(train_dataset.dataset)):
         if train_dataset.dataset.in_memory:
             # TODO: Hacked way of moving dataset to tmp.
             logger.info(f'Start of in memory branch...')
