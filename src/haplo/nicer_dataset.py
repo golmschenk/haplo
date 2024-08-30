@@ -161,7 +161,7 @@ def move_sqlite_subset_to_new_file(source_database_path: Path, target_database_p
     logger.info(f'Loaded {row_count} rows.')
     source_connection.close()
     data_frame.rename({'rowid': 'ROWID'})
-    data_frame.write_database(table_name='main', connection=target_database_uri, if_exists='append')
+    data_frame.write_database(table_name='main', connection=target_database_uri, if_table_exists='append')
     target_engine = create_engine(target_database_uri)
     Session = sessionmaker(bind=target_engine)
     session = Session()

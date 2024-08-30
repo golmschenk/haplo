@@ -47,10 +47,10 @@ def constantinos_kalapotharakos_file_handle_to_sqlite(file_contents: bytes | mma
         if len(list_of_dictionaries) % 100000 == 0:
             logger.info(f'Processed {count} lines.')
             chunk_data_frame = pl.from_dicts(list_of_dictionaries, schema={name: pl.Float32 for name in data_column_names})
-            chunk_data_frame.write_database('main', f'sqlite:///{output_file_path}', if_exists='append')
+            chunk_data_frame.write_database('main', f'sqlite:///{output_file_path}', if_table_exists='append')
             list_of_dictionaries = []
     chunk_data_frame = pl.from_dicts(list_of_dictionaries, schema={name: pl.Float32 for name in data_column_names})
-    chunk_data_frame.write_database('main', f'sqlite:///{output_file_path}', if_exists='append')
+    chunk_data_frame.write_database('main', f'sqlite:///{output_file_path}', if_table_exists='append')
 
 
 def arbitrary_constantinos_kalapotharakos_file_handle_to_polars(data_path: Path, columns_per_row: int
