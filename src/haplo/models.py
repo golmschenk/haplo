@@ -46,7 +46,7 @@ class LiraTraditionalShape8xWidthWithNoDoNoBn(Module):
 
 class ResidualGenerationLightCurveNetworkBlock(Module):
     def __init__(self, input_channels: int, output_channels: int, kernel_size: int = 3,
-                 upsampling_scale_factor: int = 1, batch_normalization: bool = False, dropout_rate: float = 0.0,
+                 upsampling_scale_factor: float = 1, batch_normalization: bool = False, dropout_rate: float = 0.0,
                  renorm: bool = False):
         super().__init__()
         self.activation = LeakyReLU()
