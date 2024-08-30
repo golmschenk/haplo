@@ -1,4 +1,3 @@
-#![feature(lazy_cell)]
 mod inference;
 use crate::inference::{infer_from_parameters_to_phase_amplitudes_array};
 
