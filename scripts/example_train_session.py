@@ -4,7 +4,7 @@ from torch.optim import AdamW
 
 from haplo.distributed import distributed_logging
 from haplo.losses import PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
-    PlusOneChiSquaredStatisticMetric
+    PlusOneChiSquaredStatisticMetric, SumDifferenceSquaredOverMedianExpectedSquaredMetric
 from haplo.models import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
@@ -19,13 +19,17 @@ def example_train_session():
     full_dataset_path = Path('data/800k_parameters_and_phase_amplitudes.db')
     full_train_dataset = NicerDataset.new(
         dataset_path=full_dataset_path,
+        length=600_000_000,
         parameters_transform=PrecomputedNormalizeParameters(),
-        phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes())
+        phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes(),
+        in_memory=True
+    )
     test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
         full_train_dataset, [100_000, 100_000, 500_000])
     model = Cura()
-    loss_function = PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()
-    metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric()]
+    loss_function = SumDifferenceSquaredOverMedianExpectedSquaredMetric()
+    metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric(),
+                        SumDifferenceSquaredOverMedianExpectedSquaredMetric()]
     hyperparameter_configuration = TrainHyperparameterConfiguration.new()
     system_configuration = TrainSystemConfiguration.new()
     optimizer = AdamW(params=model.parameters(), lr=hyperparameter_configuration.learning_rate,
