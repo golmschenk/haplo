@@ -53,6 +53,14 @@ def constantinos_kalapotharakos_file_handle_to_sqlite(file_contents: bytes | mma
     chunk_data_frame.write_database('main', f'sqlite:///{output_file_path}', if_table_exists='append')
 
 
+def arbitrary_constantinos_kalapotharakos_file_path_to_pandas(data_path: Path, columns_per_row: int
+                                                              ) -> pd.DataFrame:
+    polars_data_frame = arbitrary_constantinos_kalapotharakos_file_handle_to_polars(
+        data_path=data_path, columns_per_row=columns_per_row)
+    pandas_data_frame = polars_data_frame.to_pandas()
+    return pandas_data_frame
+
+
 def arbitrary_constantinos_kalapotharakos_file_handle_to_polars(data_path: Path, columns_per_row: int
                                                                 ) -> pl.DataFrame:
     with data_path.open() as file_handle:
