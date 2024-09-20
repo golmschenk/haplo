@@ -9,7 +9,7 @@ from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets,
 database_path = Path(__file__ + '.temp.db')
 
 
-def create_fake_data(rows: int = 3):
+def create_fake_data(rows: int = 3) -> sqlite3.Connection:
     database_path.unlink(missing_ok=True)
     database_path.parent.mkdir(exist_ok=True, parents=True)
     connection = sqlite3.connect(database_path)
@@ -23,34 +23,44 @@ def create_fake_data(rows: int = 3):
         fake_data.append({name: name_index + (64 * index) for name_index, name in enumerate(data_column_names)})
     data_frame = pd.DataFrame(fake_data)
     data_frame.to_sql(name='main', con=connection, index=False)
+    return connection
+
+
+def destroy_fake_data(connection: sqlite3.Connection):
+    connection.close()
+    database_path.unlink(missing_ok=True)
 
 
 def test_getitem():
-    create_fake_data()
+    database_connection = create_fake_data()
     dataset = NicerDataset.new(database_path)
     parameters1, phase_amplitudes1 = dataset[1]
     assert parameters1[3] == 67
     assert phase_amplitudes1[3] == 78
+    destroy_fake_data(database_connection)
 
 
 def test_len():
-    create_fake_data()
+    database_connection = create_fake_data()
     dataset = NicerDataset.new(database_path)
     assert len(dataset) == 3
+    destroy_fake_data(database_connection)
 
 
 def test_len_after_factional_split():
-    create_fake_data(rows=8)
+    database_connection = create_fake_data(rows=8)
     full_dataset = NicerDataset.new(database_path)
     fractional_dataset0, fractional_dataset1 = split_dataset_into_fractional_datasets(full_dataset, [0.25, 0.75])
     assert len(fractional_dataset0) == 2
     assert len(fractional_dataset1) == 6
+    destroy_fake_data(database_connection)
 
 
 def test_len_after_count_split():
-    create_fake_data(rows=8)
+    database_connection = create_fake_data(rows=8)
     full_dataset = NicerDataset.new(database_path)
     count_dataset0, count_dataset1, count_dataset2 = split_dataset_into_count_datasets(full_dataset, [2, 5])
     assert len(count_dataset0) == 2
     assert len(count_dataset1) == 5
     assert len(count_dataset2) == 1
+    destroy_fake_data(database_connection)
