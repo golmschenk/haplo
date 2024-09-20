@@ -37,6 +37,8 @@ def test_getitem():
     parameters1, phase_amplitudes1 = dataset[1]
     assert parameters1[3] == 67
     assert phase_amplitudes1[3] == 78
+    if dataset.connection is not None:
+        dataset.connection.close()
     destroy_fake_data(database_connection)
 
 
@@ -44,6 +46,8 @@ def test_len():
     database_connection = create_fake_data()
     dataset = NicerDataset.new(database_path)
     assert len(dataset) == 3
+    if dataset.connection is not None:
+        dataset.connection.close()
     destroy_fake_data(database_connection)
 
 
@@ -53,6 +57,8 @@ def test_len_after_factional_split():
     fractional_dataset0, fractional_dataset1 = split_dataset_into_fractional_datasets(full_dataset, [0.25, 0.75])
     assert len(fractional_dataset0) == 2
     assert len(fractional_dataset1) == 6
+    if full_dataset.connection is not None:
+        full_dataset.connection.close()
     destroy_fake_data(database_connection)
 
 
@@ -63,4 +69,6 @@ def test_len_after_count_split():
     assert len(count_dataset0) == 2
     assert len(count_dataset1) == 5
     assert len(count_dataset2) == 1
+    if full_dataset.connection is not None:
+        full_dataset.connection.close()
     destroy_fake_data(database_connection)
