@@ -1,7 +1,3 @@
-import platform
-
-import time
-
 from pathlib import Path
 
 import pandas as pd
@@ -9,11 +5,9 @@ import sqlite3
 
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets, split_dataset_into_fractional_datasets
 
-# TODO: The test datasets should be in memory, not saved to disk.
-database_path = Path(__file__ + '.temp.db')
 
-
-def create_fake_data(rows: int = 3) -> sqlite3.Connection:
+def create_fake_data(rows: int = 3, path_stem: str = 'database') -> Path:
+    database_path = Path(__file__).parent.joinpath(f'{path_stem}.temp.db')
     database_path.unlink(missing_ok=True)
     database_path.parent.mkdir(exist_ok=True, parents=True)
     connection = sqlite3.connect(database_path)
@@ -27,54 +21,35 @@ def create_fake_data(rows: int = 3) -> sqlite3.Connection:
         fake_data.append({name: name_index + (64 * index) for name_index, name in enumerate(data_column_names)})
     data_frame = pd.DataFrame(fake_data)
     data_frame.to_sql(name='main', con=connection, index=False)
-    return connection
-
-
-def destroy_fake_data(connection: sqlite3.Connection):
-    connection.close()
-    if platform.system() == 'Windows':
-        time.sleep(1)  # Avoid bug where Windows holds open the connection temporarily after closing.
-    database_path.unlink(missing_ok=True)
+    return database_path
 
 
 def test_getitem():
-    database_connection = create_fake_data()
+    database_path = create_fake_data(path_stem='getitem')
     dataset = NicerDataset.new(database_path)
     parameters1, phase_amplitudes1 = dataset[1]
     assert parameters1[3] == 67
     assert phase_amplitudes1[3] == 78
-    if dataset.connection is not None:
-        dataset.connection.close()
-    destroy_fake_data(database_connection)
 
 
 def test_len():
-    database_connection = create_fake_data()
+    database_path = create_fake_data(path_stem='len')
     dataset = NicerDataset.new(database_path)
     assert len(dataset) == 3
-    if dataset.connection is not None:
-        dataset.connection.close()
-    destroy_fake_data(database_connection)
 
 
 def test_len_after_factional_split():
-    database_connection = create_fake_data(rows=8)
+    database_path = create_fake_data(rows=8, path_stem='len_after_factional_split')
     full_dataset = NicerDataset.new(database_path)
     fractional_dataset0, fractional_dataset1 = split_dataset_into_fractional_datasets(full_dataset, [0.25, 0.75])
     assert len(fractional_dataset0) == 2
     assert len(fractional_dataset1) == 6
-    if full_dataset.connection is not None:
-        full_dataset.connection.close()
-    destroy_fake_data(database_connection)
 
 
 def test_len_after_count_split():
-    database_connection = create_fake_data(rows=8)
+    database_path = create_fake_data(rows=8, path_stem='len_after_count_split')
     full_dataset = NicerDataset.new(database_path)
     count_dataset0, count_dataset1, count_dataset2 = split_dataset_into_count_datasets(full_dataset, [2, 5])
     assert len(count_dataset0) == 2
     assert len(count_dataset1) == 5
     assert len(count_dataset2) == 1
-    if full_dataset.connection is not None:
-        full_dataset.connection.close()
-    destroy_fake_data(database_connection)
