@@ -1,3 +1,7 @@
+import platform
+
+import time
+
 from pathlib import Path
 
 import pandas as pd
@@ -28,6 +32,8 @@ def create_fake_data(rows: int = 3) -> sqlite3.Connection:
 
 def destroy_fake_data(connection: sqlite3.Connection):
     connection.close()
+    if platform.system() == 'Windows':
+        time.sleep(1)  # Avoid bug where Windows holds open the connection temporarily after closing.
     database_path.unlink(missing_ok=True)
 
 
