@@ -1,4 +1,4 @@
-#PBS -l select=2:model=mil_a100:ncpus=40:ngpus=4:mem=250GB
+#PBS -l select=2:model=mil_a100:ncpus=40:ngpus=4:mem=500GB
 #PBS -l place=scatter:excl
 #PBS -l walltime=02:00:00
 #PBS -j oe
@@ -22,7 +22,6 @@ head_node_hostname=`/bin/hostname -s`
 
 export MPI_SHEPHERD=true
 export MPI_DSM_DISTRIBUTE=0
-export OMP_NUM_THREADS=11
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 
 mpiexec -perhost 1 python -m torch.distributed.run \
