@@ -28,7 +28,7 @@ Then install `haplo` within this environment.
 
 ## Getting started
 
-A basic example project can be downloaded [here](https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fgolmschenk%2Fhaplo_example_application). Be sure to rename the directory to name the describes your project before getting started.
+A basic example project can be downloaded [here](https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fgolmschenk%2Fhaplo_example_application). Be sure to rename the directory to a name that describes your project before getting started.
 
 ```{toctree}
 :caption: 'Contents:'
