@@ -25,6 +25,7 @@ dependencies = [
     "sqlalchemy>=2.0.21",
     "connectorx>=0.3.2",
     "tenacity>=8.2.3",
+    "myst-parser",
 ]
 
 [build-system]
