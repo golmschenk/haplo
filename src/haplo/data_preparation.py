@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import math
+
 import logging
 import mmap
+import numpy as np
 import re
 from pathlib import Path
 from typing import TextIO, Dict, List
@@ -73,6 +76,36 @@ def arbitrary_constantinos_kalapotharakos_file_handle_to_polars(data_path: Path,
             file_contents, columns_per_row, skip_rows=skip_rows, limit=limit)
 
 
+def combine_constantinos_kalapotharakos_split_output_files_to_csv(root_directory_path: Path, combined_output_path: Path,
+                                                                  columns_per_row: int) -> None:
+    split_data_frames: list[pl.DataFrame] = []
+    for split_data_path in sorted(root_directory_path.glob('*.dat')):
+        print(f'Processing {split_data_path}.')
+        split_data_frame = arbitrary_constantinos_kalapotharakos_file_handle_to_polars(split_data_path,
+                                                                                       columns_per_row=columns_per_row)
+        rename_dictionary: dict[str, str] = {}
+        for column_index in range(columns_per_row - 2):
+            rename_dictionary[str(column_index)] = f'parameter{column_index}'
+        rename_dictionary[str(columns_per_row - 2)] = f'log_likelihood'
+        rename_dictionary[str(columns_per_row - 1)] = f'chain'
+        split_data_frame = split_data_frame.rename(rename_dictionary)
+        split_data_frame = split_data_frame.with_columns(split_data_frame["chain"].cast(pl.Int64).alias("chain"))
+        split_data_frame_cpu_number = int(re.search('1(\d+)\.dat', split_data_path.name).group(1))
+        split_data_frame = split_data_frame.with_columns(pl.lit(split_data_frame_cpu_number).alias('cpu'))
+        iterations = math.ceil(split_data_frame.height / 2)
+        iteration_array = np.arange(iterations, dtype=np.int64)
+        combined_iteration_array = np.empty((iteration_array.size * 2), dtype=iteration_array.dtype)
+        combined_iteration_array[0::2] = iteration_array
+        combined_iteration_array[1::2] = iteration_array
+        if split_data_frame.height % 2 != 0:
+            combined_iteration_array = combined_iteration_array[:-1]
+        split_data_frame = split_data_frame.with_columns(
+            pl.Series(name='iteration', values=combined_iteration_array, dtype=pl.Int64))
+        split_data_frames.append(split_data_frame)
+    combined_data_frame = pl.concat(split_data_frames)
+    combined_data_frame.write_csv(combined_output_path)
+
+
 def arbitrary_constantinos_kalapotharakos_file_contents_to_polars(file_contents: bytes | mmap.mmap,
                                                                   columns_per_row: int, skip_rows: int = 0,
                                                                   limit: int | None = None) -> pl.DataFrame:
@@ -130,5 +163,8 @@ def constantinos_kalapotharakos_format_file_to_sqlite(input_file_path: Path, out
 
 
 if __name__ == '__main__':
-    constantinos_kalapotharakos_format_file_to_sqlite(
-        Path('data/mcmc_vac_all_640m_A.dat'), Path('data/640m_rotated_parameters_and_phase_amplitudes.db'))
+    combine_constantinos_kalapotharakos_split_output_files_to_csv(
+        Path('/Users/golmschenk/Downloads/mcmc_vac_all_5m_cont_with_phys'),
+        Path('/Users/golmschenk/Downloads/mcmc_vac_all_5m_cont_with_phys.csv'),
+        columns_per_row=13,
+    )
