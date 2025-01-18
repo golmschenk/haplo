@@ -1,20 +1,22 @@
 from __future__ import annotations
 
+import shutil
+
 import itertools
 import logging
 import math
 import mmap
 import re
+from pandas import DataFrame
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import polars as pl
 import xarray
 import zarr
+from xarray import Dataset
 
 from haplo.data_preparation import get_memory_mapped_file_contents, \
-    arbitrary_constantinos_kalapotharakos_file_handle_to_polars, \
     arbitrary_constantinos_kalapotharakos_file_path_to_pandas
 from haplo.logging import set_up_default_logger
 
@@ -95,6 +97,18 @@ def constantinos_kalapotharakos_file_handle_to_1d_input_1d_output_zarr(file_cont
     output_array.append(phase_amplitudes_set)
 
 
+def persist_xarray_dataset_variable_order(dataset: Dataset) -> Dataset:
+    return dataset.assign_attrs(variable_order=[variable_name for variable_name in dataset.variables
+                                                if variable_name not in dataset.dims])
+
+
+def to_ordered_dataframe(dataset: Dataset) -> DataFrame:
+    variable_order = dataset.attrs['variable_order']
+    data_frame = dataset.to_dataframe()
+    data_frame = data_frame[variable_order]
+    return data_frame
+
+
 def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         root_directory_path: Path, combined_output_path: Path, columns_per_row: int) -> None:
     """
@@ -105,6 +119,8 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     :param columns_per_row: The number of columns per row in the split files.
     :return: None
     """
+    if combined_output_path.exists():
+        shutil.rmtree(combined_output_path)
     set_up_default_logger()
     for split_index, split_data_path in enumerate(sorted(root_directory_path.glob('*.dat'))):
         logger.info(f'Processing {split_data_path}.')
@@ -129,8 +145,10 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         split_data_frame['iteration'] = combined_iteration_array
         split_dataset: xarray.Dataset = split_data_frame.to_xarray()
         if split_index == 0:
+            split_dataset = persist_xarray_dataset_variable_order(split_dataset)
             split_dataset.to_zarr(combined_output_path)
         else:
+            split_dataset = persist_xarray_dataset_variable_order(split_dataset)
             split_dataset.to_zarr(combined_output_path, append_dim='index')
 
 
@@ -143,5 +161,5 @@ def convert_from_2d_xarray_zarr_to_csv(xarray_zarr_path: Path, csv_path: Path) -
     :return: None
     """
     dataset = xarray.open_zarr(xarray_zarr_path)
-    data_frame: pd.DataFrame = dataset.to_pandas()
+    data_frame: pd.DataFrame = to_ordered_dataframe(dataset)
     data_frame.to_csv(csv_path, index=False)
