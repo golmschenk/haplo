@@ -1,19 +1,19 @@
 from __future__ import annotations
 
-import shutil
+from enum import StrEnum
 
 import itertools
 import logging
 import math
 import mmap
-import re
-from pandas import DataFrame
-from pathlib import Path
-
 import numpy as np
 import pandas as pd
+import re
+import shutil
 import xarray
 import zarr
+from pandas import DataFrame
+from pathlib import Path
 from xarray import Dataset
 
 from haplo.data_preparation import get_memory_mapped_file_contents, \
@@ -21,6 +21,67 @@ from haplo.data_preparation import get_memory_mapped_file_contents, \
 from haplo.logging import set_up_default_logger
 
 logger = logging.getLogger(__name__)
+
+
+class DatasetVariableName(StrEnum):
+    INPUT = 'input'
+    OUTPUT = 'output'
+
+
+def constantinos_kalapotharakos_format_file_to_xarray_zarr(
+        input_path: Path,
+        output_path: Path,
+        input_size: int = 11,
+        output_size: int = 64,
+        zarr_chunk_axis0_size: int = 1000,
+) -> None:
+    set_up_default_logger()
+    if output_path.exists():
+        shutil.rmtree(output_path)
+    with input_path.open() as file_handle:
+        file_contents = get_memory_mapped_file_contents(file_handle)
+        value_iterator = re.finditer(rb"[^\s]+", file_contents)
+        parameters_set = []
+        phase_amplitudes_set = []
+        encoding = {
+            DatasetVariableName.INPUT: {'dtype': 'float32', 'chunks': (zarr_chunk_axis0_size, input_size)},
+            DatasetVariableName.OUTPUT: {'dtype': 'float32', 'chunks': (zarr_chunk_axis0_size, output_size)},
+        }
+        for index in itertools.count():
+            parameters = []
+            try:
+                parameters.append(float(next(value_iterator).group(0)))
+            except StopIteration:
+                break
+            for _ in range(input_size - 1):
+                parameters.append(float(next(value_iterator).group(0)))
+            _ = float(next(value_iterator).group(0))  # Likelihood in Constantinos' output which has no meaning here.
+            phase_amplitudes = []
+            for _ in range(output_size):
+                phase_amplitudes.append(float(next(value_iterator).group(0)))
+            parameters_set.append(parameters)
+            phase_amplitudes_set.append(phase_amplitudes)
+            if (index + 1) % 100000 == 0:
+                partial_dataset = xarray.Dataset(data_vars={
+                    DatasetVariableName.INPUT: (['index', 'parameter_index'], parameters_set),
+                    DatasetVariableName.OUTPUT: (['index', 'phase_index'], phase_amplitudes_set),
+                })
+                if not output_path.exists():
+                    partial_dataset.to_zarr(output_path, encoding=encoding)
+                else:
+                    partial_dataset.to_zarr(output_path, append_dim='index')
+                logger.info(f'Processed {index + 1} rows.')
+                parameters_set = []
+                phase_amplitudes_set = []
+        if len(parameters_set) != 0:
+            partial_dataset = xarray.Dataset(data_vars={
+                DatasetVariableName.INPUT: (['index', 'parameter_index'], parameters_set),
+                DatasetVariableName.OUTPUT: (['index', 'phase_index'], phase_amplitudes_set),
+            })
+            if not output_path.exists():
+                partial_dataset.to_zarr(output_path, encoding=encoding)
+            else:
+                partial_dataset.to_zarr(output_path, append_dim='index')
 
 
 def constantinos_kalapotharakos_format_file_to_zarr(input_file_path: Path, output_file_path: Path,
@@ -58,13 +119,13 @@ def constantinos_kalapotharakos_file_handle_to_1d_input_1d_output_zarr(file_cont
     zarr_store = zarr.DirectoryStore(str(output_file_path))
     root = zarr.group(store=zarr_store, overwrite=True)
     input_array = root.create_dataset(
-        'input',
+        DatasetVariableName.INPUT,
         shape=(0, input_size),
         chunks=(zarr_chunk_axis0_size, input_size),
         dtype='float32',
     )
     output_array = root.create_dataset(
-        'output',
+        DatasetVariableName.OUTPUT,
         shape=(0, output_size),
         chunks=(zarr_chunk_axis0_size, output_size),
         dtype='float32',
@@ -92,7 +153,7 @@ def constantinos_kalapotharakos_file_handle_to_1d_input_1d_output_zarr(file_cont
             output_array.append(phase_amplitudes_set)
             logger.info(f'Processed {index + 1} rows.')
             parameters_set = []
-            output_array = []
+            phase_amplitudes_set = []
     input_array.append(parameters_set)
     output_array.append(phase_amplitudes_set)
 
