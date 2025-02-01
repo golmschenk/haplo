@@ -1,0 +1,65 @@
+{
+    "metadata": {
+        ".zattrs": {},
+        ".zgroup": {
+            "zarr_format": 2
+        },
+        "input/.zarray": {
+            "chunks": [
+                10,
+                11
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                100,
+                11
+            ],
+            "zarr_format": 2
+        },
+        "input/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "index",
+                "parameter_index"
+            ]
+        },
+        "output/.zarray": {
+            "chunks": [
+                10,
+                64
+            ],
+            "compressor": {
+                "blocksize": 0,
+                "clevel": 5,
+                "cname": "lz4",
+                "id": "blosc",
+                "shuffle": 1
+            },
+            "dtype": "<f4",
+            "fill_value": "NaN",
+            "filters": null,
+            "order": "C",
+            "shape": [
+                100,
+                64
+            ],
+            "zarr_format": 2
+        },
+        "output/.zattrs": {
+            "_ARRAY_DIMENSIONS": [
+                "index",
+                "phase_index"
+            ]
+        }
+    },
+    "zarr_consolidated_format": 1
+}

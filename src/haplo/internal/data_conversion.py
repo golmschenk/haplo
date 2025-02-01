@@ -84,6 +84,41 @@ def constantinos_kalapotharakos_format_file_to_xarray_zarr(
                 partial_dataset.to_zarr(output_path, append_dim='index')
 
 
+def convert_directory_xarray_zarr_to_zip_xarray_zarr(
+        input_path: Path,
+        output_path: Path,
+) -> None:
+    if output_path.suffix != '.zip':
+        raise ValueError(f'Expected a .zip extension for the output file {output_path}')
+    dataset = xarray.open_zarr(input_path)
+    dataset.to_zarr(output_path, mode='w')
+
+
+def constantinos_kalapotharakos_format_file_to_xarray_zarr_zip(
+        input_path: Path,
+        output_path: Path,
+        input_size: int = 11,
+        output_size: int = 64,
+        zarr_chunk_axis0_size: int = 1000,
+) -> None:
+    if output_path.suffix != '.zip':
+        raise ValueError(f'Expected a .zip extension for the output file {output_path}')
+    temporary_intermediate_unzipped_zarr_path = output_path.parent.joinpath(output_path.stem + '.zarr')
+    if temporary_intermediate_unzipped_zarr_path.exists():
+        raise ValueError(f'Tried to use temporary file {temporary_intermediate_unzipped_zarr_path}, but it already '
+                         f'exists.')
+    constantinos_kalapotharakos_format_file_to_xarray_zarr(
+        input_path=input_path,
+        output_path=temporary_intermediate_unzipped_zarr_path,
+        input_size=input_size,
+        output_size=output_size,
+        zarr_chunk_axis0_size=zarr_chunk_axis0_size,
+    )
+    convert_directory_xarray_zarr_to_zip_xarray_zarr(
+        input_path=temporary_intermediate_unzipped_zarr_path, output_path=output_path)
+    shutil.rmtree(temporary_intermediate_unzipped_zarr_path)
+
+
 def constantinos_kalapotharakos_format_file_to_zarr(input_file_path: Path, output_file_path: Path,
                                                     parameter_count: int = 11) -> None:
     """
