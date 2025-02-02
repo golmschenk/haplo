@@ -30,7 +30,7 @@ dependencies = [
     "dask>=2023.1.1",
     "xarray>2023.1.0",
     "backports.strenum>=1.2.8",
-    "zarr>=3.0.0",
+    "zarr>=2.0.0",
 ]
 
 [build-system]
