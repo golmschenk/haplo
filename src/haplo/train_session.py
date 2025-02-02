@@ -44,7 +44,10 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
                   hyperparameter_configuration: TrainHyperparameterConfiguration,
                   system_configuration: TrainSystemConfiguration,
                   logging_configuration: TrainLoggingConfiguration):
-    torch.multiprocessing.set_start_method('spawn')
+    try:
+        torch.multiprocessing.set_start_method("spawn")
+    except RuntimeError:  # TODO: This is probably too general of a catch.
+        pass
     ddp_setup(system_configuration)
     set_up_default_logger()
     logger.info(f'Host: {socket.gethostname()}')
