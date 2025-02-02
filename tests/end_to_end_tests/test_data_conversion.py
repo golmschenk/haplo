@@ -77,4 +77,7 @@ def test_convert_directory_xarray_zarr_to_zip_xarray_zarr():
          45037.9321757776, 43819.8549896964, 42542.3644125813, 41383.5023840041])
     assert np.allclose(xarray_dataset[DatasetVariableName.INPUT][2], expected_input2)
     assert np.allclose(xarray_dataset[DatasetVariableName.OUTPUT][2], expected_output2)
-    output_path.unlink()
+    try:
+        output_path.unlink()
+    except PermissionError:  # In the Windows tests, this can sporadically fail. It's fine just to let it slide.
+        pass
