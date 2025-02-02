@@ -48,17 +48,17 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
         torch.multiprocessing.set_start_method("spawn")
     except RuntimeError:  # TODO: This is probably too general of a catch.
         pass
+    if platform.system() == 'Windows':
+        wandb_start_method = 'thread'
+        os.environ["USE_LIBUV"] = "0"
+    else:
+        wandb_start_method = 'fork'
     ddp_setup(system_configuration)
     set_up_default_logger()
     logger.info(f'Host: {socket.gethostname()}')
     logger.info('Starting training...')
     logging_configuration.session_directory.mkdir(exist_ok=True, parents=True)
     local_rank, process_rank, world_size = get_distributed_world_information()
-
-    if platform.system() == 'Windows':
-        wandb_start_method = 'thread'
-    else:
-        wandb_start_method = 'fork'
     wandb_init(process_rank=process_rank, project=logging_configuration.wandb_project,
                entity=logging_configuration.wandb_entity, settings=wandb.Settings(start_method=wandb_start_method))
     wandb_log_data_class(hyperparameter_configuration, process_rank=process_rank)
