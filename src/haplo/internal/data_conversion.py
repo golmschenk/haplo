@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-try:
-    from enum import StrEnum
-except ImportError:
-    from backports.strenum import StrEnum
-
+from enum import StrEnum
 import itertools
 import logging
 import math

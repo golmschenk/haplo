@@ -6,7 +6,7 @@ authors = [
     { name = "Greg Olmschenk", email = "greg@olmschenk.com" },
 ]
 readme = "readme.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11"
 
 dependencies = [
     "torch>=2.0.1",
@@ -29,8 +29,7 @@ dependencies = [
     "furo>=2023.9.10",
     "dask>=2023.1.1",
     "xarray>2023.1.0",
-    "backports.strenum>=1.2.8",
-    "zarr>=2.0.0",
+    "zarr>=3.0.0",
 ]
 
 [build-system]
