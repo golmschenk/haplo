@@ -79,7 +79,11 @@ def get_memory_mapped_file_contents(file_handle: TextIO) -> mmap.mmap:
 
 
 def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
-        split_mcmc_output_directory: Path, combined_output_path: Path, elements_per_record: int, overwrite: bool = False
+        split_mcmc_output_directory: Path,
+        combined_output_path: Path,
+        *,
+        elements_per_record: int,
+        overwrite: bool = False
 ) -> None:
     """
     Combine Constantinos Kalapotharakos format split mcmc output files into an Xarray Zarr data store.

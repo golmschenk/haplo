@@ -33,6 +33,8 @@ A basic example project can be downloaded [here](https://download-directory.gith
 ```{toctree}
 :caption: 'Contents:'
 :maxdepth: 2
+
+analysis_tools/index
 ```
 
 # Indices and tables
