@@ -238,7 +238,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
             split_data_path, elements_per_record=elements_per_record)
         parameters_batch: list[tuple[float, ...]] = []
         log_likelihood_batch: list[float] = []
-        split_data_frame_cpu_number = int(re.search('1(\d+)\.dat', split_data_path.name).group(1))
+        split_data_frame_cpu_number = int(re.search(r'1(\d+)\.dat', split_data_path.name).group(1))
         if split_index != split_data_frame_cpu_number:
             raise ValueError(f'A split MCMC output file was expected but not found. '
                              f'Expected a file for CPU number {split_index}, but found {split_data_path.name}.')
