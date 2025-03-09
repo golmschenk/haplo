@@ -14,8 +14,8 @@ def test_combine_constantinos_kalapotharakos_split_mcmc_output():
     output_path = root_split_files_directory.joinpath('output.zarr')
     if output_path.exists():
         shutil.rmtree(output_path)
-    combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
-        root_split_files_directory, output_path, elements_per_record=13, overwrite=True)
+    combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(root_split_files_directory, output_path,
+                                                                               elements_per_record=13, overwrite=True)
     xarray_dataset = xarray.load_dataset(output_path)
     assert xarray_dataset['parameter'].shape == (3, 4, 2, 11)
     assert xarray_dataset['iteration'].max() == 2
@@ -32,8 +32,8 @@ def test_combine_constantinos_kalapotharakos_split_mcmc_output_with_complete_fin
     output_path = root_split_files_directory.joinpath('output.zarr')
     if output_path.exists():
         shutil.rmtree(output_path)
-    combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
-        root_split_files_directory, output_path, elements_per_record=13, overwrite=True)
+    combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(root_split_files_directory, output_path,
+                                                                               elements_per_record=13, overwrite=True)
     xarray_dataset = xarray.load_dataset(output_path)
     assert xarray_dataset['parameter'].shape == (4, 4, 2, 11)
     assert xarray_dataset['iteration'].max() == 3
@@ -50,8 +50,8 @@ def test_combine_constantinos_kalapotharakos_split_mcmc_output_with_incomplete_f
     output_path = root_split_files_directory.joinpath('output.zarr')
     if output_path.exists():
         shutil.rmtree(output_path)
-    combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
-        root_split_files_directory, output_path, elements_per_record=13, overwrite=True)
+    combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(root_split_files_directory, output_path,
+                                                                               elements_per_record=13, overwrite=True)
     xarray_dataset = xarray.load_dataset(output_path)
     assert xarray_dataset['parameter'].shape == (3, 4, 2, 11)
     assert xarray_dataset['iteration'].max() == 2

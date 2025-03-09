@@ -79,12 +79,12 @@ def get_memory_mapped_file_contents(file_handle: TextIO) -> mmap.mmap:
 
 
 def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
-        root_directory_path: Path, combined_output_path: Path, elements_per_record: int, overwrite: bool = False
+        split_mcmc_output_directory: Path, combined_output_path: Path, elements_per_record: int, overwrite: bool = False
 ) -> None:
     """
     Combine Constantinos Kalapotharakos format split mcmc output files into an Xarray Zarr data store.
 
-    :param root_directory_path: The root of the split files.
+    :param split_mcmc_output_directory: The root of the split files.
     :param combined_output_path: The path of the output Zarr file.
     :param elements_per_record: The number of elements per record in the split files. Similar to columns per row, but
                                 the files are not organized into rows and columns.
@@ -218,7 +218,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         return temporary_combined_output_path_
 
     temporary_combined_output_path = _check_for_existing_files(combined_output_path, overwrite)
-    split_data_file_paths = sorted(root_directory_path.glob('*.dat'))
+    split_data_file_paths = sorted(split_mcmc_output_directory.glob('*.dat'))
     max_known_complete_iteration, is_final_iteration_known_incomplete = _get_known_complete_iterations(
         split_data_file_paths, elements_per_record)
     iterations = np.arange(max_known_complete_iteration + 1, dtype=np.int64)
