@@ -11,6 +11,10 @@ def create_default_formatter() -> logging.Formatter:
     return formatter
 
 
+def enable_logger():
+    set_up_default_logger()
+
+
 def set_up_default_logger():
     global logger_initialized
     if not logger_initialized:
