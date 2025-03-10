@@ -4,7 +4,13 @@ The split file text format the MCMC outputs data into is a bit cumbersome. The X
 
 ## What does Xarray Zarr mean?
 
-[Xarray](https://docs.xarray.dev/en/stable/) and [Zarr](https://zarr.readthedocs.io/en/stable/) are two separate things that work together. Xarray is N-dimensional arrays with labels (sorta like Pandas, but for more dimensions), but also makes parallelization easy. Xarray is the form of the data from an abstract point of view. Zarr is the on-disk data format of the data. It's a format that allows reading parts directly from the disk without needing to load the entire array, but is still compressed at the same time. Xarray can take advantage of many file formats, Zarr being one of them. Zarr can be used by several data structure libraries, Xarray being one of them. For the most part, you only need to use the Xarray side of things. Just know that the file format this data is saved in is Zarr.
+[Xarray](https://docs.xarray.dev/en/stable/) and [Zarr](https://zarr.readthedocs.io/en/stable/) are two separate things that work together.
+
+Xarray is N-dimensional arrays with labels (sort of like Pandas, but for more dimensions), but also makes parallelization easy. Xarray is the form of the data from an abstract point of view. In this format, the data is stored in a `Dataset` object, which contains two `DataArray`s. One is the array that contains the parameters of the MCMC states and one is the array that contains the log likelihood of the states. The parameter array is a 4D array with the dimensions being `[iteration, cpu, chain, parameter_index]`. The log likelihood array is a 3D array with dimensions `[iteration, cpu, chain]`. These two arrays share the overlapping dimensions, so you can take slices of both arrays at the same time along those dimensions.
+
+Zarr is the on-disk data format of the data. It's a format that allows reading parts directly from the disk without needing to load the entire array, but is still compressed at the same time.
+
+Xarray can take advantage of many file formats, Zarr being one of them. Zarr can be used by several data structure libraries, Xarray being one of them. For the most part, you only need to use the Xarray side of things. Just know that the file format this data is saved in is Zarr.
 
 ## Converting the data from the split `.dat` files to Zarr
 
@@ -24,3 +30,4 @@ combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
 ```
 
 Currently, the conversion process is done in a single process. An accelerated multiprocess version is possible. If you believe it would be particularly useful to speed this process up, please report that.
+
