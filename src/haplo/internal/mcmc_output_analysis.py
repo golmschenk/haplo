@@ -56,16 +56,3 @@ def mcmc_output_xarray_dataset_to_pandas_data_frame(
     if random_sample_size is not None:
         data_frame.sort_index(inplace=True)
     return data_frame
-
-
-if __name__ == '__main__':
-    dataset_path_ = Path('temp.zarr')
-    combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
-        Path('tests/end_to_end_tests/'
-             'combine_constantinos_kalapotharakos_split_mcmc_output_resources_with_complete_final_iteration'),
-        dataset_path_,
-        elements_per_record=13,
-        overwrite=True
-    )
-    dataset_ = xarray.load_dataset(dataset_path_)
-    data_frame_ = mcmc_output_xarray_dataset_to_pandas_data_frame(dataset_)

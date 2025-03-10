@@ -204,49 +204,6 @@ def to_ordered_dataframe(dataset: Dataset) -> DataFrame:
     return data_frame
 
 
-def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
-        root_directory_path: Path, combined_output_path: Path, columns_per_row: int) -> None:
-    """
-    Combine Constantinos Kalapotharakos format split mcmc output files into an Xarray Zarr data store.
-
-    :param root_directory_path: The root of the split files.
-    :param combined_output_path: The path of the output Zarr file.
-    :param columns_per_row: The number of columns per row in the split files.
-    :return: None
-    """
-    if combined_output_path.exists():
-        shutil.rmtree(combined_output_path)
-    set_up_default_logger()
-    for split_index, split_data_path in enumerate(sorted(root_directory_path.glob('*.dat'))):
-        logger.info(f'Processing {split_data_path}.')
-        split_data_frame = arbitrary_constantinos_kalapotharakos_file_path_to_pandas(split_data_path,
-                                                                                     columns_per_row=columns_per_row)
-        rename_dictionary: dict[str, str] = {}
-        for column_index in range(columns_per_row - 2):
-            rename_dictionary[str(column_index)] = f'parameter{column_index}'
-        rename_dictionary[str(columns_per_row - 2)] = f'log_likelihood'
-        rename_dictionary[str(columns_per_row - 1)] = f'chain'
-        split_data_frame = split_data_frame.rename(rename_dictionary, axis='columns')
-        split_data_frame['chain'] = split_data_frame['chain'].astype(np.int64)
-        split_data_frame_cpu_number = int(re.search('1(\d+)\.dat', split_data_path.name).group(1))
-        split_data_frame['cpu'] = split_data_frame_cpu_number
-        iterations = math.ceil(split_data_frame.shape[0] / 2)
-        iteration_array = np.arange(iterations, dtype=np.int64)
-        combined_iteration_array = np.empty((iteration_array.size * 2), dtype=iteration_array.dtype)
-        combined_iteration_array[0::2] = iteration_array
-        combined_iteration_array[1::2] = iteration_array
-        if split_data_frame.shape[0] % 2 != 0:
-            combined_iteration_array = combined_iteration_array[:-1]
-        split_data_frame['iteration'] = combined_iteration_array
-        split_dataset: xarray.Dataset = split_data_frame.to_xarray()
-        if split_index == 0:
-            split_dataset = persist_xarray_dataset_variable_order(split_dataset)
-            split_dataset.to_zarr(combined_output_path)
-        else:
-            split_dataset = persist_xarray_dataset_variable_order(split_dataset)
-            split_dataset.to_zarr(combined_output_path, append_dim='index')
-
-
 def convert_from_2d_xarray_zarr_to_csv(xarray_zarr_path: Path, csv_path: Path) -> None:
     """
     Convert a table-like 2D Xarray Zarr data store to a CSV file.
