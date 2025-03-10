@@ -58,3 +58,15 @@ def test_mcmc_output_xarray_dataset_to_pandas_data_frame(sample_dataset):
 
     assert (data_frame.loc[5, 2, 1]['parameter1'] ==
             sample_dataset.sel({'iteration': 5, 'cpu': 2, 'chain': 1})['parameter'][1].item())
+
+
+def test_mcmc_output_xarray_dataset_to_pandas_data_frame_with_limit_from_end(sample_dataset):
+    data_frame = mcmc_output_xarray_dataset_to_pandas_data_frame(sample_dataset, limit_from_end=10)
+
+    assert data_frame.shape[0] == 10
+
+
+def test_mcmc_output_xarray_dataset_to_pandas_data_frame_with_sample_size(sample_dataset):
+    data_frame = mcmc_output_xarray_dataset_to_pandas_data_frame(sample_dataset, random_sample_size=10)
+
+    assert data_frame.shape[0] == 10
