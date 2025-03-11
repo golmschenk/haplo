@@ -39,7 +39,7 @@ def test_slice_iteration_of_mcmc_output_xarray_dataset(sample_dataset):
     end_iteration = 5
 
     sliced_dataset = slice_iteration_of_mcmc_output_xarray_dataset(
-        sample_dataset, start_iteration, end_iteration
+        sample_dataset, start_iteration=start_iteration, end_iteration=end_iteration
     )
 
     assert len(sliced_dataset['iteration']) == end_iteration - start_iteration
