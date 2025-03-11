@@ -30,8 +30,8 @@ def constantinos_kalapotharakos_format_record_generator(path: Path, elements_per
     """
     with path.open() as file_handle:
         file_contents = get_memory_mapped_file_contents(file_handle)
-        generator = constantinos_kalapotharakos_format_record_generator_from_file_contents(file_contents=file_contents,
-                                                                                           elements_per_record=elements_per_record)
+        generator = constantinos_kalapotharakos_format_record_generator_from_file_contents(
+            file_contents=file_contents, elements_per_record=elements_per_record)
         for record in generator:
             yield record
 
@@ -45,7 +45,7 @@ def constantinos_kalapotharakos_format_record_generator_from_file_contents(
     :param elements_per_record: The number of elements per record.
     :return: A generator that iterates over the records.
     """
-    value_iterator = re.finditer(rb"[^\s]+", file_contents)
+    value_iterator = re.finditer(rb"\S+", file_contents)
     count = 0
     while True:
         values = []
@@ -83,7 +83,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         combined_output_path: Path,
         *,
         elements_per_record: int,
-        overwrite: bool = False
+        overwrite: bool = False,
 ) -> None:
     """
     Combine Constantinos Kalapotharakos format split mcmc output files into an Xarray Zarr data store.
@@ -153,11 +153,11 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         )
         region_dataset.to_zarr(zarr_path, append_dim='iteration')
 
-    def _get_known_complete_iterations(split_data_file_paths, elements_per_record):
+    def _get_known_complete_iterations(split_data_file_paths_, elements_per_record_):
         logger.info(f'Scanning first file to get iteration count.')
-        split_data_path0 = split_data_file_paths[0]
+        split_data_path0 = split_data_file_paths_[0]
         record_generator_ = constantinos_kalapotharakos_format_record_generator(
-            split_data_path0, elements_per_record=elements_per_record)
+            split_data_path0, elements_per_record=elements_per_record_)
         data_file0_iterations = 0
         is_final_iteration_known_incomplete_ = False
         read_chain0 = False
@@ -175,39 +175,40 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
             max_known_complete_iteration_ = data_file0_iterations - 2
         return max_known_complete_iteration_, is_final_iteration_known_incomplete_
 
-    def _create_empty_dataset_zarr(zarr_path, iterations, cpus, chains, parameter_indexes, iteration_chunk_size):
+    def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, parameter_indexes_, iteration_chunk_size_):
         empty_dataset = xarray.Dataset(
             coords={
-                'iteration': iterations,
-                'cpu': cpus,
-                'chain': chains,
-                'parameter_index': parameter_indexes,
+                'iteration': iterations_,
+                'cpu': cpus_,
+                'chain': chains_,
+                'parameter_index': parameter_indexes_,
             },
             data_vars={
                 'parameter': (
                     ['iteration', 'cpu', 'chain', 'parameter_index'],
-                    dask.array.full((iterations.size, cpus.size, chains.size, parameter_indexes.size),
-                                    fill_value=np.nan, chunks=(iteration_chunk_size, -1, -1, -1), dtype=np.float32),
+                    dask.array.full((iterations_.size, cpus_.size, chains_.size, parameter_indexes_.size),
+                                    fill_value=np.nan, chunks=(iteration_chunk_size_, -1, -1, -1), dtype=np.float32),
                 ),
                 'log_likelihood': (
                     ['iteration', 'cpu', 'chain'],
-                    dask.array.full((iterations.size, cpus.size, chains.size),
-                                    fill_value=np.nan, chunks=(iteration_chunk_size, -1, -1), dtype=np.float32),
+                    dask.array.full((iterations_.size, cpus_.size, chains_.size),
+                                    fill_value=np.nan, chunks=(iteration_chunk_size_, -1, -1), dtype=np.float32),
                 ),
             },
         )
         encoding = {
-            'iteration': {'dtype': 'int64', 'chunks': (iteration_chunk_size,)},
+            'iteration': {'dtype': 'int64', 'chunks': (iteration_chunk_size_,)},
             'cpu': {'dtype': 'int64', 'chunks': (-1,)},
             'chain': {'dtype': 'int64', 'chunks': (-1,)},
             'parameter_index': {'dtype': 'int64', 'chunks': (-1,)},
-            'parameter': {'dtype': 'float32', 'chunks': (iteration_chunk_size, -1, -1, -1)},
-            'log_likelihood': {'dtype': 'float32', 'chunks': (iteration_chunk_size, -1, -1)},
+            'parameter': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, -1, -1, -1)},
+            'log_likelihood': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, -1, -1)},
         }
-        empty_dataset.to_zarr(zarr_path, compute=False, encoding=encoding)
+        empty_dataset.to_zarr(zarr_path_, compute=False, encoding=encoding)
 
     def _check_for_existing_files(combined_output_path_, overwrite_):
-        temporary_combined_output_path_ = combined_output_path_.parent.joinpath(combined_output_path_.name + '.partial')
+        temporary_directory_ = combined_output_path_.parent
+        temporary_combined_output_path_ = temporary_directory_.joinpath(combined_output_path_.name + '.partial')
         if temporary_combined_output_path_.exists():
             if overwrite_:
                 shutil.rmtree(temporary_combined_output_path_)
