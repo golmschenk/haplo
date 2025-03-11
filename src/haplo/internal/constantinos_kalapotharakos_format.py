@@ -154,6 +154,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         region_dataset.to_zarr(zarr_path, append_dim='iteration')
 
     def _get_known_complete_iterations(split_data_file_paths, elements_per_record):
+        logger.info(f'Scanning first file to get iteration count.')
         split_data_path0 = split_data_file_paths[0]
         record_generator_ = constantinos_kalapotharakos_format_record_generator(
             split_data_path0, elements_per_record=elements_per_record)
@@ -238,6 +239,9 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     final_iteration_log_likelihood_batch: list[float] = []
     for split_index, split_data_path in enumerate(split_data_file_paths):
         logger.info(f'Processing {split_data_path}.')
+        if split_index == 0:
+            logger.info(f'The first file write for CPU 0 will appear to take a long time, as it writes a large empty '
+                        f'dataset to disk. Then processing will continue at a consistent speed.')
         record_generator = constantinos_kalapotharakos_format_record_generator(
             split_data_path, elements_per_record=elements_per_record)
         parameters_batch: list[tuple[float, ...]] = []
