@@ -26,7 +26,7 @@ Once converted, you can open the Xarray dataset from the Zarr file using:
 ```python
 import xarray
 
-dataset = xarray.load_dataset(zarr_path)
+dataset = xarray.load_dataset(zarr_path, engine='zarr')
 ```
 
 You can get a range of the MCMC iterations (start is inclusive, end is exclusive):
@@ -86,7 +86,7 @@ You can open the Xarray dataset from the Zarr file using:
 ```python
 import xarray
 
-dataset = xarray.load_dataset(zarr_path)
+dataset = xarray.load_dataset(zarr_path, engine='zarr')
 ```
 
 At any point after manipulating the Xarray dataset (say, after reducing the subsample by slicing on the iterations), you can save the updated dataset to another Zarr file using:
