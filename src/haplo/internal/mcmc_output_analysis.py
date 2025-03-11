@@ -9,8 +9,12 @@ from haplo.internal.constantinos_kalapotharakos_format import \
     combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr
 
 
-def slice_iteration_of_mcmc_output_xarray_dataset(dataset: xarray.Dataset, start_iteration: int, end_iteration
-                                                  ) -> xarray.Dataset:
+def slice_iteration_of_mcmc_output_xarray_dataset(
+        dataset: xarray.Dataset,
+        *,
+        start_iteration: int,
+        end_iteration: int,
+) -> xarray.Dataset:
     """
     Gets a slice of an MCMC output Xarray dataset along the iteration axis.
 
@@ -32,6 +36,9 @@ def mcmc_output_xarray_dataset_to_pandas_data_frame(
     Converts the MCMC output Xarray dataset to a Pandas data frame.
 
     :param dataset: The MCMC output Xarray dataset.
+    :param limit_from_end: Limits the number of rows from the end of the dataset.
+    :param random_sample_size: Randomly samples this many elements from the dataset. If `limit_from_end` is set, that
+                               limit will be applied first, then this many will be sampled from that subset.
     :return: The Pandas data frame.
     """
     state_parameter_data_array = dataset['parameter'].stack({'state_index': ['iteration', 'cpu', 'chain']}).transpose()

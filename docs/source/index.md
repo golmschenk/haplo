@@ -35,6 +35,7 @@ A basic example project can be downloaded [here](https://download-directory.gith
 :maxdepth: 2
 
 analysis_tools/index
+reference_index
 ```
 
 # Indices and tables
