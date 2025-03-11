@@ -1,4 +1,4 @@
-# Converting MCMC output files to Xarray Zarr
+# Xarray Zarr MCMC output files
 
 The split file text format the MCMC outputs data into is a bit cumbersome. The Xarray Zarr format makes the files much smaller (20x smaller), allows for random access indexing (meaning you can grab a random subset from the middle almost instantly), does not require loading the full file into memory (allowing low memory nodes to perform full dataset analysis), makes parallelization of analysis easy, and provides several other advanced benefits.
 
@@ -52,7 +52,7 @@ The `mcmc_output_xarray_dataset_to_pandas_data_frame` function also accepts opti
 
 Xarray is N-dimensional arrays with labels (sort of like Pandas, but for more dimensions), but also makes parallelization easy. Xarray is the form of the data from an abstract point of view. In this format, the data is stored in a `Dataset` object, which contains two `DataArray`s. One is the array that contains the parameters of the MCMC states and one is the array that contains the log likelihood of the states. The parameter array is a 4D array with the dimensions being `[iteration, cpu, chain, parameter_index]`. The log likelihood array is a 3D array with dimensions `[iteration, cpu, chain]`. These two arrays share the overlapping dimensions, so you can take slices of both arrays at the same time along those dimensions.
 
-```{image} converting_mcmc_output_files_to_xarray_zarr.md
+```{image} mcmc_output_xarray_data_structure.png
 :width: 400px
 ```
 
