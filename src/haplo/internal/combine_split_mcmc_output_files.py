@@ -231,9 +231,6 @@ def _process_split_file(temporary_combined_output_path0_, split_data_path_, spli
     split_final_iteration_parameters_batch_: list[tuple[float, ...]] = []
     split_final_iteration_log_likelihood_batch_: list[float] = []
     split_is_final_iteration_known_incomplete_ = False
-    if split_index_ == 0:
-        logger.info(f'The first file write for CPU 0 will appear to take a long time, as it writes a large empty '
-                    f'dataset to disk. Then processing will continue at a consistent speed.')
     record_generator = constantinos_kalapotharakos_format_record_generator(
         split_data_path_, elements_per_record=elements_per_record_)
     parameters_batch: list[tuple[float, ...]] = []

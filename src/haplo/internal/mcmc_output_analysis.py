@@ -3,10 +3,6 @@ from __future__ import annotations
 import pandas as pd
 import xarray
 from numpy.random import RandomState
-from pathlib import Path
-
-from haplo.internal.constantinos_kalapotharakos_format import \
-    combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr
 
 
 def slice_iteration_of_mcmc_output_xarray_dataset(
