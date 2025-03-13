@@ -4,7 +4,7 @@ from pathlib import Path
 
 import shutil
 
-from haplo.internal.constantinos_kalapotharakos_format import \
+from haplo.internal.combine_split_mcmc_output_files import \
     combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr
 
 
