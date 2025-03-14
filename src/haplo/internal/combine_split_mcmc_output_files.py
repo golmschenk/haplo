@@ -1,10 +1,8 @@
-import re
-
-import itertools
-
 import dask.array
+import itertools
 import logging
 import numpy as np
+import re
 import shutil
 import xarray
 from multiprocessing.pool import AsyncResult, Pool
@@ -31,6 +29,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     :param elements_per_record: The number of elements per record in the split files. Similar to columns per row, but
                                 the files are not organized into rows and columns.
     :param overwrite: Overwrite existing files if they exist. Otherwise, an error will be raised if they exist.
+    :param multiprocess_pool_size: The number of processes to handle the conversion process.
     :return: None
     """
     temporary_combined_output_path0, temporary_combined_output_path1 = _check_for_existing_files(
@@ -69,7 +68,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     _rechunk_dataset(old_zarr_path_=temporary_combined_output_path0, new_zarr_path_=temporary_combined_output_path1,
                      new_iteration_chunk_size_=1_000)
     shutil.rmtree(temporary_combined_output_path0)
-    if not any(split_is_final_iteration_known_incomplete_list):  # All false.
+    if not any(split_is_final_iteration_known_incomplete_list):  # All false, meaning we should add the final iteration.
         _save_final_iteration_region(temporary_combined_output_path1, final_iteration_parameters_batch,
                                      final_iteration_log_likelihood_batch,
                                      max_known_complete_iteration + 1, cpus, chains,
