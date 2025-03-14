@@ -18,7 +18,8 @@ enable_logger()  # Optional. Will add printing of some progress information.
 combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     split_mcmc_output_directory=split_mcmc_output_directory,
     combined_output_path=zarr_path,
-    elements_per_record=13
+    elements_per_record=13,
+    multiprocess_pool_size=28,
 )
 ```
 
@@ -74,11 +75,31 @@ zarr_path = Path('path/to/output.zarr')  # Use a better name, but still use the 
 combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     split_mcmc_output_directory=split_mcmc_output_directory,
     combined_output_path=zarr_path,
-    elements_per_record=13
+    elements_per_record=13,
+    multiprocess_pool_size=28,
 )
 ```
 
-Currently, the conversion process is done in a single process. An accelerated multiprocess version is possible. If you believe it would be particularly useful to speed this process up, please report that.
+`multiprocess_pool_size` should be set to the number of available CPU cores for best performances. This can then be run NASA's Pleiades machines using something like:
+
+```shell
+#PBS -l select=1:model=bro:mem=100GB
+#PBS -l place=scatter:excl
+#PBS -l walltime=24:00:00
+#PBS -j oe
+#PBS -W group_list=s2853
+#PBS -q long@pbspl1
+job_description="combine_split_mcmc_files"
+current_time=$(date "+%Y_%m_%d_%H_%M_%S")
+qalter -o "${current_time}_${job_description}_${PBS_JOBID}.log" $PBS_JOBID
+
+module use -a /swbuild/analytix/tools/modulefiles
+module load miniconda3/v4
+source activate haplo_env  # Use your environment here.
+
+python combine_split_mcmc_files.py
+```
+
 
 ## Xarray manipulations
 
