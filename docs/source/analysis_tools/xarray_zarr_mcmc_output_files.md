@@ -120,7 +120,7 @@ Xarray will automatically multiprocess tasks. If you wanted to get the mean log 
 ```python
 mean_log_likelihood_value = dataset['log_likelihood'].mean().compute()
 ```
-The `compute()` is necessary, because by default Xarray is "lazy" in that it avoids unnecessary computation by only computing values (and intermediate values) for the results you explicitly request.
+The `compute()` is necessary, because by default Xarray is "lazy" in that it avoids unnecessary computation by only computing values (and intermediate values) for the results you explicitly request. It's also worth noting that this will by default run being computed from the disk, so the entire set of values never needs to be loaded into memory at once.
 
 The `parameter` and `log_likelihood` arrays within the dataset share the `[iteration, cpu, chain]` dimensions. So, you can get a subset of both at the same time. For example,
 ```python
