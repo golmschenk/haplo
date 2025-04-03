@@ -66,6 +66,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
             final_iteration_log_likelihood_batch.extend(split_final_iteration_log_likelihood_batch)
             split_is_final_iteration_known_incomplete_list.append(split_is_final_iteration_known_incomplete)
     _rechunk_dataset(old_zarr_path_=temporary_combined_output_path0, new_zarr_path_=temporary_combined_output_path1,
+                     iterations_=iterations, cpus_=cpus, chains_=chains, parameter_indexes_=parameter_indexes,
                      new_iteration_chunk_size_=1_000)
     shutil.rmtree(temporary_combined_output_path0)
     if not any(split_is_final_iteration_known_incomplete_list):  # All false, meaning we should add the final iteration.
@@ -160,7 +161,8 @@ def _get_known_complete_iterations(split_data_file_paths_, elements_per_record_)
     return max_known_complete_iteration_
 
 
-def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, parameter_indexes_, iteration_chunk_size_):
+def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, parameter_indexes_, iteration_chunk_size_,
+                               cpu_chunk_size_: int = 1):
     empty_dataset = xarray.Dataset(
         coords={
             'iteration': iterations_,
@@ -172,38 +174,41 @@ def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, paramete
             'parameter': (
                 ['iteration', 'cpu', 'chain', 'parameter_index'],
                 dask.array.full((iterations_.size, cpus_.size, chains_.size, parameter_indexes_.size),
-                                fill_value=np.nan, chunks=(iteration_chunk_size_, 1, -1, -1), dtype=np.float32),
+                                fill_value=np.nan, chunks=(iteration_chunk_size_, cpu_chunk_size_, -1, -1),
+                                dtype=np.float32),
             ),
             'log_likelihood': (
                 ['iteration', 'cpu', 'chain'],
                 dask.array.full((iterations_.size, cpus_.size, chains_.size),
-                                fill_value=np.nan, chunks=(iteration_chunk_size_, 1, -1), dtype=np.float32),
+                                fill_value=np.nan, chunks=(iteration_chunk_size_, cpu_chunk_size_, -1),
+                                dtype=np.float32),
             ),
         },
     )
     encoding = {
         'iteration': {'dtype': 'int64', 'chunks': (iteration_chunk_size_,)},
-        'cpu': {'dtype': 'int64', 'chunks': (1,)},
+        'cpu': {'dtype': 'int64', 'chunks': (cpu_chunk_size_,)},
         'chain': {'dtype': 'int64', 'chunks': (-1,)},
         'parameter_index': {'dtype': 'int64', 'chunks': (-1,)},
-        'parameter': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, 1, -1, -1)},
-        'log_likelihood': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, 1, -1)},
+        'parameter': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, -1, -1)},
+        'log_likelihood': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, -1)},
     }
     empty_dataset.to_zarr(zarr_path_, compute=False, encoding=encoding)
 
 
-def _rechunk_dataset(old_zarr_path_, new_zarr_path_, new_iteration_chunk_size_):
+def _rechunk_dataset(old_zarr_path_, new_zarr_path_, iterations_, cpus_, chains_, parameter_indexes_,
+                     new_iteration_chunk_size_):
     logger.info('Rechunking dataset.')
-    old_dataset = xarray.load_dataset(old_zarr_path_, engine='zarr')
-    encoding = {
-        'iteration': {'dtype': 'int64', 'chunks': (new_iteration_chunk_size_,)},
-        'cpu': {'dtype': 'int64', 'chunks': (-1,)},
-        'chain': {'dtype': 'int64', 'chunks': (-1,)},
-        'parameter_index': {'dtype': 'int64', 'chunks': (-1,)},
-        'parameter': {'dtype': 'float32', 'chunks': (new_iteration_chunk_size_, -1, -1, -1)},
-        'log_likelihood': {'dtype': 'float32', 'chunks': (new_iteration_chunk_size_, -1, -1)},
-    }
-    old_dataset.to_zarr(new_zarr_path_, encoding=encoding)
+    _create_empty_dataset_zarr(new_zarr_path_, iterations_, cpus_, chains_, parameter_indexes_,
+                               new_iteration_chunk_size_, cpu_chunk_size_=-1)
+    old_dataset = xarray.open_zarr(old_zarr_path_)
+    iteration_batches = np.split(iterations_,
+                                 np.arange(new_iteration_chunk_size_, len(iterations_), new_iteration_chunk_size_))
+    for iteration_batch in iteration_batches:
+        logger.info(f'Rechunking iteration: {iteration_batch[0]}')
+        batch: xarray.Dataset = old_dataset.sel({'iteration': iteration_batch})
+        batch = batch.chunk({'iteration': new_iteration_chunk_size_, 'cpu': -1})
+        batch.to_zarr(new_zarr_path_, region='auto')
 
 
 def _check_for_existing_files(combined_output_path_, overwrite_):
