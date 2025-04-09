@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-import xarray as xr
+import xarray
 
 from haplo.internal.mcmc_output_analysis import slice_iteration_of_mcmc_output_xarray_dataset, \
     mcmc_output_xarray_dataset_to_pandas_data_frame
@@ -21,7 +21,7 @@ def sample_dataset():
     parameter_data = np.random.rand(number_of_iterations, number_of_cpus, number_of_chains, number_of_parameters)
     log_likelihood_data = np.random.rand(number_of_iterations, number_of_cpus, number_of_chains)
 
-    dataset = xr.Dataset({
+    dataset = xarray.Dataset({
         'parameter': (['iteration', 'cpu', 'chain', 'parameter_index'], parameter_data),
         'log_likelihood': (['iteration', 'cpu', 'chain'], log_likelihood_data)
     }, coords={
@@ -70,3 +70,47 @@ def test_mcmc_output_xarray_dataset_to_pandas_data_frame_with_sample_size(sample
     data_frame = mcmc_output_xarray_dataset_to_pandas_data_frame(sample_dataset, random_sample_size=10)
 
     assert data_frame.shape[0] == 10
+
+def get_toy_dataset():
+    iterations = np.arange(20)
+    cpus = np.arange(10)
+    chains = np.arange(2)
+    parameter_indexes = np.arange(11)
+    dataset = xarray.Dataset(
+        coords={
+            'iteration': iterations,
+            'cpu': cpus,
+            'chain': chains,
+            'parameter_index': parameter_indexes,
+        },
+        data_vars={
+            'parameter': (
+                ['iteration', 'cpu', 'chain', 'parameter_index'],
+                np.arange(iterations.size * cpus.size * chains.size * parameter_indexes.size, dtype=np.float32
+                          ).reshape([iterations.size, cpus.size, chains.size, parameter_indexes.size]),
+            ),
+            'log_likelihood': (
+                ['iteration', 'cpu', 'chain'],
+                np.arange(iterations.size * cpus.size * chains.size, dtype=np.float32
+                          ).reshape([iterations.size, cpus.size, chains.size]),
+            ),
+        },
+    )
+    return dataset
+
+
+def test_mcmc_output_xarray_dataset_to_pandas_data_frame_on_explicit_dataset():
+    dataset = get_toy_dataset()
+
+    data_frame = mcmc_output_xarray_dataset_to_pandas_data_frame(dataset)
+
+    assert data_frame.shape == (400, 12)
+    assert data_frame.index.levshape == (20, 10, 2)
+
+
+def test_mcmc_output_xarray_dataset_to_pandas_data_frame_with_limit_from_end_on_explicit_dataset():
+    dataset = get_toy_dataset()
+
+    data_frame = mcmc_output_xarray_dataset_to_pandas_data_frame(dataset, limit_from_end=35)
+
+    assert set(np.unique(data_frame.index.get_level_values('iteration').tolist())) == {18, 19}
