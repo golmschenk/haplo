@@ -54,7 +54,7 @@ def mcmc_output_xarray_dataset_to_pandas_data_frame(
 
     multi_indexes = np.unravel_index(state_indexes,
                                      (dataset['iteration'].size, dataset['cpu'].size, dataset['chain'].size))
-    sampled_dataset = dataset.sel({
+    sampled_dataset = dataset.isel({
         'iteration': xarray.DataArray(multi_indexes[0], dims='state_index'),
         'cpu': xarray.DataArray(multi_indexes[1], dims='state_index'),
         'chain': xarray.DataArray(multi_indexes[2], dims='state_index'),

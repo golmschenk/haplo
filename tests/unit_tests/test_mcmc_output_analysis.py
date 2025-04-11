@@ -117,6 +117,24 @@ def test_mcmc_output_xarray_dataset_to_pandas_data_frame_with_limit_from_end_on_
     assert set(np.unique(data_frame.index.get_level_values('iteration').tolist())) == {18, 19}
 
 
+def test_mcmc_output_xarray_dataset_to_pandas_data_frame_on_sliced_dataset():
+    dataset = get_toy_dataset()
+
+    sliced_dataset = dataset.sel({'iteration': slice(5, 15)})
+    data_frame = mcmc_output_xarray_dataset_to_pandas_data_frame(sliced_dataset, limit_from_end=35)
+
+    assert set(np.unique(data_frame.index.get_level_values('iteration').tolist())) == {14, 15}
+
+
+def test_mcmc_output_xarray_dataset_to_pandas_data_frame_on_split_dataset():
+    dataset = get_toy_dataset()
+
+    split_dataset = dataset.sel({'iteration': [5, 15]})
+    data_frame = mcmc_output_xarray_dataset_to_pandas_data_frame(split_dataset, limit_from_end=35)
+
+    assert set(np.unique(data_frame.index.get_level_values('iteration').tolist())) == {5, 15}
+
+
 def test_extract_windowed_median_log_likelihood_series():
     dataset = get_toy_dataset()
 
