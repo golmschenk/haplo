@@ -76,8 +76,11 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
                                      parameter_count, parameter_indexes)
     if combined_output_path.suffix == '.zip':
         dataset = xarray.open_zarr(temporary_combined_output_path1)
-        dataset.to_zarr(combined_output_path, mode='w')
+        temporary_combined_output_zip_path1 = temporary_combined_output_path1.parent.joinpath(
+            temporary_combined_output_path1.name + '.zip')
+        dataset.to_zarr(temporary_combined_output_zip_path1, mode='w')
         shutil.rmtree(temporary_combined_output_path1)
+        temporary_combined_output_zip_path1.rename(combined_output_path)
     else:
         temporary_combined_output_path1.rename(combined_output_path)
 
