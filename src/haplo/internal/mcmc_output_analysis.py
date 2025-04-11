@@ -1,12 +1,9 @@
 from __future__ import annotations
 
-from multiprocessing.pool import ThreadPool
-
-import dask
 import numpy as np
 import pandas as pd
 import xarray
-from numpy.random import Generator, default_rng
+from numpy.random import default_rng
 
 
 def slice_iteration_of_mcmc_output_xarray_dataset(
@@ -79,3 +76,20 @@ def mcmc_output_xarray_dataset_to_pandas_data_frame(
     if random_sample_size is not None:
         data_frame.sort_index(inplace=True)
     return data_frame
+
+
+def extract_windowed_median_log_likelihood_series(dataset: xarray.Dataset, window_size: int = 1000) -> pd.Series:
+    """
+    Extracts the windowed median log likelihood values from the dataset.
+
+    :param dataset: The MCMC output dataset.
+    :param window_size: The size of the window to take the medians over.
+    :return: The resulting medians. The Pandas Series has an index that is the start of the window.
+    """
+    bin_edges = np.concat([
+        np.arange(dataset['iteration'].min(), dataset['iteration'].max() + 1, window_size, dtype=np.int64),
+        np.array([dataset['iteration'].max() + 1], dtype=np.int64)
+    ])
+    binned = dataset['log_likelihood'].groupby_bins('iteration', bins=bin_edges, right=False)
+    medians = binned.median(dim=['iteration', 'cpu', 'chain']).compute().to_numpy()
+    return pd.Series(index=bin_edges[:-1], data=medians)

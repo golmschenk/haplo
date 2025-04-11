@@ -3,7 +3,7 @@ import pytest
 import xarray
 
 from haplo.internal.mcmc_output_analysis import slice_iteration_of_mcmc_output_xarray_dataset, \
-    mcmc_output_xarray_dataset_to_pandas_data_frame
+    mcmc_output_xarray_dataset_to_pandas_data_frame, extract_windowed_median_log_likelihood_series
 
 
 @pytest.fixture
@@ -71,6 +71,7 @@ def test_mcmc_output_xarray_dataset_to_pandas_data_frame_with_sample_size(sample
 
     assert data_frame.shape[0] == 10
 
+
 def get_toy_dataset():
     iterations = np.arange(20)
     cpus = np.arange(10)
@@ -114,3 +115,12 @@ def test_mcmc_output_xarray_dataset_to_pandas_data_frame_with_limit_from_end_on_
     data_frame = mcmc_output_xarray_dataset_to_pandas_data_frame(dataset, limit_from_end=35)
 
     assert set(np.unique(data_frame.index.get_level_values('iteration').tolist())) == {18, 19}
+
+
+def test_extract_windowed_median_log_likelihood_series():
+    dataset = get_toy_dataset()
+
+    log_likelihood_series = extract_windowed_median_log_likelihood_series(dataset, window_size=5)
+
+    assert np.allclose(log_likelihood_series.index, [0, 5, 10, 15])
+    assert np.allclose(log_likelihood_series.values, [49.5, 149.5, 249.5, 349.5])
