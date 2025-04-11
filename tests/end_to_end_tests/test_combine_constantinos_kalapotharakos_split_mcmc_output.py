@@ -99,5 +99,7 @@ def test_combine_constantinos_kalapotharakos_split_mcmc_output_with_zip():
     assert xarray_dataset['parameter'][1, 1, 0, 8].compute().item() == pytest.approx(2.06011819056089)
     assert xarray_dataset['log_likelihood'][2, 3, 1].compute().item() == pytest.approx(-24990.2909981251)
     assert xarray_dataset['parameter'].encoding['chunks'] == (1000, 4, 2, 11)
-    if output_path.exists():
+    try:
         output_path.unlink()
+    except PermissionError:  # In the Windows tests, this can sporadically fail. It's fine just to let it slide.
+        pass
