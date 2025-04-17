@@ -22,6 +22,7 @@ combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     multiprocess_pool_size=28,
 )
 ```
+Note, this expects all the `.dat` files in the directory are the split output files. You should not have an already combined `.dat` file in the same directory.
 
 Once converted, you can open the Xarray dataset from the Zarr file using:
 ```python
@@ -97,7 +98,7 @@ combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
 )
 ```
 
-`multiprocess_pool_size` should be set to the number of available CPU cores for best performances. This can then be run NASA's Pleiades machines using something like:
+Note, this expects all the `.dat` files in the directory are the split output files. You should not have an already combined `.dat` file in the same directory. `multiprocess_pool_size` should be set to the number of available CPU cores for best performances. This can then be run NASA's Pleiades machines using something like:
 
 ```shell
 #PBS -l select=1:ncpus=28:model=bro:mem=100GB
