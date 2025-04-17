@@ -54,7 +54,7 @@ data_frame = mcmc_output_xarray_dataset_to_pandas_data_frame(dataset)
 ```
 The resulting data frame values will be the parameters and log likelihoods. It will have a [Pandas MultiIndex](https://pandas.pydata.org/docs/user_guide/advanced.html#multiindex-advanced-indexing) that includes the iteration, cpu, and chain for each entry (but the values of the data frame are only the parameters and log likelihood). If you're not used to Pandas MultiIndexes, you can use Pandas' `reset_index` to convert these to regular columns. From here, you could save the data frame to a CSV or perform analysis using Pandas' normal methods.
 
-The `mcmc_output_xarray_dataset_to_pandas_data_frame` function also accepts optional `limit_from_end` and `random_sample_size` arguments. Setting `limit_from_end` will make the export to Pandas export only the last N rows, where N is the value that's set. Similarly, setting `random_sample_size` to N will make the export take a random sample of N from the dataset that's passed. Note, that you can use the iteration slicing of the dataset before applying these export limits. Slicing to an iteration followed by `limit_from_end=100_000` will take only a few seconds, regardless of where you take the states from in the dataset. Because of how the data is stored, `random_sample_size=100_000` will still take longer, because it will access each chunk of the data array on-disk. When using a single core, on `nobackup` data, for a dataset with 1.3M iterations, it usually takes about 15 minutes. Most of this time is due to the slow read speed of `nobackup`, and this will probably highly depend on `nobackup` traffic that day. That said, this can still be run on a login node, without submitting a job, as it never uses substantial amounts of memory.
+The `mcmc_output_xarray_dataset_to_pandas_data_frame` function also accepts optional `limit_from_end` and `random_sample_size` arguments. Setting `limit_from_end` will make the export to Pandas export only the last N rows, where N is the value that's set. Similarly, setting `random_sample_size` to N will make the export take a random sample of N from the dataset that's passed. Note that you can use the iteration slicing of the dataset before applying these export limits. Slicing to an iteration followed by `limit_from_end=100_000` will take only a few seconds, regardless of where you take the states from in the dataset. Because of how the data is stored, `random_sample_size=100_000` will still take longer, because it will access each chunk of the data array on-disk. When using a single core, on `nobackup` data, for a dataset with 1.3M iterations, it usually takes about 15 minutes. Most of this time is due to the slow read speed of `nobackup`, and this will probably highly depend on `nobackup` traffic that day. That said, this can still be run on a login node, without submitting a job, as it never uses substantial amounts of memory.
 
 There is also a high-level function for getting the median log-likelihoods over windows of iterations of the data.
 ```python
@@ -74,7 +74,7 @@ Xarray is N-dimensional arrays with labels (sort of like Pandas, but for more di
 :width: 400px
 ```
 
-Zarr is the on-disk data format of the data. It's a format that allows reading parts directly from the disk without needing to load the entire array, but is still compressed at the same time.
+Zarr is the on-disk format of the data. It's a format that allows reading parts directly from the disk without needing to load the entire array, but is still compressed at the same time.
 
 Xarray can take advantage of many file formats, Zarr being one of them. Zarr can be used by several data structure libraries, Xarray being one of them. For the most part, you only need to use the Xarray side of things. Just know that the file format this data is saved in is Zarr.
 
@@ -143,7 +143,7 @@ dataset.to_zarr(another_zarr_path)
 ```
 This is particularly useful if you want to perform some reductions of the data on a remote server, but then want a smaller Zarr file for further local processing.
 
-Xarray will automatically multiprocess tasks. If you wanted to get the mean log likelihood value (with the computation automatically parallelized across the available CPUs), you can use:
+Xarray will automatically multiprocess tasks. If you want to get the mean log likelihood value (with the computation automatically parallelized across the available CPUs), you can use:
 ```python
 mean_log_likelihood_value = dataset['log_likelihood'].mean().compute()
 ```
