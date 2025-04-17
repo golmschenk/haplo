@@ -1,6 +1,6 @@
-# Xarray Zarr MCMC output files
+# Xarray MCMC output files
 
-The split file text format the MCMC outputs data into is a bit cumbersome. The Xarray Zarr format makes the output smaller (~7x smaller), allows for random access indexing (meaning you can grab a random subset from the middle almost instantly), does not require loading the full file into memory (allowing low memory nodes to perform full dataset analysis), makes parallelization of analysis easy, and provides several other benefits in advanced use cases.
+The split file text format the MCMC outputs data into is a bit cumbersome. The Xarray Zarr format makes the output smaller (~7x smaller), allows for random access indexing (meaning you can grab a random subset from the middle almost instantly), does not require loading the full file into memory (allowing low memory nodes to perform full file analysis), makes parallel processing of analysis easy, and provides several other benefits in advanced use cases.
 
 ## High-level API
 
@@ -53,7 +53,7 @@ data_frame = mcmc_output_xarray_dataset_to_pandas_data_frame(dataset)
 ```
 The resulting data frame values will be the parameters and log likelihoods. It will have a [Pandas MultiIndex](https://pandas.pydata.org/docs/user_guide/advanced.html#multiindex-advanced-indexing) that includes the iteration, cpu, and chain for each entry (but the values of the data frame are only the parameters and log likelihood). If you're not used to Pandas MultiIndexes, you can use Pandas' `reset_index` to convert these to regular columns. From here, you could save the data frame to a CSV or perform analysis using Pandas' normal methods.
 
-The `mcmc_output_xarray_dataset_to_pandas_data_frame` function also accepts optional `limit_from_end` and `random_sample_size` arguments. Setting `limit_from_end` will make the export to Pandas export only the last N rows, where N is the value that's set. Similarly, setting `random_sample_size` to N will make the export take a random sample of N from the dataset that's passed. Note, that you can use the iteration slicing of the dataset before applying these export limits. Slicing to an iteration followed by `limit_from_end=100_000` will take only a few seconds, regardless of where you take the states from in the dataset. Because of how the data is stored, `random_sample_size=100_000` will still take longer, because it will access each chunk of the data array on-disk. When using a single core, on `nobackup` data, for a dataset with 1.3M iterations, it usually takes about 15 minutes. Most of this time is due to the slow read speed of `nobackup`, and this will probably highly depend on `nobackup` traffic that day (and it has taken an hour once). That said, this can still be run on a login node, without submitting a job, as it never uses substantial amounts of memory.
+The `mcmc_output_xarray_dataset_to_pandas_data_frame` function also accepts optional `limit_from_end` and `random_sample_size` arguments. Setting `limit_from_end` will make the export to Pandas export only the last N rows, where N is the value that's set. Similarly, setting `random_sample_size` to N will make the export take a random sample of N from the dataset that's passed. Note, that you can use the iteration slicing of the dataset before applying these export limits. Slicing to an iteration followed by `limit_from_end=100_000` will take only a few seconds, regardless of where you take the states from in the dataset. Because of how the data is stored, `random_sample_size=100_000` will still take longer, because it will access each chunk of the data array on-disk. When using a single core, on `nobackup` data, for a dataset with 1.3M iterations, it usually takes about 15 minutes. Most of this time is due to the slow read speed of `nobackup`, and this will probably highly depend on `nobackup` traffic that day. That said, this can still be run on a login node, without submitting a job, as it never uses substantial amounts of memory.
 
 There is also a high-level function for getting the median log-likelihoods over windows of iterations of the data.
 ```python
@@ -61,7 +61,7 @@ from haplo.analysis import extract_windowed_median_log_likelihood_series
 
 medians = extract_windowed_median_log_likelihood_series(dataset, window_size=1000)
 ```
-This provides a Pandas Series with the indexes being the starts of the windows and the values being the median of those windows. Again, since this method accesses every part of the data array, it takes a while to run (e.g., 15 minutes with a single core when read from `nobackup`). However, it does not require substantial memory and can be run on a login node without submitting a job.
+This provides a Pandas Series with the indexes being the starts of the windows and the values being the median of those windows. Again, since this method accesses every part of the data array, it can take a while to run (e.g., 15 minutes with a single core when read from `nobackup`). However, it does not require substantial memory and can be run on a login node without submitting a job.
 
 ## What is Xarray and Zarr? What is the structure of this data?
 
