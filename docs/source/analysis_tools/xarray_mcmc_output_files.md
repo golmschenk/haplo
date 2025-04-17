@@ -148,7 +148,7 @@ The main `Dataset` object contains two `DataArray` objects, one for the paramete
 parameters_xarray_array = dataset['parameter']
 log_likelihoods_xarray_array = dataset['log_likelihood']
 ```
-That said, it's often useful to work on the full dataset when sub-selecting the data. The two `DataArray` objects share their overlapping dimensions. Meaning you can do something like request a certain range of iterations and you will get that range on both arrays at the same time.
+That said, it's often useful to work on the full dataset when sub-selecting the data. The two `DataArray` objects share their overlapping dimensions. Meaning you can do something like request a certain range of iterations and you will get that range on both arrays at the same time. The dimensions of the dataset are `[iteration, cpu, chain, parameter_index]` with `[iteration, cpu, chain]` shared between the parameters and log-likelihoods arrays.
 
 Xarray will automatically multiprocess tasks. If you want to get the mean log likelihood value (with the computation automatically parallelized across the available CPUs), you can use:
 ```python
