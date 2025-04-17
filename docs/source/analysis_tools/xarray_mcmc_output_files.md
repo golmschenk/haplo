@@ -165,7 +165,7 @@ y = x[slice(2, 5)]
 ```
 However, the former only works with the index `[]` notation, so, with Xarray, we sometimes need to call `slice` directly.
 
-Notably for the MCMC output data, more specific selection can often be useful for other analyses. For example, if you wanted to follow what an individual MCMC chain on one CPU did, you could use:
+For the MCMC output data, more specific selection can often be useful for other analyses. For example, if you wanted to follow what an individual MCMC chain on one CPU did, you could use:
 ```python
 specific_chain_dataset = dataset.sel({'cpu': 7, 'chain': 0})
 ```
