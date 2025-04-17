@@ -155,6 +155,16 @@ iteration_sliced_dataset = dataset.sel({'iteration': slice(100, 200)})
 ```
 Will get a new dataset which is the subsample of the dataset for iterations 100 through 200. Note, this follows Pandas style labeled indexing [where endpoints are inclusive](https://pandas.pydata.org/docs/user_guide/advanced.html#endpoints-are-inclusive). Position-based indexing is also possible using `isel`, where endpoints are exclusive (again following Pandas). More general indexing and selecting rules for Xarray are similar to Pandas, but details can be found [here](https://docs.xarray.dev/en/latest/user-guide/indexing.html).
 
+In case you have never seen the `slice` function before, this is built-in to Python, and you've probably used it a lot without knowing it. This is because
+```python
+y = x[2:5]
+```
+is actually just a shorthand for
+```python
+y = x[slice(2, 5)]
+```
+However, the former only works with the index `[]` notation, so, with Xarray, we sometimes need to call `slice` directly.
+
 Notably for the MCMC output data, more specific selection can often be useful for other analyses. For example, if you wanted to follow what an individual MCMC chain on one CPU did, you could use:
 ```python
 specific_chain_dataset = dataset.sel({'cpu': 7, 'chain': 0})
