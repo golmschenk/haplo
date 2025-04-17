@@ -98,7 +98,7 @@ combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
 )
 ```
 
-Note, this expects all the `.dat` files in the directory are the split output files. You should not have an already combined `.dat` file in the same directory. The Zarr format would by default only have a `.zarr` extension. This would make the output a directory, with the subfiles in that directory being the components of the data array. However, Zarr supports using the `zarr.zip` extension to make this be a single file. NASA NAS's [best-practices for the Lustre file systems](https://www.nas.nasa.gov/hecc/support/kb/lustre-best-practices_226.html) notes that using many small files does not work well on Lustre, so here we use this `.zarr.zip` version of the file. `multiprocess_pool_size` should be set to the number of available CPU cores for best performances.
+Note, this expects all the `.dat` files in the directory are the split output files. You should not have an already combined `.dat` file in the same directory. The Zarr format would by default only have a `.zarr` extension. This would make the output a directory, with the subfiles in that directory being the components of the data array. However, Zarr supports using the `.zarr.zip` extension to make this be a single file. NASA NAS's [best-practices for the Lustre file systems](https://www.nas.nasa.gov/hecc/support/kb/lustre-best-practices_226.html) notes that using many small files does not work well on Lustre, so here we use this `.zarr.zip` version of the file. `multiprocess_pool_size` should be set to the number of available CPU cores for best performance.
 
 This can then be run NASA's Pleiades machines using something like:
 
@@ -147,7 +147,7 @@ Xarray will automatically multiprocess tasks. If you want to get the mean log li
 ```python
 mean_log_likelihood_value = dataset['log_likelihood'].mean().compute()
 ```
-The `compute()` is necessary, because by default Xarray is "lazy" in that it avoids unnecessary computation by only computing values (and intermediate values) for the results you explicitly request. It's also worth noting that this will by default run being computed from the disk, so the entire set of values never needs to be loaded into memory at once.
+The `compute()` is necessary, because by default Xarray is "lazy" in that it avoids unnecessary computation by only computing values (and intermediate values) for the results you explicitly request. It's also worth noting that this will by default run computed from the disk, so the entire set of values never needs to be loaded into memory at once.
 
 The `parameter` and `log_likelihood` arrays within the dataset share the `[iteration, cpu, chain]` dimensions. So, you can get a subset of both at the same time. For example,
 ```python
@@ -159,7 +159,7 @@ In case you have never seen the `slice` function before, this is built-in to Pyt
 ```python
 y = x[2:5]
 ```
-is actually just a shorthand for
+is actually just shorthand for
 ```python
 y = x[slice(2, 5)]
 ```
