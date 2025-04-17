@@ -98,7 +98,9 @@ combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
 )
 ```
 
-Note, this expects all the `.dat` files in the directory are the split output files. You should not have an already combined `.dat` file in the same directory. `multiprocess_pool_size` should be set to the number of available CPU cores for best performances. This can then be run NASA's Pleiades machines using something like:
+Note, this expects all the `.dat` files in the directory are the split output files. You should not have an already combined `.dat` file in the same directory. The Zarr format would by default only have a `.zarr` extension. This would make the output a directory, with the subfiles in that directory being the components of the data array. However, Zarr supports using the `zarr.zip` extension to make this be a single file. NASA NAS's [best-practices for the Lustre file systems](https://www.nas.nasa.gov/hecc/support/kb/lustre-best-practices_226.html) notes that using many small files does not work well on Lustre, so here we use this `.zarr.zip` version of the file. `multiprocess_pool_size` should be set to the number of available CPU cores for best performances.
+
+This can then be run NASA's Pleiades machines using something like:
 
 ```shell
 #PBS -l select=1:ncpus=28:model=bro:mem=100GB
