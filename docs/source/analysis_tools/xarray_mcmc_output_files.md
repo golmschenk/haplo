@@ -13,7 +13,7 @@ from haplo.analysis import combine_constantinos_kalapotharakos_split_mcmc_output
 from haplo.logging import enable_logger
 
 split_mcmc_output_directory = Path('path/to/split/mcmc/directory')
-zarr_path = Path('path/to/output.zarr.zip')  # Use a better name, but still use the `.zarr.zip` extension.
+zarr_path = Path('path/to/output.zarr.zip')  # Use a better name but still use the `.zarr.zip` extension.
 enable_logger()  # Optional. Will add printing of some progress information.
 combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     split_mcmc_output_directory=split_mcmc_output_directory,
@@ -89,7 +89,7 @@ from haplo.analysis import combine_constantinos_kalapotharakos_split_mcmc_output
 from haplo.logging import enable_logger
 enable_logger()  # Optional. Will add printing of some progress information.
 split_mcmc_output_directory = Path('path/to/split/mcmc/directory')
-zarr_path = Path('path/to/output.zarr.zip')  # Use a better name, but still use the `.zarr.zip` extension.
+zarr_path = Path('path/to/output.zarr.zip')  # Use a better name but still use the `.zarr.zip` extension.
 combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     split_mcmc_output_directory=split_mcmc_output_directory,
     combined_output_path=zarr_path,
@@ -142,6 +142,13 @@ At any point after manipulating the Xarray dataset (say, after reducing the subs
 dataset.to_zarr(another_zarr_path)
 ```
 This is particularly useful if you want to perform some reductions of the data on a remote server, but then want a smaller Zarr file for further local processing.
+
+The main `Dataset` object contains two `DataArray` objects, one for the parameters and one for the log-likelihoods. To get each of these you can use 
+```python
+parameters_xarray_array = dataset['parameter']
+log_likelihoods_xarray_array = dataset['log_likelihood']
+```
+That said, it's often useful to work on the full dataset when sub-selecting the data. The two `DataArray` objects share their overlapping dimensions. Meaning you can do something like request a certain range of iterations and you will get that range on both arrays at the same time.
 
 Xarray will automatically multiprocess tasks. If you want to get the mean log likelihood value (with the computation automatically parallelized across the available CPUs), you can use:
 ```python
