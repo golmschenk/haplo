@@ -246,3 +246,6 @@ cython_debug/
 /wandb/
 /sessions/
 /logs/
+/GammaPackage/Gamma_halfplane_v3.csv
+/GammaPackage/J0030+0451_3PC_data.fits
+/GammaPackage/lowest_validation_model.pt
