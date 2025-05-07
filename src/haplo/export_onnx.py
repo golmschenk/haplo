@@ -13,8 +13,8 @@ class WrappedModel(Module):
         super(WrappedModel, self).__init__()
         self.module = module
 
-    def forward(self, x):
-        return self.module(x)
+    def forward(self, *args, **kwargs):
+        return self.module(*args, **kwargs)
 
 
 def export_onnx(model: Module, output_onnx_model_path: Path, input_features: int = 11):
