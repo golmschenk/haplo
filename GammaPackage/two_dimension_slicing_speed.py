@@ -10,7 +10,6 @@ from GammaPackage.cura_2D_model import Cura2D
 from GammaPackage.efficient_cura_2D_model import SelectiveThetaComputeCura2D
 from haplo.export_onnx import WrappedModel
 from haplo.nicer_dataset import split_dataset_into_count_datasets
-from haplo.unwrap_model import unwrap_model
 
 
 def main():
@@ -40,9 +39,12 @@ def main():
         efficient_model_predicted_test_phase_amplitudes0 = np.squeeze(efficient_model_output_array, axis=0)
 
         light_curve_comparison = figure()
-        light_curve_comparison.line(x=list(range(100)), y=test_phase_amplitudes0[theta_bin].numpy(), color='mediumblue')
-        light_curve_comparison.line(x=list(range(100)), y=full_model_predicted_test_phase_amplitudes0[theta_bin], color='goldenrod')
-        light_curve_comparison.line(x=list(range(1, 101)), y=efficient_model_predicted_test_phase_amplitudes0, color='firebrick')
+        light_curve_comparison.line(x=list(range(100)), y=test_phase_amplitudes0[theta_bin].numpy(),
+                                    color='mediumblue')
+        light_curve_comparison.line(x=list(range(100)), y=full_model_predicted_test_phase_amplitudes0[theta_bin],
+                                    color='goldenrod')
+        light_curve_comparison.line(x=list(range(100)), y=efficient_model_predicted_test_phase_amplitudes0,
+                                    color='firebrick')
         show(light_curve_comparison)
 
 
