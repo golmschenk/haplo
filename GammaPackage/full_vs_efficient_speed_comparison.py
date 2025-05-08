@@ -23,16 +23,25 @@ def main():
     for _ in range(100):
         parameters = random_generator.random(11, dtype=np.float32)
         input_array = np.expand_dims(parameters, axis=0)
-        theta_bin = random_generator.integers(0, 64)
-        theta_bin = 4
         with torch.no_grad():
             input_tensor = torch.tensor(input_array)
-            full_model_output_tensor = full_model(input_tensor)
-            efficient_model_output_tensor = efficient_model(input_tensor, tensor(theta_bin))
-            full_model_bin_tensor = full_model_output_tensor[:, theta_bin]
-            full_model_bin_array = full_model_bin_tensor.numpy()
-            efficient_model_output_array = efficient_model_output_tensor.numpy()
-            assert np.allclose(full_model_bin_array, efficient_model_output_array, rtol=0.02)
+            model_output_tensor = full_model(input_tensor)
+            model_output_array = model_output_tensor.numpy()
+            _ = np.squeeze(model_output_array, axis=0)
+    end_time = datetime.datetime.now()
+    print(f'{end_time - start_time}')
+
+    theta_bin = 4
+    random_generator = np.random.default_rng(seed=0)
+    start_time = datetime.datetime.now()
+    for _ in range(100):
+        parameters = random_generator.random(11, dtype=np.float32)
+        input_array = np.expand_dims(parameters, axis=0)
+        with torch.no_grad():
+            input_tensor = torch.tensor(input_array)
+            model_output_tensor = efficient_model(input_tensor, tensor(theta_bin))
+            model_output_array = model_output_tensor.numpy()
+            _ = np.squeeze(model_output_array, axis=0)
     end_time = datetime.datetime.now()
     print(f'{end_time - start_time}')
 
