@@ -3,6 +3,7 @@ import torch
 from bokeh.io import show
 from bokeh.plotting import figure
 from pathlib import Path
+from torch import tensor
 
 from GammaPackage.GammaSkymapDataset import GammaSkymapDataset
 from GammaPackage.cura_2D_model import Cura2D
@@ -26,14 +27,14 @@ def main():
     saved_model_path = Path('lowest_validation_model.pt')
     efficient_model.load_state_dict(torch.load(str(saved_model_path), map_location=torch.device('cpu')))
 
-    theta_bin = 30
+    theta_bin = 4
     test_parameters0, test_phase_amplitudes0 = test_dataset[0]
     input_array = np.expand_dims(test_parameters0, axis=0)
     with torch.no_grad():
         input_tensor = torch.tensor(input_array)
         full_model_output_tensor = full_model(input_tensor)
         full_model_output_array = full_model_output_tensor.numpy()
-        efficient_model_output_tensor = efficient_model(input_tensor, theta_bin)
+        efficient_model_output_tensor = efficient_model(input_tensor, tensor(theta_bin))
         efficient_model_output_array = efficient_model_output_tensor.numpy()
         full_model_predicted_test_phase_amplitudes0 = np.squeeze(full_model_output_array, axis=0)
         efficient_model_predicted_test_phase_amplitudes0 = np.squeeze(efficient_model_output_array, axis=0)

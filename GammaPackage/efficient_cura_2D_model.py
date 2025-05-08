@@ -1,3 +1,4 @@
+import torch
 from torch.nn import ModuleList, Conv2d, LeakyReLU, Module
 
 from GammaPackage.cura_2D_model import ResidualGenerationLightCurveNetworkBlock2D
@@ -38,11 +39,16 @@ class SelectiveThetaComputeCura2D(Module):
         x = self.activation(x)
         for index, block in enumerate(self.blocks[:-3]):
             x = block(x)
-        x = self.blocks[-3](x)
-        x = self.blocks[-2](x)
-        x = self.blocks[-1](x)
-        x = self.end_conv(x)
-        x = x[:, :, :100, :100]
-        x = x[:, :, theta_bin]
+        lower_capture_theta_bin = (torch.floor((theta_bin - 1) / 2.25) - 1).to(torch.int32)
+        upper_capture_theta_bin = (torch.floor((theta_bin + 1) / 2.25) + 2).to(torch.int32)
+        sub_x = x[:, :, lower_capture_theta_bin:upper_capture_theta_bin]
+        x = self.blocks[-3](sub_x)
+        sub_x = x[:, :, 2:7]  # TODO: which 3 of the 4 to take will depend on whether it's odd or even.
+        x = self.blocks[-2](sub_x)
+        sub_x = x[:, :, 1:-1]
+        x = self.blocks[-1](sub_x)
+        sub_x = x[:, :, 1:-1]
+        x = self.end_conv(sub_x)
+        x = x[:, :, :, :100]
         outputs = x.reshape([-1, 100])
         return outputs
