@@ -39,11 +39,13 @@ class SelectiveThetaComputeCura2D(Module):
         x = self.activation(x)
         for index, block in enumerate(self.blocks[:-3]):
             x = block(x)
-        lower_capture_theta_bin = (torch.floor((theta_bin - 1) / 2.25) - 1).to(torch.int32)
-        upper_capture_theta_bin = (torch.floor((theta_bin + 1) / 2.25) + 2).to(torch.int32)
+        lower_capture_theta_bin = (torch.round((theta_bin - 2) / 2.25) - 1).to(torch.int32)
+        upper_capture_theta_bin = (torch.round((theta_bin + 2) / 2.25) + 2).to(torch.int32)
         sub_x = x[:, :, lower_capture_theta_bin:upper_capture_theta_bin]
         x = self.blocks[-3](sub_x)
-        sub_x = x[:, :, 2:7]  # TODO: which 3 of the 4 to take will depend on whether it's odd or even.
+        # The below values work for index 4, but this will shift up or down based on the upsampling.
+        # For example, if the upsampling is 2, then the slice will be 2:7 for even, 3:8 for odd.
+        sub_x = x[:, :, 2:7]
         x = self.blocks[-2](sub_x)
         sub_x = x[:, :, 1:-1]
         x = self.blocks[-1](sub_x)

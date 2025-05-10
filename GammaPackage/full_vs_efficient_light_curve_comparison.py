@@ -44,7 +44,7 @@ def main():
         light_curve_comparison.line(x=list(range(100)), y=full_model_predicted_test_phase_amplitudes0[theta_bin],
                                     color='goldenrod')
         light_curve_comparison.line(x=list(range(100)), y=efficient_model_predicted_test_phase_amplitudes0,
-                                    color='firebrick')
+                                    color='firebrick', line_dash='dashed')
         show(light_curve_comparison)
 
 

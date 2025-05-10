@@ -19,7 +19,6 @@ def main():
     efficient_model.load_state_dict(torch.load(str(saved_model_path), map_location=torch.device('cpu')))
 
     random_generator = np.random.default_rng(seed=0)
-    start_time = datetime.datetime.now()
     for _ in range(100):
         parameters = random_generator.random(11, dtype=np.float32)
         input_array = np.expand_dims(parameters, axis=0)
@@ -33,8 +32,6 @@ def main():
             full_model_bin_array = full_model_bin_tensor.numpy()
             efficient_model_output_array = efficient_model_output_tensor.numpy()
             assert np.allclose(full_model_bin_array, efficient_model_output_array, rtol=0.02)
-    end_time = datetime.datetime.now()
-    print(f'{end_time - start_time}')
 
 
 if __name__ == '__main__':
