@@ -5,7 +5,7 @@ from pathlib import Path
 from torch import tensor
 
 from GammaPackage.cura_2D_model import Cura2D
-from GammaPackage.efficient_cura_2D_model import SelectiveThetaComputeCura2D
+from GammaPackage.selective_theta_compute_cura_2D_model import SelectiveThetaComputeCura2D
 from haplo.export_onnx import WrappedModel
 
 
@@ -31,10 +31,10 @@ def main():
     end_time = datetime.datetime.now()
     print(f'{end_time - start_time}')
 
-    theta_bin = 4
     random_generator = np.random.default_rng(seed=0)
     start_time = datetime.datetime.now()
     for _ in range(100):
+        theta_bin = 4  # TODO: Should be random across the various zeta bins.
         parameters = random_generator.random(11, dtype=np.float32)
         input_array = np.expand_dims(parameters, axis=0)
         with torch.no_grad():

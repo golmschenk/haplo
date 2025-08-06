@@ -1,11 +1,10 @@
-import datetime
 import numpy as np
 import torch
 from pathlib import Path
 from torch import tensor
 
 from GammaPackage.cura_2D_model import Cura2D
-from GammaPackage.efficient_cura_2D_model import SelectiveThetaComputeCura2D
+from GammaPackage.selective_theta_compute_cura_2D_model import SelectiveThetaComputeCura2D
 from haplo.export_onnx import WrappedModel
 
 
