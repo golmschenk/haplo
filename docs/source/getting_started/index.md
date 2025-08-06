@@ -69,3 +69,9 @@ The red line is the network prediction where the blue is the ground truth. Of co
 ```{image} example_infer_output_with_good_model.png
 :width: 400px
 ```
+
+## Exporting the trained model
+The trained model is currently stored as a PyTorch `.pt` file. To use the model in outside of PyTorch, including in our Rust package, we need to export the model to the Open Neural Network eXchange (ONNX) format. To do that, we use the `scripts/example_export_to_onnx.py` file. This is a very simple file, and the only thing that needs to be changed is to set the `.pt` path to point to your `.pt` file. Then run
+```shell
+python scripts/example_export_to_onnx.py
+```
