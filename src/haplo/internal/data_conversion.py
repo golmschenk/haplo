@@ -40,42 +40,42 @@ def constantinos_kalapotharakos_format_file_to_xarray_zarr(
     with input_path.open() as file_handle:
         file_contents = get_memory_mapped_file_contents(file_handle)
         value_iterator = re.finditer(rb"[^\s]+", file_contents)
-        parameters_set = []
-        phase_amplitudes_set = []
+        input_set = []
+        output_set = []
         encoding = {
             DatasetVariableName.INPUT: {'dtype': 'float32', 'chunks': (zarr_chunk_axis0_size, input_size)},
             DatasetVariableName.OUTPUT: {'dtype': 'float32', 'chunks': (zarr_chunk_axis0_size, output_size)},
         }
         for index in itertools.count():
-            parameters = []
+            inputs = []
             try:
-                parameters.append(float(next(value_iterator).group(0)))
+                inputs.append(float(next(value_iterator).group(0)))
             except StopIteration:
                 break
             for _ in range(input_size - 1):
-                parameters.append(float(next(value_iterator).group(0)))
+                inputs.append(float(next(value_iterator).group(0)))
             _ = float(next(value_iterator).group(0))  # Likelihood in Constantinos' output which has no meaning here.
-            phase_amplitudes = []
+            outputs = []
             for _ in range(output_size):
-                phase_amplitudes.append(float(next(value_iterator).group(0)))
-            parameters_set.append(parameters)
-            phase_amplitudes_set.append(phase_amplitudes)
+                outputs.append(float(next(value_iterator).group(0)))
+            input_set.append(inputs)
+            output_set.append(outputs)
             if (index + 1) % 100000 == 0:
                 partial_dataset = xarray.Dataset(data_vars={
-                    DatasetVariableName.INPUT: (['index', 'parameter_index'], parameters_set),
-                    DatasetVariableName.OUTPUT: (['index', 'phase_index'], phase_amplitudes_set),
+                    DatasetVariableName.INPUT: (['index', 'input'], input_set),
+                    DatasetVariableName.OUTPUT: (['index', 'output'], output_set),
                 })
                 if not output_path.exists():
                     partial_dataset.to_zarr(output_path, encoding=encoding)
                 else:
                     partial_dataset.to_zarr(output_path, append_dim='index')
                 logger.info(f'Processed {index + 1} rows.')
-                parameters_set = []
-                phase_amplitudes_set = []
-        if len(parameters_set) != 0:
+                input_set = []
+                output_set = []
+        if len(input_set) != 0:
             partial_dataset = xarray.Dataset(data_vars={
-                DatasetVariableName.INPUT: (['index', 'parameter_index'], parameters_set),
-                DatasetVariableName.OUTPUT: (['index', 'phase_index'], phase_amplitudes_set),
+                DatasetVariableName.INPUT: (['index', 'input'], input_set),
+                DatasetVariableName.OUTPUT: (['index', 'output'], output_set),
             })
             if not output_path.exists():
                 partial_dataset.to_zarr(output_path, encoding=encoding)

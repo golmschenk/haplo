@@ -1,23 +1,22 @@
 from __future__ import annotations
 
-import itertools
 import logging
-import math
-from pathlib import Path
-from typing import Optional, Callable, List
-
 import numpy as np
 import pandas as pd
 import polars as pl
 import torch
+from pathlib import Path
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
-from torch.utils.data import Dataset, Subset, get_worker_info
+from torch.utils.data import Subset, get_worker_info
+from typing import Optional, Callable, List, TypeVar
+
+from haplo.internal.sized_dataset import SizedDataset
 
 logger = logging.getLogger(__name__)
 
 
-class NicerDataset(Dataset):
+class NicerDataset(SizedDataset):
     def __init__(self, database_uri: str, database_path: Path, length: int, parameter_count: int,
                  parameters_transform: Optional[Callable] = None, phase_amplitudes_transform: Optional[Callable] = None,
                  *, in_memory: bool = False):
@@ -132,15 +131,18 @@ def split_dataset_into_fractional_datasets(dataset: NicerDataset, fractions: Lis
     return fractional_datasets
 
 
-def split_dataset_into_count_datasets(dataset: NicerDataset, counts: List[int]) -> List[NicerDataset]:
+_T_co = TypeVar("_T_co", covariant=True)
+
+
+def split_dataset_into_count_datasets(dataset: SizedDataset[_T_co], counts: List[int]) -> List[Subset[_T_co]]:
     assert np.sum(counts) < len(dataset)
-    count_datasets: List[NicerDataset] = []
+    count_datasets: List[Subset[_T_co]] = []
     next_index = 0
     previous_index = 0
     for count in counts:
         next_index += count
         indexes = torch.tensor(range(previous_index, next_index), dtype=torch.int32)
-        count_dataset: NicerDataset = Subset(dataset, indexes)
+        count_dataset = Subset(dataset, indexes)
         count_datasets.append(count_dataset)
         previous_index = next_index
     indexes = torch.tensor(range(previous_index, len(dataset)), dtype=torch.int32)
