@@ -5,7 +5,7 @@ from torch.optim import AdamW
 from haplo.distributed import distributed_logging
 from haplo.losses import PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
     PlusOneChiSquaredStatisticMetric, SumDifferenceSquaredOverMedianExpectedSquaredMetric
-from haplo.models import Cura
+from haplo.internal.models.cura_model import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration

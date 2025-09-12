@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 
 from haplo.export_onnx import WrappedModel, export_onnx
-from haplo.models import Cura
+from haplo.internal.models.cura_model import Cura
 
 
 def example_export_to_onnx():
