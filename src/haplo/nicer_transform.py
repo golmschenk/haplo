@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 phase_amplitude_mean = 34025.080543335825
 phase_amplitude_standard_deviation = 47698.66676993027
@@ -39,8 +38,3 @@ class PrecomputedUnnormalizePhaseAmplitudes:
         phase_amplitudes *= phase_amplitude_standard_deviation
         phase_amplitudes += phase_amplitude_mean
         return phase_amplitudes
-
-
-class ToTensor:
-    def __call__(self, array):
-        return torch.tensor(array)
