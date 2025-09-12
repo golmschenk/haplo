@@ -1,6 +1,6 @@
 from torch.nn import Module, ModuleList, Conv1d, LeakyReLU
 
-from haplo.internal.models import ResidualGenerationLightCurveNetworkBlock
+from haplo.internal.models.legacy_models import ResidualGenerationLightCurveNetworkBlock
 
 
 class Cura(Module):

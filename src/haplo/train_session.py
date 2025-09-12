@@ -6,6 +6,7 @@ import math
 import os
 import socket
 from pathlib import Path
+from torch.optim.lr_scheduler import ExponentialLR
 from typing import Callable, List
 
 import numpy as np
@@ -123,8 +124,9 @@ def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_f
                logging_configuration: TrainLoggingConfiguration):
     lowest_validation_cycle_loss = tensor(math.inf)
     logger.info(f'{process_rank}: Starting training loop...')
+    scheduler = ExponentialLR(optimizer, gamma=0.95)
     for cycle in range(cycles_to_run):
-        logger.info(f"Epoch {cycle} -------------------------------")
+        logger.info(f"Epoch {cycle} with LR={optimizer.param_groups[0]['lr']} -------------------------------")
         train_phase(train_dataloader, model, loss_function, optimizer, network_device=network_device,
                     cycle=cycle, metric_functions=metric_functions, process_rank=process_rank,
                     world_size=world_size)
@@ -133,6 +135,7 @@ def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_f
                                                  cycle=cycle,
                                                  metric_functions=metric_functions,
                                                  process_rank=process_rank, world_size=world_size)
+        scheduler.step()
         save_state(model, optimizer, logging_configuration, state_name_prefix='latest', process_rank=process_rank)
         if (
                 logging_configuration.model_save_cycle_frequency is not None and
