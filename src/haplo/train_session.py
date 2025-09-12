@@ -60,8 +60,12 @@ def train_session(train_dataset: Dataset, validation_dataset: Dataset, model: Mo
     logger.info('Starting training...')
     logging_configuration.session_directory.mkdir(exist_ok=True, parents=True)
     local_rank, process_rank, world_size = get_distributed_world_information()
+    wandb_init_extra_kwargs = {}
+    if os.environ.get('WANDB_MODE') == 'disabled':
+        wandb_init_extra_kwargs['mode'] = 'disabled'
     wandb_init(process_rank=process_rank, project=logging_configuration.wandb_project,
-               entity=logging_configuration.wandb_entity, settings=wandb.Settings(start_method=wandb_start_method))
+               entity=logging_configuration.wandb_entity, settings=wandb.Settings(start_method=wandb_start_method),
+               **wandb_init_extra_kwargs)
     wandb_log_data_class(hyperparameter_configuration, process_rank=process_rank)
     wandb_log_data_class(system_configuration, process_rank=process_rank)
     wandb_log_dictionary(logging_configuration.additional_log_dictionary, process_rank=process_rank)

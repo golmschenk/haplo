@@ -11,6 +11,7 @@ from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNor
 
 def test_infer_session():
     os.environ["WANDB_MODE"] = "disabled"
+    os.environ['WANDB_DISABLED'] = 'true'
     full_dataset_path = Path(__file__).parent.joinpath('test_train_session_resources/300_parameters_and_phase_amplitudes.db')
     full_train_dataset = NicerDataset.new(
         dataset_path=full_dataset_path,
