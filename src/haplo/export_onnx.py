@@ -5,8 +5,6 @@ import torch
 from onnxruntime.tools.onnx_model_utils import make_dim_param_fixed
 from torch.nn import Module
 
-from haplo.models import Cura
-
 
 class WrappedModel(Module):
     def __init__(self, module):
@@ -35,14 +33,3 @@ def export_onnx(model: Module, output_onnx_model_path: Path, input_features: int
     make_dim_param_fixed(onnx_model.graph, 'batch_size', 1)
     make_dim_param_fixed(onnx_model.graph, 'phase_amplitudes_length', 64)
     onnx.save(onnx_model, str(output_onnx_model_path))
-
-
-def export_onnx_model_from_pytorch_path(pytorch_path: Path):
-    model = Cura()
-    model = WrappedModel(model)
-    model.load_state_dict(torch.load(pytorch_path, map_location='cpu'))
-    export_onnx(model, output_onnx_model_path=Path('exported_model.onnx'))
-
-
-if __name__ == '__main__':
-    export_onnx_model_from_pytorch_path(Path('sessions/1.pt'))

@@ -8,7 +8,7 @@ from haplo.internal.models.cura_model import Cura
 
 def example_export_to_onnx():
     pytorch_path = Path('sessions/your_model_name.pt')
-    model = Cura()
+    model = Cura.new()
     model = WrappedModel(model)
     model.load_state_dict(torch.load(pytorch_path, map_location='cpu'))
     export_onnx(model=model, output_onnx_model_path=Path('exported_model.onnx'))

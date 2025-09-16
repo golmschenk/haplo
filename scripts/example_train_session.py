@@ -26,7 +26,7 @@ def example_train_session():
     )
     test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
         full_train_dataset, [100_000, 100_000, 500_000])
-    model = Cura()
+    model = Cura.new()
     loss_function = SumDifferenceSquaredOverMedianExpectedSquaredMetric()
     metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric(),
                         SumDifferenceSquaredOverMedianExpectedSquaredMetric()]
