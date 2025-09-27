@@ -27,9 +27,9 @@ dependencies = [
     "tenacity>=8.2.3",
     "myst-parser",
     "furo>=2023.9.10",
-    "dask>=2023.1.1",
+    "dask>=2023.1.1,<2025.4.0",  # TODO: Remove restriction when dependencies fix Zip bug.
     "xarray>2023.1.0",
-    "zarr>=2.0.0,<3.0.0",
+    "zarr>=3.0.0",
     "numcodecs>=0.15.0,!=0.16.0",
 ]
 
@@ -90,21 +90,3 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "if TYPE_CHECKING:",
 ]
-
-[tool.ruff]
-extend-exclude = ["examples"]
-
-[tool.ruff.lint]
-ignore = [
-    "RET504", # Subjective but, naming the returned value often seems to help readability.
-    "SIM108", # Subjective but, ternary operators are often too confusing.
-    # We don't expect use cases of the frame to need to worry about security issues.
-    "S608",
-    "S301",
-    "S311",
-    "EM102", # The improved source readability is worth the loss in readibility of the traceback in my opinion.
-    "TRY003", # Disabling EM102 makes this rule trigger in areas it shouldn't.
-    "G004", # The improved source readability is worth the extra string evaluation cost in my opinion.
-    "N812", # Bokeh uses lowercase for its figure class, and not changing that messes with other conventions.
-]
-isort.known-first-party = ["haplo", "ramjet", "qusi"]

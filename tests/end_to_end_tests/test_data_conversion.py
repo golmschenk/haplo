@@ -1,8 +1,16 @@
+import asyncio
+
+from typing import Generator
+
+import pytest
+import zipfile
+
 import numpy as np
 import shutil
 import xarray
 
 from pathlib import Path
+from zarr.storage import ZipStore
 
 from haplo.internal.data_conversion import constantinos_kalapotharakos_format_file_to_xarray_zarr, \
     DatasetVariableName, convert_directory_xarray_zarr_to_zip_xarray_zarr
@@ -50,13 +58,15 @@ def test_convert_directory_xarray_zarr_to_zip_xarray_zarr():
     input_path = Path(__file__).parent.joinpath(
         'test_data_conversion_resources/test_convert_directory_xarray_zarr_to_zip_xarray_zarr_input.zarr')
     output_path = Path(__file__).parent.joinpath(
-        'test_data_conversion_resources/test_convert_directory_xarray_zarr_to_zip_xarray_zarr_output.zip')
+        'test_data_conversion_resources/test_convert_directory_xarray_zarr_to_zip_xarray_zarr_output.zarr.zip')
     output_path.unlink(missing_ok=True)
     convert_directory_xarray_zarr_to_zip_xarray_zarr(
         input_path=input_path,
         output_path=output_path,
     )
-    xarray_dataset = xarray.open_zarr(output_path)
+    assert zipfile.is_zipfile(output_path)
+    output_store = ZipStore(output_path)
+    xarray_dataset = xarray.open_zarr(output_store)
     assert xarray_dataset['input'].encoding['chunks'] == (10, 11)
     assert xarray_dataset['output'].encoding['chunks'] == (10, 64)
     expected_input2 = np.array(

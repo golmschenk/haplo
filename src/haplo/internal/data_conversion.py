@@ -14,6 +14,7 @@ import zarr
 from pandas import DataFrame
 from pathlib import Path
 from xarray import Dataset
+from zarr.storage import ZipStore, StorePath, LocalStore
 
 from haplo.data_preparation import get_memory_mapped_file_contents, \
     arbitrary_constantinos_kalapotharakos_file_path_to_pandas
@@ -90,7 +91,8 @@ def convert_directory_xarray_zarr_to_zip_xarray_zarr(
     if output_path.suffix != '.zip':
         raise ValueError(f'Expected a .zip extension for the output file {output_path}')
     dataset = xarray.open_zarr(input_path)
-    dataset.to_zarr(output_path, mode='w')
+    output_store = ZipStore(output_path, mode='w')
+    dataset.to_zarr(output_store, mode='w')
 
 
 def constantinos_kalapotharakos_format_file_to_xarray_zarr_zip(
