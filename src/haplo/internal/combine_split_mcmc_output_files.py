@@ -7,6 +7,7 @@ import shutil
 import xarray
 from multiprocessing.pool import AsyncResult, Pool
 from pathlib import Path
+from zarr.storage import ZipStore
 
 from haplo.internal.constantinos_kalapotharakos_format import constantinos_kalapotharakos_format_record_generator
 
@@ -78,7 +79,8 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         dataset = xarray.open_zarr(temporary_combined_output_path1)
         temporary_combined_output_zip_path1 = temporary_combined_output_path1.parent.joinpath(
             temporary_combined_output_path1.name + '.zip')
-        dataset.to_zarr(temporary_combined_output_zip_path1, mode='w')
+        with ZipStore(temporary_combined_output_zip_path1, mode='w') as output_zip_store:
+            dataset.to_zarr(output_zip_store, mode='w')
         shutil.rmtree(temporary_combined_output_path1)
         temporary_combined_output_zip_path1.rename(combined_output_path)
     else:
@@ -166,6 +168,10 @@ def _get_known_complete_iterations(split_data_file_paths_, elements_per_record_)
 
 def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, parameter_indexes_, iteration_chunk_size_,
                                cpu_chunk_size_: int = 1):
+    if iteration_chunk_size_ == -1:
+        iteration_chunk_size_ = len(iterations_)
+    if cpu_chunk_size_ == -1:
+        cpu_chunk_size_ = len(cpus_)
     empty_dataset = xarray.Dataset(
         coords={
             'iteration': iterations_,
@@ -191,10 +197,11 @@ def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, paramete
     encoding = {
         'iteration': {'dtype': 'int64', 'chunks': (iteration_chunk_size_,)},
         'cpu': {'dtype': 'int64', 'chunks': (cpu_chunk_size_,)},
-        'chain': {'dtype': 'int64', 'chunks': (-1,)},
-        'parameter_index': {'dtype': 'int64', 'chunks': (-1,)},
-        'parameter': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, -1, -1)},
-        'log_likelihood': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, -1)},
+        'chain': {'dtype': 'int64', 'chunks': (len(chains_),)},
+        'parameter_index': {'dtype': 'int64', 'chunks': (len(parameter_indexes_),)},
+        'parameter': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, len(chains_),
+                                                     len(parameter_indexes_))},
+        'log_likelihood': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, len(chains_))},
     }
     empty_dataset.to_zarr(zarr_path_, compute=False, encoding=encoding)
 

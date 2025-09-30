@@ -3,6 +3,7 @@ import xarray
 from pathlib import Path
 
 import shutil
+from zarr.storage import ZipStore
 
 from haplo.internal.combine_split_mcmc_output_files import \
     combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr
@@ -93,7 +94,8 @@ def test_combine_constantinos_kalapotharakos_split_mcmc_output_with_zip():
         output_path.unlink()
     combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(root_split_files_directory, output_path,
                                                                                elements_per_record=13, overwrite=True)
-    xarray_dataset = xarray.open_zarr(output_path)
+    output_zip_store = ZipStore(output_path)
+    xarray_dataset = xarray.open_zarr(output_zip_store)
     assert xarray_dataset['parameter'].shape == (3, 4, 2, 11)
     assert xarray_dataset['iteration'].max() == 2
     assert xarray_dataset['parameter'][1, 1, 0, 8].compute().item() == pytest.approx(2.06011819056089)

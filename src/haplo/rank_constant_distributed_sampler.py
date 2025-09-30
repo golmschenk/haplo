@@ -85,12 +85,12 @@ class RankConstantDistributedSampler(Sampler[T_co]):
             # Split to nearest available length that is evenly divisible.
             # This is to ensure each rank receives the same amount of data when
             # using this Sampler.
-            self.num_samples = math.ceil(
+            self.number_of_samples_per_replica = math.ceil(
                 (len(self.dataset) - self.num_replicas) / self.num_replicas  # type: ignore[arg-type]
             )
         else:
-            self.num_samples = math.ceil(len(self.dataset) / self.num_replicas)  # type: ignore[arg-type]
-        self.total_size = self.num_samples * self.num_replicas
+            self.number_of_samples_per_replica = math.ceil(len(self.dataset) / self.num_replicas)  # type: ignore[arg-type]
+        self.total_size = self.number_of_samples_per_replica * self.num_replicas
         self.shuffle = shuffle
         self.seed = seed
 
@@ -111,7 +111,7 @@ class RankConstantDistributedSampler(Sampler[T_co]):
 
         # subsample
         indices = indices[self.rank:self.total_size:self.num_replicas]
-        assert len(indices) == self.num_samples
+        assert len(indices) == self.number_of_samples_per_replica
 
         if self.shuffle:
             epoch_seed = self.seed + self.epoch
@@ -120,7 +120,7 @@ class RankConstantDistributedSampler(Sampler[T_co]):
         return iter(indices)
 
     def __len__(self) -> int:
-        return self.num_samples
+        return self.number_of_samples_per_replica
 
     def set_epoch(self, epoch: int) -> None:
         r"""

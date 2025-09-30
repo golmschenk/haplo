@@ -2,6 +2,7 @@ import xarray
 from pathlib import Path
 from typing import Self
 from xarray import Dataset
+from zarr.storage import ZipStore, LocalStore
 
 from haplo.internal.sized_dataset import SizedDataset
 
@@ -9,7 +10,11 @@ from haplo.internal.sized_dataset import SizedDataset
 class XarrayBasedDataset(SizedDataset):
     @classmethod
     def new(cls, zarr_path: Path) -> Self:
-        xarray_dataset: Dataset = xarray.open_zarr(zarr_path)
+        if zarr_path.suffix == '.zip':
+            store = ZipStore(zarr_path)
+        else:
+            store = LocalStore(zarr_path)
+        xarray_dataset: Dataset = xarray.open_zarr(store)
         instance = cls(xarray_dataset=xarray_dataset)
         return instance
 
