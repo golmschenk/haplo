@@ -13,6 +13,10 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: free_disk_space  # The GitHub CI runner is going over space limit.
+        if: runner.os == 'Linux'
+        uses: jlumbroso/free-disk-space@main
+
       - name: install_hatch
         run: pipx install hatch
 
