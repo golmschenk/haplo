@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from torch.nn import Module, ModuleList, Conv1d, LeakyReLU
+from torch.nn import Module, ModuleList, Conv1d, LeakyReLU, Identity
 
 from haplo.internal.models.legacy_models import ResidualGenerationLightCurveNetworkBlock
 from haplo.internal.transforms.affine_normalize import default_input_affine_transform, default_output_affine_transform
@@ -11,9 +11,9 @@ class Cura(Module):
     def new(cls, input_features: int = 11, input_transformation: Module | None = None,
             output_transformation: Module | None = None):
         if input_transformation is None:
-            input_transformation = default_input_affine_transform
+            input_transformation = Identity()
         if output_transformation is None:
-            output_transformation = default_output_affine_transform
+            output_transformation = Identity()
         instance = cls(input_features=input_features, input_transformation=input_transformation,
                        output_transformation=output_transformation)
         return instance
