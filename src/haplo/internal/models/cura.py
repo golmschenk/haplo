@@ -1,15 +1,25 @@
 from __future__ import annotations
 
+from typing import Self
+
+from torch import Tensor
 from torch.nn import Module, ModuleList, Conv1d, LeakyReLU, Identity
 
 from haplo.internal.models.legacy_models import ResidualGenerationLightCurveNetworkBlock
-from haplo.internal.transforms.affine_normalize import default_input_affine_transform, default_output_affine_transform
 
 
 class Cura(Module):
     @classmethod
     def new(cls, number_of_input_features: int = 11, input_transformation: Module | None = None,
-            output_transformation: Module | None = None):
+            output_transformation: Module | None = None) -> Self:
+        """
+        Constructor for the model.
+
+        :param number_of_input_features: The number of input features.
+        :param input_transformation: The transformation to be applied to the input data.
+        :param output_transformation: The transformation to be applied to the output data.
+        :return: An instance of the network model.
+        """
         if input_transformation is None:
             input_transformation = Identity()
         if output_transformation is None:
@@ -46,7 +56,13 @@ class Cura(Module):
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 
-    def forward(self, x):
+    def forward(self, x: Tensor) -> Tensor:
+        """
+        The forward pass of the model.
+
+        :param x: The input data to infer on.
+        :return: The network prediction.
+        """
         x = self.input_transformation(x)
         x = x.reshape([-1, self.number_of_input_features, 1])
         x = self.dense0(x)
