@@ -3,8 +3,8 @@ from pathlib import Path
 from torch.optim import AdamW
 
 from haplo.distributed import distributed_logging
-from haplo.losses import PlusOneBeforeUnnormalizationChiSquaredStatisticMetric, \
-    PlusOneChiSquaredStatisticMetric, SumDifferenceSquaredOverMedianExpectedSquaredMetric
+from haplo.internal.losses import PlusOneBeforeUnnormalizationChiSquaredStatisticMetricWithNormalization, \
+    PlusOneChiSquaredStatisticMetricWithNormalization, SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization
 from haplo.internal.models.cura import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
@@ -27,9 +27,9 @@ def example_train_session():
     test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
         full_train_dataset, [100_000, 100_000, 500_000])
     model = Cura.new()
-    loss_function = SumDifferenceSquaredOverMedianExpectedSquaredMetric()
-    metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric(),
-                        SumDifferenceSquaredOverMedianExpectedSquaredMetric()]
+    loss_function = SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization()
+    metric_functions = [PlusOneChiSquaredStatisticMetricWithNormalization(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetricWithNormalization(),
+                        SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization()]
     hyperparameter_configuration = TrainHyperparameterConfiguration.new()
     system_configuration = TrainSystemConfiguration.new()
     optimizer = AdamW(params=model.parameters(), lr=hyperparameter_configuration.learning_rate,

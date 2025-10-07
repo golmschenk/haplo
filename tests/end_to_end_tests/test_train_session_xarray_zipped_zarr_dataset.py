@@ -4,8 +4,7 @@ from pathlib import Path
 from torch.optim import AdamW
 
 from haplo.internal.xarray_zarr_dataset import XarrayBasedDataset
-from haplo.losses import SumDifferenceSquaredOverMedianExpectedSquaredMetric, PlusOneChiSquaredStatisticMetric, \
-    PlusOneBeforeUnnormalizationChiSquaredStatisticMetric
+from haplo.internal.losses import SumDifferenceSquaredOverMedianExpectedSquaredMetric, PlusOneChiSquaredStatisticMetric
 from haplo.models import SingleDenseNetwork
 from haplo.nicer_dataset import split_dataset_into_count_datasets
 from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
@@ -24,7 +23,7 @@ def test_simple_train_session():
         full_dataset, [10, 10])
     model = SingleDenseNetwork()
     loss_function = SumDifferenceSquaredOverMedianExpectedSquaredMetric()
-    metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric(),
+    metric_functions = [PlusOneChiSquaredStatisticMetric(),
                         SumDifferenceSquaredOverMedianExpectedSquaredMetric()]
     hyperparameter_configuration = TrainHyperparameterConfiguration.new(cycles=5, batch_size=50)
     system_configuration = TrainSystemConfiguration.new(preprocessing_processes_per_train_process=0)

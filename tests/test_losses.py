@@ -1,6 +1,6 @@
 import torch
 
-from haplo.losses import norm_based_gradient_clip
+from haplo.internal.losses import norm_based_gradient_clip
 
 
 def test_norm_based_gradient_clipping():

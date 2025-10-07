@@ -13,7 +13,7 @@ import stringcase
 import torch
 import wandb as wandb
 from torch import Tensor, tensor
-from torch.distributed import init_process_group, destroy_process_group, ReduceOp
+from torch.distributed import destroy_process_group, ReduceOp
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.nn.utils import clip_grad_norm_
@@ -23,7 +23,7 @@ from torch.utils.data import DataLoader, DistributedSampler, Dataset
 
 from haplo.distributed import ddp_setup
 from haplo.logging import set_up_default_logger
-from haplo.losses import norm_based_gradient_clip
+from haplo.internal.losses import norm_based_gradient_clip
 from haplo.nicer_dataset import nicer_dataset_worker_initialization_function, disconnect, \
     move_sqlite_subset_to_new_file, NicerDataset
 from haplo.rank_constant_distributed_sampler import RankConstantDistributedSampler

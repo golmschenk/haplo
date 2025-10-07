@@ -3,8 +3,8 @@ import tempfile
 from pathlib import Path
 from torch.optim import AdamW
 
-from haplo.losses import SumDifferenceSquaredOverMedianExpectedSquaredMetric, PlusOneChiSquaredStatisticMetric, \
-    PlusOneBeforeUnnormalizationChiSquaredStatisticMetric
+from haplo.internal.losses import SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization, PlusOneChiSquaredStatisticMetricWithNormalization, \
+    PlusOneBeforeUnnormalizationChiSquaredStatisticMetricWithNormalization
 from haplo.models import SingleDenseNetwork
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
@@ -29,9 +29,9 @@ def test_simple_train_session():
     test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
         full_train_dataset, [10, 10, 100])
     model = SingleDenseNetwork()
-    loss_function = SumDifferenceSquaredOverMedianExpectedSquaredMetric()
-    metric_functions = [PlusOneChiSquaredStatisticMetric(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetric(),
-                        SumDifferenceSquaredOverMedianExpectedSquaredMetric()]
+    loss_function = SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization()
+    metric_functions = [PlusOneChiSquaredStatisticMetricWithNormalization(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetricWithNormalization(),
+                        SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization()]
     hyperparameter_configuration = TrainHyperparameterConfiguration.new(cycles=5, batch_size=50)
     system_configuration = TrainSystemConfiguration.new(preprocessing_processes_per_train_process=0)
     optimizer = AdamW(params=model.parameters(), lr=hyperparameter_configuration.learning_rate,
