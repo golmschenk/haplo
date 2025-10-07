@@ -13,7 +13,7 @@ dependencies = [
     "torch!=2.4.0,!=2.4.1,!=2.8.*; platform_system == 'Windows'",
     "stringcase>=1.2.0",
     "filelock>=3.12.3",
-    "numpy>=1.25.2",
+    "numpy>=2.0.0",
     "onnx>=1.14.1",
     "onnxruntime>=1.15.1",
     "pandas>=2.1.0",
