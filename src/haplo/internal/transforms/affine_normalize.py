@@ -14,8 +14,10 @@ from haplo.nicer_transform import phase_amplitude_mean, phase_amplitude_standard
 class AffineTransform(Module):
     def __init__(self, scale: Tensor, translation: Tensor):
         super().__init__()
-        self.translation: Tensor = translation
-        self.scale: Tensor = scale
+        self.register_buffer('translation', translation)
+        self.translation: Tensor = self.translation  # Static analysis workaround for PyTorch register_buffer.
+        self.register_buffer('scale', scale)
+        self.scale: Tensor = self.scale  # Static analysis workaround for PyTorch register_buffer.
 
     def forward(self, x: Tensor) -> Tensor:
         x = x * self.scale

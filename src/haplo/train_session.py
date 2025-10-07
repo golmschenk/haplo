@@ -128,7 +128,7 @@ def train_loop(model, train_dataloader, validation_dataloader, optimizer, loss_f
     lowest_validation_cycle_loss = tensor(math.inf)
     logger.info(f'{process_rank}: Starting training loop...')
     for cycle in range(cycles_to_run):
-        logger.info(f"Epoch {cycle} with LR={optimizer.param_groups[0]['lr']} -------------------------------")
+        logger.info(f"Epoch {cycle} -------------------------------")
         train_phase(train_dataloader, model, loss_function, optimizer, network_device=network_device,
                     cycle=cycle, metric_functions=metric_functions, process_rank=process_rank,
                     world_size=world_size)
