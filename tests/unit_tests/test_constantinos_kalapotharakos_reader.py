@@ -2,7 +2,8 @@ from io import StringIO
 
 import pytest
 
-from haplo.data_preparation import arbitrary_constantinos_kalapotharakos_file_contents_to_polars
+from haplo.internal.constantinos_kalapotharakos_format import \
+    arbitrary_constantinos_kalapotharakos_file_contents_to_polars
 
 
 def test_conversion_of_constantinos_kalapotharakos_format_file_handle_to_pandas_dataframe():
