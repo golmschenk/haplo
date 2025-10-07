@@ -5,6 +5,8 @@ import itertools
 import logging
 import math
 import mmap
+from typing import TextIO
+
 import numpy as np
 import pandas as pd
 import re
@@ -16,8 +18,7 @@ from pathlib import Path
 from xarray import Dataset
 from zarr.storage import ZipStore, StorePath, LocalStore
 
-from haplo.data_preparation import get_memory_mapped_file_contents, \
-    arbitrary_constantinos_kalapotharakos_file_path_to_pandas
+from haplo.data_preparation import arbitrary_constantinos_kalapotharakos_file_path_to_pandas
 from haplo.logging import set_up_default_logger
 
 logger = logging.getLogger(__name__)
@@ -217,3 +218,9 @@ def convert_from_2d_xarray_zarr_to_csv(xarray_zarr_path: Path, csv_path: Path) -
     dataset = xarray.open_zarr(xarray_zarr_path)
     data_frame: pd.DataFrame = to_ordered_dataframe(dataset)
     data_frame.to_csv(csv_path, index=False)
+
+
+def get_memory_mapped_file_contents(file_handle: TextIO) -> mmap.mmap:
+    file_fileno = file_handle.fileno()
+    file_contents = mmap.mmap(file_fileno, 0, access=mmap.ACCESS_READ)
+    return file_contents
