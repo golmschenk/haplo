@@ -1,27 +1,23 @@
-import numpy as np
 import os
-import torch
 from pathlib import Path
 
+import numpy as np
+import torch
+
+from haplo.internal.dataset.split import split_dataset_into_count_datasets
+from haplo.internal.dataset.xarray_zarr import XarrayBasedDataset
 from haplo.internal.export import WrappedModel
 from haplo.models import SingleDenseNetwork
-from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
-from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 
 
 def test_infer_session():
     os.environ["WANDB_MODE"] = "disabled"
     os.environ['WANDB_DISABLED'] = 'true'
-    full_dataset_path = Path(__file__).parent.joinpath('test_train_session_resources/300_parameters_and_phase_amplitudes.db')
-    full_train_dataset = NicerDataset.new(
-        dataset_path=full_dataset_path,
-        length=300,
-        parameters_transform=PrecomputedNormalizeParameters(),
-        phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes(),
-        in_memory=True
-    )
-    test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
-        full_train_dataset, [10, 10, 100])
+    full_dataset_path = Path(__file__).parent.joinpath(
+        'test_train_session_xarray_zipped_zarr_resources/100_svf_dataset.zarr.zip')
+    full_dataset = XarrayBasedDataset.new(zarr_path=full_dataset_path)
+    test_dataset, validation_dataset, train_dataset = split_dataset_into_count_datasets(
+        full_dataset, [10, 10])
 
     model = SingleDenseNetwork()
     model = WrappedModel(model)  # The DDP module requires an extra wrapping. This emulates that.

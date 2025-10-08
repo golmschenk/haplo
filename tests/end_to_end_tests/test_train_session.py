@@ -3,11 +3,10 @@ import tempfile
 from pathlib import Path
 from torch.optim import AdamW
 
-from haplo.internal.losses import SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization, PlusOneChiSquaredStatisticMetricWithNormalization, \
-    PlusOneBeforeUnnormalizationChiSquaredStatisticMetricWithNormalization
+from haplo.internal.dataset.xarray_zarr import XarrayBasedDataset
+from haplo.internal.losses import SumDifferenceSquaredOverMedianExpectedSquaredMetric, PlusOneChiSquaredStatisticMetric
 from haplo.models import SingleDenseNetwork
-from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
-from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
+from haplo.internal.dataset.split import split_dataset_into_count_datasets
 from haplo.internal.train_hyperparameter_configuration import TrainHyperparameterConfiguration
 from haplo.internal.train_logging_configuration import TrainLoggingConfiguration
 from haplo.internal.train_session import train_session
@@ -15,23 +14,17 @@ from haplo.internal.train_system_configuration import TrainSystemConfiguration
 
 
 def test_simple_train_session():
-    os.environ["WANDB_MODE"] = "disabled"
+    os.environ['WANDB_MODE'] = 'disabled'
     os.environ['WANDB_DISABLED'] = 'true'
     full_dataset_path = Path(__file__).parent.joinpath(
-        'test_train_session_resources/300_parameters_and_phase_amplitudes.db')
-    full_train_dataset = NicerDataset.new(
-        dataset_path=full_dataset_path,
-        length=300,
-        parameters_transform=PrecomputedNormalizeParameters(),
-        phase_amplitudes_transform=PrecomputedNormalizePhaseAmplitudes(),
-        in_memory=True
-    )
-    test_dataset, validation_dataset, train_dataset, _ = split_dataset_into_count_datasets(
-        full_train_dataset, [10, 10, 100])
+        'test_train_session_xarray_zipped_zarr_resources/100_svf_dataset.zarr.zip')
+    full_dataset = XarrayBasedDataset.new(zarr_path=full_dataset_path)
+    test_dataset, validation_dataset, train_dataset = split_dataset_into_count_datasets(
+        full_dataset, [10, 10])
     model = SingleDenseNetwork()
-    loss_function = SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization()
-    metric_functions = [PlusOneChiSquaredStatisticMetricWithNormalization(), PlusOneBeforeUnnormalizationChiSquaredStatisticMetricWithNormalization(),
-                        SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization()]
+    loss_function = SumDifferenceSquaredOverMedianExpectedSquaredMetric()
+    metric_functions = [PlusOneChiSquaredStatisticMetric(),
+                        SumDifferenceSquaredOverMedianExpectedSquaredMetric()]
     hyperparameter_configuration = TrainHyperparameterConfiguration.new(cycles=5, batch_size=50)
     system_configuration = TrainSystemConfiguration.new(preprocessing_processes_per_train_process=0)
     optimizer = AdamW(params=model.parameters(), lr=hyperparameter_configuration.learning_rate,

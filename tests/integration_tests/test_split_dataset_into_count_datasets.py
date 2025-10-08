@@ -1,8 +1,8 @@
 import numpy as np
 import xarray
 
-from haplo.internal.xarray_zarr_dataset import XarrayBasedDataset
-from haplo.nicer_dataset import split_dataset_into_count_datasets
+from haplo.internal.dataset.xarray_zarr import XarrayBasedDataset
+from haplo.internal.dataset.split import split_dataset_into_count_datasets
 
 
 def test_split_dataset_into_count_datasets_with_xarray_dataset():

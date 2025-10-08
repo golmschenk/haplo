@@ -6,7 +6,8 @@ from haplo.internal.distributed import distributed_logging
 from haplo.internal.losses import PlusOneBeforeUnnormalizationChiSquaredStatisticMetricWithNormalization, \
     PlusOneChiSquaredStatisticMetricWithNormalization, SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization
 from haplo.internal.models.cura import Cura
-from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
+from haplo.nicer_dataset import NicerDataset
+from haplo.internal.dataset.split import split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
 from haplo.internal.train_hyperparameter_configuration import TrainHyperparameterConfiguration
 from haplo.internal.train_logging_configuration import TrainLoggingConfiguration
