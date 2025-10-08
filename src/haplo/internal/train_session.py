@@ -24,7 +24,7 @@ from torch.utils.data import DataLoader, DistributedSampler, Dataset
 
 from haplo.internal.distributed import ddp_setup
 from haplo.internal.logging import set_up_default_logger
-from haplo.internal.losses import norm_based_gradient_clip
+from haplo.internal.gradient_clipping import norm_based_gradient_clip
 from haplo.internal.rank_constant_distributed_sampler import RankConstantDistributedSampler
 from haplo.internal.train_hyperparameter_configuration import TrainHyperparameterConfiguration
 from haplo.internal.train_logging_configuration import TrainLoggingConfiguration

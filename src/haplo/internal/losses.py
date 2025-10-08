@@ -1,6 +1,4 @@
 import torch
-from torch import Tensor
-from torch.linalg import vector_norm
 from torch.nn import Module
 
 from haplo.nicer_transform import PrecomputedUnnormalizePhaseAmplitudes
@@ -64,5 +62,3 @@ class SumDifferenceSquaredOverMedianExpectedSquaredMetric(Module):
         return metric
 
 
-def norm_based_gradient_clip(gradient_tensor: Tensor) -> Tensor:
-    return gradient_tensor / torch.maximum(torch.linalg.vector_norm(gradient_tensor), torch.tensor(1.0))
