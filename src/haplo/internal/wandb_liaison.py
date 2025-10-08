@@ -1,4 +1,5 @@
 import logging
+import os
 from dataclasses import fields, dataclass
 from pathlib import Path
 from typing import Any, Dict
@@ -51,8 +52,9 @@ def wandb_save_file(path: Path, process_rank: int):
 
 
 def wandb_save_manual_config_file(process_rank):
-    if process_rank == 0:
-        manual_config_path = Path(wandb.run.dir).joinpath('manual_config.yaml')
-        with manual_config_path.open('w') as manual_config_file:
-            yaml.dump(wandb.config, manual_config_file)
-        wandb_save_file(manual_config_path, process_rank=process_rank)
+    if os.environ.get('WANDB_MODE') != 'disabled':
+        if process_rank == 0:
+            manual_config_path = Path(wandb.run.dir).joinpath('manual_config.yaml')
+            with manual_config_path.open('w') as manual_config_file:
+                yaml.dump(wandb.config, manual_config_file)
+            wandb_save_file(manual_config_path, process_rank=process_rank)
