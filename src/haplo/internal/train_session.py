@@ -5,6 +5,7 @@ import logging
 import math
 import os
 import socket
+from collections import OrderedDict
 from pathlib import Path
 from typing import Callable, List
 
@@ -21,17 +22,16 @@ from torch.optim import Optimizer
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
 
-from haplo.distributed import ddp_setup
-from haplo.logging import set_up_default_logger
+from haplo.internal.distributed import ddp_setup
+from haplo.internal.logging import set_up_default_logger
 from haplo.internal.losses import norm_based_gradient_clip
 from haplo.nicer_dataset import nicer_dataset_worker_initialization_function, disconnect, \
     move_sqlite_subset_to_new_file, NicerDataset
-from haplo.rank_constant_distributed_sampler import RankConstantDistributedSampler
-from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
-from haplo.train_logging_configuration import TrainLoggingConfiguration
-from haplo.train_system_configuration import TrainSystemConfiguration
-from haplo.unwrap_model import unwrap_model
-from haplo.wandb_liaison import wandb_init, wandb_log, wandb_commit, \
+from haplo.internal.rank_constant_distributed_sampler import RankConstantDistributedSampler
+from haplo.internal.train_hyperparameter_configuration import TrainHyperparameterConfiguration
+from haplo.internal.train_logging_configuration import TrainLoggingConfiguration
+from haplo.internal.train_system_configuration import TrainSystemConfiguration
+from haplo.internal.wandb_liaison import wandb_init, wandb_log, wandb_commit, \
     wandb_log_dictionary, wandb_log_data_class, wandb_save_manual_config_file
 
 logger = logging.getLogger(__name__)
@@ -354,3 +354,14 @@ def optimizer_to_device(optimizer, device):
                     subparam.data = subparam.data.to(device, non_blocking=non_blocking)
                     if subparam._grad is not None:
                         subparam._grad.data = subparam._grad.data.to(device, non_blocking=non_blocking)
+
+
+def unwrap_model(model_dict):
+    unwrapped_model_dict = OrderedDict()
+    for key, value in model_dict.items():
+        if key.startswith('module.'):
+            unwrapped_key = key[7:]
+        else:
+            unwrapped_key = key
+        unwrapped_model_dict[unwrapped_key] = value
+    return unwrapped_model_dict

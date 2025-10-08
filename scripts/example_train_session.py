@@ -2,16 +2,16 @@ from pathlib import Path
 
 from torch.optim import AdamW
 
-from haplo.distributed import distributed_logging
+from haplo.internal.distributed import distributed_logging
 from haplo.internal.losses import PlusOneBeforeUnnormalizationChiSquaredStatisticMetricWithNormalization, \
     PlusOneChiSquaredStatisticMetricWithNormalization, SumDifferenceSquaredOverMedianExpectedSquaredMetricWithNormalization
 from haplo.internal.models.cura import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
-from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
-from haplo.train_logging_configuration import TrainLoggingConfiguration
-from haplo.train_session import train_session
-from haplo.train_system_configuration import TrainSystemConfiguration
+from haplo.internal.train_hyperparameter_configuration import TrainHyperparameterConfiguration
+from haplo.internal.train_logging_configuration import TrainLoggingConfiguration
+from haplo.internal.train_session import train_session
+from haplo.internal.train_system_configuration import TrainSystemConfiguration
 
 
 @distributed_logging

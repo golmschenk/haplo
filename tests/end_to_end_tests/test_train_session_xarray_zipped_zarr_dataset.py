@@ -7,10 +7,10 @@ from haplo.internal.xarray_zarr_dataset import XarrayBasedDataset
 from haplo.internal.losses import SumDifferenceSquaredOverMedianExpectedSquaredMetric, PlusOneChiSquaredStatisticMetric
 from haplo.models import SingleDenseNetwork
 from haplo.nicer_dataset import split_dataset_into_count_datasets
-from haplo.train_hyperparameter_configuration import TrainHyperparameterConfiguration
-from haplo.train_logging_configuration import TrainLoggingConfiguration
-from haplo.train_session import train_session
-from haplo.train_system_configuration import TrainSystemConfiguration
+from haplo.internal.train_hyperparameter_configuration import TrainHyperparameterConfiguration
+from haplo.internal.train_logging_configuration import TrainLoggingConfiguration
+from haplo.internal.train_session import train_session
+from haplo.internal.train_system_configuration import TrainSystemConfiguration
 
 
 def test_simple_train_session():

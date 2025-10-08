@@ -2,7 +2,7 @@ import re
 
 from pathlib import Path
 
-from haplo.train_logging_configuration import TrainLoggingConfiguration
+from haplo.internal.train_logging_configuration import TrainLoggingConfiguration
 
 
 def test_passing_no_session_directory_to_new_creates_one_based_on_the_datetime():

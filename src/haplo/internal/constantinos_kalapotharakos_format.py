@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import polars as pl
 
-from haplo.logging import set_up_default_logger
+from haplo.internal.logging import set_up_default_logger
 
 logger = logging.getLogger(__name__)
 

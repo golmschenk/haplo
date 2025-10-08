@@ -7,10 +7,11 @@ The split file text format the MCMC outputs data into is a bit cumbersome. The X
 There's a small high-level API that allows you to get the smaller file size and some of the quick subset extraction benefits without knowing how it works. Learning the basics of Xarray will enable a lot of extra benefits, but this high-level API doesn't require that.
 
 First convert your dataset to the Zarr file format. This part, unfortunately, still requires substantial time and should probably be run as a job on clusters (see {ref}`converting_the_data_from_the_split_dat_files_to_zarr` for more details):
+
 ```python
 from pathlib import Path
 from haplo.analysis import combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr
-from haplo.logging import enable_logger
+from haplo.internal.logging import enable_logger
 
 split_mcmc_output_directory = Path('path/to/split/mcmc/directory')
 zarr_path = Path('path/to/output.zarr.zip')  # Use a better name but still use the `.zarr.zip` extension.
@@ -86,7 +87,8 @@ To convert the data, you will need to pass the directory of the split MCMC outpu
 ```python
 from pathlib import Path
 from haplo.analysis import combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr
-from haplo.logging import enable_logger
+from haplo.internal.logging import enable_logger
+
 enable_logger()  # Optional. Will add printing of some progress information.
 split_mcmc_output_directory = Path('path/to/split/mcmc/directory')
 zarr_path = Path('path/to/output.zarr.zip')  # Use a better name but still use the `.zarr.zip` extension.

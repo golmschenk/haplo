@@ -5,7 +5,7 @@ import torch
 from bokeh.io import show
 from bokeh.plotting import figure
 
-from haplo.export_onnx import WrappedModel
+from haplo.internal.export import WrappedModel
 from haplo.internal.models.cura import Cura
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes

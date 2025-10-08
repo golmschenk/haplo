@@ -16,7 +16,7 @@ from xarray import Dataset
 from zarr.storage import ZipStore
 
 from haplo.internal.constantinos_kalapotharakos_format import get_memory_mapped_file_contents
-from haplo.logging import set_up_default_logger
+from haplo.internal.logging import set_up_default_logger
 
 logger = logging.getLogger(__name__)
 

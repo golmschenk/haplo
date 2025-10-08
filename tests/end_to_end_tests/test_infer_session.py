@@ -3,7 +3,7 @@ import os
 import torch
 from pathlib import Path
 
-from haplo.export_onnx import WrappedModel
+from haplo.internal.export import WrappedModel
 from haplo.models import SingleDenseNetwork
 from haplo.nicer_dataset import NicerDataset, split_dataset_into_count_datasets
 from haplo.nicer_transform import PrecomputedNormalizeParameters, PrecomputedNormalizePhaseAmplitudes
