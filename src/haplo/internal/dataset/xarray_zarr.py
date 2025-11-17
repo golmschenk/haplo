@@ -10,7 +10,7 @@ from haplo.internal.sized_dataset import SizedDataset
 
 class XarrayBasedDataset(SizedDataset):
     @classmethod
-    def new(cls, zarr_path: Path, memory_cached: bool = True) -> Self:
+    def new(cls, zarr_path: Path, memory_cached: bool = False, in_memory: bool = True) -> Self:
         if zarr_path.suffix == '.zip':
             store = ZipStore(zarr_path)
         else:
@@ -18,6 +18,11 @@ class XarrayBasedDataset(SizedDataset):
         if memory_cached:
             memory_store = MemoryStore()
             store = CacheStore(store=store, cache_store=memory_store)
+        if in_memory:
+            memory_store = MemoryStore()
+            in_storage_xarray_dataset: Dataset = xarray.open_zarr(store)
+            in_storage_xarray_dataset.to_zarr(memory_store)
+            store = memory_store
         xarray_dataset: Dataset = xarray.open_zarr(store)
         instance = cls(xarray_dataset=xarray_dataset)
         return instance
