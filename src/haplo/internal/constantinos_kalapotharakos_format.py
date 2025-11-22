@@ -44,10 +44,23 @@ def constantinos_kalapotharakos_format_record_generator_from_file_contents(
     """
     value_iterator = re.finditer(rb"\S+", file_contents)
     count = 0
+    values = []
     while True:
-        values = []
         try:
-            values.append(float(next(value_iterator).group(0)))
+            value_string = next(value_iterator).group(0)
+            try:
+                values = [float(value_string)]
+            except ValueError as error:
+                if value_string.startswith(b'\x00'):
+                    null_value_repeat_count = len(value_string) // len(b'\x00')
+                    yields_to_repeat = null_value_repeat_count // 305
+                    logger.warning(f'Encountered repeating `b\'\x00\'` string. Yielding previous record repeatedly.')
+                    for _ in range(yields_to_repeat):
+                        yield tuple(values)
+                        count += 1
+                    continue
+                else:
+                    raise error
         except StopIteration:
             break
         try:

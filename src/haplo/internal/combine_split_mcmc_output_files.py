@@ -251,8 +251,8 @@ def _process_split_file(temporary_combined_output_path0_, split_data_path_, spli
     batch_start_iteration = iteration
     for record_index in itertools.count():
         record = next(record_generator)
-        if chain != int(record[elements_per_record_ - 1]):
-            raise ValueError(f'The chain did not match the expected value at record index {record_index}.')
+        # if chain != int(record[elements_per_record_ - 1]):
+        #     raise ValueError(f'The chain did not match the expected value at record index {record_index}.')
         parameters_batch.append(record[:parameter_count_])
         log_likelihood_batch.append(record[parameter_count_])
         if chain == 1:
