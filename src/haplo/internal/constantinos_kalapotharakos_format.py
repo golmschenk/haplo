@@ -25,7 +25,7 @@ def constantinos_kalapotharakos_format_record_generator(path: Path, elements_per
     with path.open() as file_handle:
         file_contents = get_memory_mapped_file_contents(file_handle)
         generator = constantinos_kalapotharakos_format_record_generator_from_file_contents(
-            file_contents=file_contents, elements_per_record=elements_per_record)
+            file_contents=file_contents, elements_per_record=elements_per_record, file_path_for_logging=path)
         for record in generator:
             yield record
 
@@ -33,7 +33,8 @@ def constantinos_kalapotharakos_format_record_generator(path: Path, elements_per
 def constantinos_kalapotharakos_format_record_generator_from_file_contents(
         file_contents: bytes | mmap.mmap,
         *,
-        elements_per_record: int
+        elements_per_record: int,
+        file_path_for_logging: Path | None = None,
 ) -> Iterator[tuple[float, ...]]:
     """
     Create a record generator for a Constantinos Kalapotharakos format file's contents.
@@ -54,7 +55,8 @@ def constantinos_kalapotharakos_format_record_generator_from_file_contents(
                 if value_string.startswith(b'\x00'):
                     null_value_repeat_count = len(value_string) // len(b'\x00')
                     yields_to_repeat = null_value_repeat_count // 305
-                    logger.warning(f'Encountered repeating `b\'\x00\'` string. Yielding previous record repeatedly.')
+                    path_logging_string = f'{file_path_for_logging.name}: ' if file_path_for_logging is not None else ''
+                    logger.warning(f'{path_logging_string}Encountered repeating `b\'\x00\'` string. Yielding previous record repeatedly.')
                     for _ in range(yields_to_repeat):
                         yield tuple(values)
                         count += 1
@@ -68,7 +70,8 @@ def constantinos_kalapotharakos_format_record_generator_from_file_contents(
                 values.append(float(next(value_iterator).group(0)))
             yield tuple(values)
             if count % 100000 == 0:
-                logger.info(f'Processed {count} rows.')
+                path_logging_string = f'{file_path_for_logging.name}: ' if file_path_for_logging is not None else ''
+                logger.info(f'{path_logging_string}Processed {count} rows.')
             count += 1
         except StopIteration:
             raise ConstantinosKalapotharakosFormatError(

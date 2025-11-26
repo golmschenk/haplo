@@ -279,5 +279,6 @@ def _process_split_file(temporary_combined_output_path0_, split_data_path_, spli
                 break
         else:
             chain = 1
+    logger.info(f'Finished processing {split_data_path_}.')
     return (split_final_iteration_log_likelihood_batch_, split_final_iteration_parameters_batch_,
             split_is_final_iteration_known_incomplete_)
