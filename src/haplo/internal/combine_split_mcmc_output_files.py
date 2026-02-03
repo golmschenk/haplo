@@ -38,7 +38,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     max_known_complete_iteration = _get_known_complete_iterations(split_data_file_paths, elements_per_record)
     iterations = np.arange(max_known_complete_iteration + 1, dtype=np.int64)
     cpus = np.arange(len(split_data_file_paths), dtype=np.int64)
-    chains = np.array([0, 1], dtype=np.int64)
+    chains = np.array([0], dtype=np.int64)
     parameter_count = elements_per_record - 2
     parameter_indexes = np.arange(parameter_count, dtype=np.int64)
     scanning_iteration_chunk_size = 1_000_000
@@ -255,30 +255,26 @@ def _process_split_file(temporary_combined_output_path0_, split_data_path_, spli
         #     raise ValueError(f'The chain did not match the expected value at record index {record_index}.')
         parameters_batch.append(record[:parameter_count_])
         log_likelihood_batch.append(record[parameter_count_])
-        if chain == 1:
-            chain = 0
-            iteration += 1
-            if iteration > batch_start_iteration + scanning_iteration_chunk_size_ or iteration > max_known_complete_iteration_:
-                _save_batch_to_cpu_and_iteration_region(temporary_combined_output_path0_, parameters_batch,
-                                                        log_likelihood_batch, batch_start_iteration, iteration,
-                                                        split_data_frame_cpu_number, chains_, parameter_count_,
-                                                        parameter_indexes_)
-                batch_start_iteration = iteration
-                parameters_batch = []
-                log_likelihood_batch = []
-            if iteration > max_known_complete_iteration_:
-                try:
-                    record = next(record_generator)
-                    split_final_iteration_parameters_batch_.append(record[:parameter_count_])
-                    split_final_iteration_log_likelihood_batch_.append(record[parameter_count_])
-                    record = next(record_generator)
-                    split_final_iteration_parameters_batch_.append(record[:parameter_count_])
-                    split_final_iteration_log_likelihood_batch_.append(record[parameter_count_])
-                except StopIteration:
-                    split_is_final_iteration_known_incomplete_ = True
-                break
-        else:
-            chain = 1
+        iteration += 1
+        if iteration > batch_start_iteration + scanning_iteration_chunk_size_ or iteration > max_known_complete_iteration_:
+            _save_batch_to_cpu_and_iteration_region(temporary_combined_output_path0_, parameters_batch,
+                                                    log_likelihood_batch, batch_start_iteration, iteration,
+                                                    split_data_frame_cpu_number, chains_, parameter_count_,
+                                                    parameter_indexes_)
+            batch_start_iteration = iteration
+            parameters_batch = []
+            log_likelihood_batch = []
+        if iteration > max_known_complete_iteration_:
+            try:
+                record = next(record_generator)
+                split_final_iteration_parameters_batch_.append(record[:parameter_count_])
+                split_final_iteration_log_likelihood_batch_.append(record[parameter_count_])
+                record = next(record_generator)
+                split_final_iteration_parameters_batch_.append(record[:parameter_count_])
+                split_final_iteration_log_likelihood_batch_.append(record[parameter_count_])
+            except StopIteration:
+                split_is_final_iteration_known_incomplete_ = True
+            break
     logger.info(f'Finished processing {split_data_path_}.')
     return (split_final_iteration_log_likelihood_batch_, split_final_iteration_parameters_batch_,
             split_is_final_iteration_known_incomplete_)
