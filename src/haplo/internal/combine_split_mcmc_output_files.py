@@ -69,7 +69,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
                      iterations_=iterations, cpus_=cpus, chains_=chains, parameter_indexes_=parameter_indexes,
                      new_iteration_chunk_size_=1_000)
     shutil.rmtree(temporary_combined_output_path0)
-    if not any(split_is_final_iteration_known_incomplete_list):  # All false, meaning we should add the final iteration.
+    if False and not any(split_is_final_iteration_known_incomplete_list):  # All false, meaning we should add the final iteration.
         _save_final_iteration_region(temporary_combined_output_path1, final_iteration_parameters_batch,
                                      final_iteration_log_likelihood_batch,
                                      max_known_complete_iteration + 1, cpus, chains,
@@ -150,17 +150,9 @@ def _get_known_complete_iterations(split_data_file_paths_, elements_per_record_)
     record_generator_ = constantinos_kalapotharakos_format_record_generator(
         split_data_path0, elements_per_record=elements_per_record_)
     data_file0_iterations = 0
-    read_chain0 = False
     for _ in record_generator_:
-        if read_chain0:
-            data_file0_iterations += 1
-            read_chain0 = False
-        else:
-            read_chain0 = True
-    if read_chain0:
-        max_known_complete_iteration_ = data_file0_iterations - 1
-    else:
-        max_known_complete_iteration_ = data_file0_iterations - 2
+        data_file0_iterations += 1
+    max_known_complete_iteration_ = data_file0_iterations - 1
     return max_known_complete_iteration_
 
 
@@ -266,9 +258,6 @@ def _process_split_file(temporary_combined_output_path0_, split_data_path_, spli
             log_likelihood_batch = []
         if iteration > max_known_complete_iteration_:
             try:
-                record = next(record_generator)
-                split_final_iteration_parameters_batch_.append(record[:parameter_count_])
-                split_final_iteration_log_likelihood_batch_.append(record[parameter_count_])
                 record = next(record_generator)
                 split_final_iteration_parameters_batch_.append(record[:parameter_count_])
                 split_final_iteration_log_likelihood_batch_.append(record[parameter_count_])
