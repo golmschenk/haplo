@@ -152,7 +152,7 @@ def _get_known_complete_iterations(split_data_file_paths_, elements_per_record_)
     data_file0_iterations = 0
     for _ in record_generator_:
         data_file0_iterations += 1
-    max_known_complete_iteration_ = data_file0_iterations - 1
+    max_known_complete_iteration_ = data_file0_iterations - 2
     return max_known_complete_iteration_
 
 
