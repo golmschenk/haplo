@@ -1,29 +1,21 @@
-import xarray
 from pathlib import Path
+
+import xarray
 from typing import Self
 from xarray import Dataset
-from zarr.experimental.cache_store import CacheStore
-from zarr.storage import ZipStore, LocalStore, MemoryStore
+from zarr.storage import ZipStore, LocalStore
 
 from haplo.internal.sized_dataset import SizedDataset
 
 
 class XarrayBasedDataset(SizedDataset):
     @classmethod
-    def new(cls, zarr_path: Path, memory_cached: bool = False, in_memory: bool = True) -> Self:
+    def new(cls, zarr_path: Path) -> Self:
         if zarr_path.suffix == '.zip':
             store = ZipStore(zarr_path)
         else:
             store = LocalStore(zarr_path)
-        if memory_cached:
-            memory_store = MemoryStore()
-            store = CacheStore(store=store, cache_store=memory_store)
-        if in_memory:
-            memory_store = MemoryStore()
-            in_storage_xarray_dataset: Dataset = xarray.open_zarr(store)
-            in_storage_xarray_dataset.to_zarr(memory_store)
-            store = memory_store
-        xarray_dataset: Dataset = xarray.open_zarr(store)
+        xarray_dataset: Dataset = xarray.open_dataset(store, engine='zarr', chunks=None, cache=False)
         instance = cls(xarray_dataset=xarray_dataset)
         return instance
 
