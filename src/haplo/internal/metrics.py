@@ -53,7 +53,7 @@ class SumDifferenceSquaredOverMedianExpectedSquaredWithLogExpectedMetric(Module)
         return metric
 
 
-class SumDifferenceSquaredOverMedianExpectedSquaredWithLogExpectedMetricNoLogInQi(Module):  # TODO: This one
+class SumDifferenceSquaredOverMedianExpectedSquaredWithLogExpectedMetricNoLogInQi(Module):
     def forward(self, output: torch.Tensor, target: torch.Tensor):
         epsilon = 1e-10
         observed = output.type(torch.float64)
@@ -67,11 +67,11 @@ class SumDifferenceSquaredOverMedianExpectedSquaredWithLogExpectedMetricNoLogInQ
         return metric
 
 
-class SumDifferenceSquaredOverMedianExpectedSquaredWithExpObservedMetric(Module):  # TODO: This one
+class SumDifferenceSquaredOverMedianExpectedSquaredWithExpObservedMetric(Module):
     def forward(self, output: torch.Tensor, target: torch.Tensor):
         epsilon = 1e-10
         observed = torch.exp(output.type(torch.float64))
-        expected = target.type(torch.float64) + 2.0
+        expected = target.type(torch.float64) + 1.0
         numerator = torch.sum(((observed - expected) ** 2), dim=1)
         median = torch.median(expected, dim=1).values
         denominator = median ** 2
