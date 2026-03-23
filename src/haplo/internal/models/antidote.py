@@ -9,7 +9,7 @@ from torch import permute
 from torch.nn import Module, ModuleList, Conv1d, LeakyReLU, Identity, GELU, BatchNorm1d, ConvTranspose1d, Upsample, \
     ConstantPad1d, Dropout1d, ReLU
 
-from haplo.internal.models.legacy_models import ResidualGenerationLightCurveNetworkBlock
+from haplo.internal.models.residual_generation_light_curve_network_block import ResidualGenerationLightCurveNetworkBlock
 
 
 class AntidotePrototype0(Module):
@@ -43,20 +43,21 @@ class AntidotePrototype0(Module):
         self.activation = LeakyReLU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
-        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
-            batch_normalization=False))
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=400, output_channels=output_channels,
+                                                                    batch_normalization=False, dropout_rate=0.0,
+                                                                    activation_type=LeakyReLU))
         input_channels = output_channels
         for output_channels in [512, 512, 256, 128, 64, 32]:
-            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
-                dropout_rate=0.0,
-                batch_normalization=False))
+            self.blocks.append(
+                ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels, output_channels=output_channels,
+                                                         upsampling_scale_factor=2, batch_normalization=False,
+                                                         dropout_rate=0.0, activation_type=LeakyReLU))
             input_channels = output_channels
             for _ in range(2):
-                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
-                    batch_normalization=False))
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels,
+                                                                            output_channels=output_channels,
+                                                                            batch_normalization=False, dropout_rate=0.0,
+                                                                            activation_type=LeakyReLU))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 
@@ -79,7 +80,6 @@ class AntidotePrototype0(Module):
         outputs = x.reshape([-1, 64])
         x = self.output_transformation(x)
         return outputs
-
 
 
 class AntidotePrototype1(Module):
@@ -113,23 +113,23 @@ class AntidotePrototype1(Module):
         self.activation = LeakyReLU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
-        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
-            batch_normalization=False))
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=400, output_channels=output_channels,
+                                                                    batch_normalization=False, dropout_rate=0.0,
+                                                                    activation_type=LeakyReLU))
         input_channels = output_channels
         for output_channels in [512, 512, 256, 128, 64, 32]:
-            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
-                dropout_rate=0.0,
-                batch_normalization=False))
+            self.blocks.append(
+                ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels, output_channels=output_channels,
+                                                         upsampling_scale_factor=2, batch_normalization=False,
+                                                         dropout_rate=0.0, activation_type=LeakyReLU))
             input_channels = output_channels
             for _ in range(2):
-                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
-                    batch_normalization=False))
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels,
+                                                                            output_channels=output_channels,
+                                                                            batch_normalization=False, dropout_rate=0.0,
+                                                                            activation_type=LeakyReLU))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
-
 
     def forward(self, x):
         """
@@ -150,7 +150,6 @@ class AntidotePrototype1(Module):
         x = x.reshape([-1, 64])
         x = self.output_transformation(x)
         return x
-
 
 
 class AntidotePrototype2(Module):
@@ -184,20 +183,22 @@ class AntidotePrototype2(Module):
         self.activation = LeakyReLU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
-        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=self.dense1.out_channels, dropout_rate=0.0,
-            batch_normalization=False))
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=self.dense1.out_channels,
+                                                                    output_channels=output_channels,
+                                                                    batch_normalization=False, dropout_rate=0.0,
+                                                                    activation_type=LeakyReLU))
         input_channels = output_channels
         for output_channels in [512, 512, 256, 128, 64, 32]:
-            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
-                dropout_rate=0.0,
-                batch_normalization=False))
+            self.blocks.append(
+                ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels, output_channels=output_channels,
+                                                         upsampling_scale_factor=2, batch_normalization=False,
+                                                         dropout_rate=0.0, activation_type=LeakyReLU))
             input_channels = output_channels
             for _ in range(2):
-                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
-                    batch_normalization=False))
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels,
+                                                                            output_channels=output_channels,
+                                                                            batch_normalization=False, dropout_rate=0.0,
+                                                                            activation_type=LeakyReLU))
                 input_channels = output_channels
         self.end_conv0 = Conv1d(input_channels, 20, kernel_size=1)
         self.end_conv1 = Conv1d(self.end_conv0.out_channels, 10, kernel_size=1)
@@ -228,81 +229,11 @@ class AntidotePrototype2(Module):
         return x
 
 
-class GeluResidualGenerationLightCurveNetworkBlock(Module):
-    def __init__(self, input_channels: int, output_channels: int, kernel_size: int = 3,
-                 upsampling_scale_factor: float = 1, batch_normalization: bool = False, dropout_rate: float = 0.0,
-                 renorm: bool = False):
-        super().__init__()
-        self.activation = GELU()
-        dimension_decrease_factor = 4
-        if batch_normalization:
-            self.batch_normalization = BatchNorm1d(num_features=input_channels, track_running_stats=renorm)
-        else:
-            self.batch_normalization = None
-        reduced_channels = output_channels // dimension_decrease_factor
-        self.dimension_decrease_layer = ConvTranspose1d(
-            in_channels=input_channels, out_channels=reduced_channels, kernel_size=1)
-        self.convolutional_layer = ConvTranspose1d(
-            in_channels=reduced_channels, out_channels=reduced_channels, kernel_size=kernel_size,
-            padding=math.floor(kernel_size / 2)
-        )
-        self.dimension_increase_layer = ConvTranspose1d(
-            in_channels=reduced_channels, out_channels=output_channels, kernel_size=1)
-        if upsampling_scale_factor > 1:
-            self.upsampling_layer = Upsample(scale_factor=upsampling_scale_factor)
-        else:
-            self.upsampling_layer = None
-        self.input_to_output_channel_difference = input_channels - output_channels
-        if output_channels != input_channels:
-            if output_channels < input_channels:
-                self.input_channels = input_channels
-                self.output_channels = output_channels
-            else:
-                self.dimension_change_layer = ConstantPad1d(padding=(0, -self.input_to_output_channel_difference),
-                                                            value=0)
-        else:
-            self.dimension_change_layer = None
-        if dropout_rate > 0:
-            self.dropout_layer = Dropout1d(p=dropout_rate)
-        else:
-            self.dropout_layer = None
-
-    def forward(self, x):
-        """
-        The forward pass of the block.
-
-        :param x: The input tensor.
-        :return: The output tensor of the layer.
-        """
-        y = x
-        if self.batch_normalization is not None:
-            y = self.batch_normalization(y)
-        y = self.dimension_decrease_layer(y)
-        y = self.activation(y)
-        y = self.convolutional_layer(y)
-        y = self.activation(y)
-        y = self.dimension_increase_layer(y)
-        y = self.activation(y)
-        if self.upsampling_layer is not None:
-            x = self.upsampling_layer(x)
-            y = self.upsampling_layer(y)
-        if self.input_to_output_channel_difference != 0:
-            x = permute(x, (0, 2, 1))
-            if self.input_to_output_channel_difference < 0:
-                x = self.dimension_change_layer(x)
-            else:
-                x = x[:, :, 0:self.output_channels]
-                # x = interpolate(x, [self.output_channels], mode='linear')
-            x = permute(x, (0, 2, 1))
-        if self.dropout_layer is not None:
-            y = self.dropout_layer(y)
-        return x + y
-
-
 class AntidotePrototype3(Module):
     """
     P1 with GELU
     """
+
     @classmethod
     def new(cls, input_features_shape: int = 11, input_transformation: Module | None = None,
             output_transformation: Module | None = None) -> Self:
@@ -333,20 +264,21 @@ class AntidotePrototype3(Module):
         self.activation = GELU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
-        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
-            batch_normalization=False))
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=400, output_channels=output_channels,
+                                                                    batch_normalization=False, dropout_rate=0.0,
+                                                                    activation_type=LeakyReLU))
         input_channels = output_channels
         for output_channels in [512, 512, 256, 128, 64, 32]:
-            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
-                dropout_rate=0.0,
-                batch_normalization=False))
+            self.blocks.append(
+                ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels, output_channels=output_channels,
+                                                         upsampling_scale_factor=2, batch_normalization=False,
+                                                         dropout_rate=0.0, activation_type=LeakyReLU))
             input_channels = output_channels
             for _ in range(2):
-                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
-                    batch_normalization=False))
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels,
+                                                                            output_channels=output_channels,
+                                                                            batch_normalization=False, dropout_rate=0.0,
+                                                                            activation_type=LeakyReLU))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 
@@ -369,83 +301,13 @@ class AntidotePrototype3(Module):
         x = x.reshape([-1, 64])
         x = self.output_transformation(x)
         return x
-
-
-class ReluResidualGenerationLightCurveNetworkBlock(Module):
-    def __init__(self, input_channels: int, output_channels: int, kernel_size: int = 3,
-                 upsampling_scale_factor: float = 1, batch_normalization: bool = False, dropout_rate: float = 0.0,
-                 renorm: bool = False):
-        super().__init__()
-        self.activation = ReLU()
-        dimension_decrease_factor = 4
-        if batch_normalization:
-            self.batch_normalization = BatchNorm1d(num_features=input_channels, track_running_stats=renorm)
-        else:
-            self.batch_normalization = None
-        reduced_channels = output_channels // dimension_decrease_factor
-        self.dimension_decrease_layer = ConvTranspose1d(
-            in_channels=input_channels, out_channels=reduced_channels, kernel_size=1)
-        self.convolutional_layer = ConvTranspose1d(
-            in_channels=reduced_channels, out_channels=reduced_channels, kernel_size=kernel_size,
-            padding=math.floor(kernel_size / 2)
-        )
-        self.dimension_increase_layer = ConvTranspose1d(
-            in_channels=reduced_channels, out_channels=output_channels, kernel_size=1)
-        if upsampling_scale_factor > 1:
-            self.upsampling_layer = Upsample(scale_factor=upsampling_scale_factor)
-        else:
-            self.upsampling_layer = None
-        self.input_to_output_channel_difference = input_channels - output_channels
-        if output_channels != input_channels:
-            if output_channels < input_channels:
-                self.input_channels = input_channels
-                self.output_channels = output_channels
-            else:
-                self.dimension_change_layer = ConstantPad1d(padding=(0, -self.input_to_output_channel_difference),
-                                                            value=0)
-        else:
-            self.dimension_change_layer = None
-        if dropout_rate > 0:
-            self.dropout_layer = Dropout1d(p=dropout_rate)
-        else:
-            self.dropout_layer = None
-
-    def forward(self, x):
-        """
-        The forward pass of the block.
-
-        :param x: The input tensor.
-        :return: The output tensor of the layer.
-        """
-        y = x
-        if self.batch_normalization is not None:
-            y = self.batch_normalization(y)
-        y = self.dimension_decrease_layer(y)
-        y = self.activation(y)
-        y = self.convolutional_layer(y)
-        y = self.activation(y)
-        y = self.dimension_increase_layer(y)
-        y = self.activation(y)
-        if self.upsampling_layer is not None:
-            x = self.upsampling_layer(x)
-            y = self.upsampling_layer(y)
-        if self.input_to_output_channel_difference != 0:
-            x = permute(x, (0, 2, 1))
-            if self.input_to_output_channel_difference < 0:
-                x = self.dimension_change_layer(x)
-            else:
-                x = x[:, :, 0:self.output_channels]
-                # x = interpolate(x, [self.output_channels], mode='linear')
-            x = permute(x, (0, 2, 1))
-        if self.dropout_layer is not None:
-            y = self.dropout_layer(y)
-        return x + y
 
 
 class AntidotePrototype4(Module):
     """
     P1 with ReLU
     """
+
     @classmethod
     def new(cls, input_features_shape: int = 11, input_transformation: Module | None = None,
             output_transformation: Module | None = None) -> Self:
@@ -476,20 +338,21 @@ class AntidotePrototype4(Module):
         self.activation = ReLU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
-        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
-            batch_normalization=False))
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=400, output_channels=output_channels,
+                                                                    batch_normalization=False, dropout_rate=0.0,
+                                                                    activation_type=LeakyReLU))
         input_channels = output_channels
         for output_channels in [512, 512, 256, 128, 64, 32]:
-            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
-                dropout_rate=0.0,
-                batch_normalization=False))
+            self.blocks.append(
+                ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels, output_channels=output_channels,
+                                                         upsampling_scale_factor=2, batch_normalization=False,
+                                                         dropout_rate=0.0, activation_type=LeakyReLU))
             input_channels = output_channels
             for _ in range(2):
-                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
-                    batch_normalization=False))
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels,
+                                                                            output_channels=output_channels,
+                                                                            batch_normalization=False, dropout_rate=0.0,
+                                                                            activation_type=LeakyReLU))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 
@@ -514,11 +377,11 @@ class AntidotePrototype4(Module):
         return x
 
 
-
 class AntidotePrototype5(Module):
     """
     P1 with GELU
     """
+
     @classmethod
     def new(cls, input_features_shape: int = 11, input_transformation: Module | None = None,
             output_transformation: Module | None = None) -> Self:
@@ -549,20 +412,21 @@ class AntidotePrototype5(Module):
         self.activation = GELU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
-        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
-            batch_normalization=False))
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=400, output_channels=output_channels,
+                                                                    batch_normalization=False, dropout_rate=0.0,
+                                                                    activation_type=LeakyReLU))
         input_channels = output_channels
         for output_channels in [512, 512, 256, 128, 64, 32]:
-            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
-                dropout_rate=0.0,
-                batch_normalization=True))
+            self.blocks.append(
+                ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels, output_channels=output_channels,
+                                                         upsampling_scale_factor=2, batch_normalization=True,
+                                                         dropout_rate=0.0, activation_type=LeakyReLU))
             input_channels = output_channels
             for _ in range(2):
-                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
-                    batch_normalization=True))
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels,
+                                                                            output_channels=output_channels,
+                                                                            batch_normalization=True, dropout_rate=0.0,
+                                                                            activation_type=LeakyReLU))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 
@@ -591,6 +455,7 @@ class AntidotePrototype6(Module):
     """
     P1 with GELU
     """
+
     @classmethod
     def new(cls, input_features_shape: int = 11, input_transformation: Module | None = None,
             output_transformation: Module | None = None) -> Self:
@@ -621,20 +486,21 @@ class AntidotePrototype6(Module):
         self.activation = GELU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
-        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
-            batch_normalization=False))
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=400, output_channels=output_channels,
+                                                                    batch_normalization=False, dropout_rate=0.0,
+                                                                    activation_type=LeakyReLU))
         input_channels = output_channels
         for output_channels in [512, 512, 256, 128, 64, 32]:
-            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
-                dropout_rate=0.1,
-                batch_normalization=False))
+            self.blocks.append(
+                ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels, output_channels=output_channels,
+                                                         upsampling_scale_factor=2, batch_normalization=False,
+                                                         dropout_rate=0.1, activation_type=LeakyReLU))
             input_channels = output_channels
             for _ in range(2):
-                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.1,
-                    batch_normalization=False))
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels,
+                                                                            output_channels=output_channels,
+                                                                            batch_normalization=False, dropout_rate=0.1,
+                                                                            activation_type=LeakyReLU))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 
@@ -692,20 +558,21 @@ class AntidotePrototype7(Module):
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         self.do1 = Dropout1d(p=0.1)
         output_channels = 128
-        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=400, dropout_rate=0.1,
-            batch_normalization=False))
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=400, output_channels=output_channels,
+                                                                    batch_normalization=False, dropout_rate=0.1,
+                                                                    activation_type=LeakyReLU))
         input_channels = output_channels
         for output_channels in [512, 512, 256, 128, 64, 32]:
-            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
-                dropout_rate=0.1,
-                batch_normalization=False))
+            self.blocks.append(
+                ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels, output_channels=output_channels,
+                                                         upsampling_scale_factor=2, batch_normalization=False,
+                                                         dropout_rate=0.1, activation_type=LeakyReLU))
             input_channels = output_channels
             for _ in range(2):
-                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.1,
-                    batch_normalization=False))
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels,
+                                                                            output_channels=output_channels,
+                                                                            batch_normalization=False, dropout_rate=0.1,
+                                                                            activation_type=LeakyReLU))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 
@@ -763,20 +630,23 @@ class AntidotePrototype8(Module):
         self.activation = GELU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
-        self.blocks.append(GeluResidualGenerationLightCurveNetworkBlock(
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
             output_channels=output_channels, input_channels=400, dropout_rate=0.0,
-            batch_normalization=False))
+            batch_normalization=False, activation_type=GELU))
         input_channels = output_channels
         for output_channels in [512, 512, 256, 128, 64, 32]:
-            self.blocks.append(GeluResidualGenerationLightCurveNetworkBlock(
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
                 output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
                 dropout_rate=0.0,
-                batch_normalization=False))
+                batch_normalization=False,
+                activation_type=GELU))
             input_channels = output_channels
             for _ in range(2):
-                self.blocks.append(GeluResidualGenerationLightCurveNetworkBlock(
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
                     input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
-                    batch_normalization=False))
+                    batch_normalization=False,
+                    activation_type=GELU
+                ))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 
@@ -802,7 +672,7 @@ class AntidotePrototype8(Module):
 
 
 if __name__ == '__main__':
-    x = torch.rand(size=[7, 11])
+    x_ = torch.rand(size=[7, 11])
     model = AntidotePrototype0.new()
-    y = model(x)
+    y_ = model(x_)
     pass

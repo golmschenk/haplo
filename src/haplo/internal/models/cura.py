@@ -5,7 +5,7 @@ from typing import Self
 from torch import Tensor
 from torch.nn import Module, ModuleList, Conv1d, LeakyReLU, Identity
 
-from haplo.internal.models.legacy_models import ResidualGenerationLightCurveNetworkBlock
+from haplo.internal.models.residual_generation_light_curve_network_block import ResidualGenerationLightCurveNetworkBlock
 
 
 class Cura(Module):
@@ -39,20 +39,21 @@ class Cura(Module):
         self.activation = LeakyReLU()
         self.dense1 = Conv1d(self.dense0.out_channels, 400, kernel_size=1)
         output_channels = 128
-        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
-            batch_normalization=False))
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=400, output_channels=output_channels,
+                                                                    batch_normalization=False, dropout_rate=0.0,
+                                                                    activation_type=LeakyReLU))
         input_channels = output_channels
         for output_channels in [512, 512, 1024, 1024, 2048, 2048]:
-            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=2,
-                dropout_rate=0.0,
-                batch_normalization=False))
+            self.blocks.append(
+                ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels, output_channels=output_channels,
+                                                         upsampling_scale_factor=2, batch_normalization=False,
+                                                         dropout_rate=0.0, activation_type=LeakyReLU))
             input_channels = output_channels
             for _ in range(2):
-                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
-                    batch_normalization=False))
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(input_channels=input_channels,
+                                                                            output_channels=output_channels,
+                                                                            batch_normalization=False, dropout_rate=0.0,
+                                                                            activation_type=LeakyReLU))
                 input_channels = output_channels
         self.end_conv = Conv1d(input_channels, 1, kernel_size=1)
 

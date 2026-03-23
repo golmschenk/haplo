@@ -4,7 +4,7 @@ from pathlib import Path
 from torch.optim import AdamW
 
 from haplo.internal.dataset.xarray_zarr import XarrayBasedDataset
-from haplo.internal.losses import SumDifferenceSquaredOverMedianExpectedSquaredMetric, PlusOneChiSquaredStatisticMetric
+from haplo.internal.metrics import SumDifferenceSquaredOverMedianExpectedSquaredMetric, PlusOneChiSquaredStatisticMetric
 from haplo.models import SingleDenseNetwork
 from haplo.internal.dataset.split import split_dataset_into_count_datasets
 from haplo.internal.train_hyperparameter_configuration import TrainHyperparameterConfiguration
