@@ -2,9 +2,7 @@ import math
 from random import Random
 from typing import TypeVar, Optional, Iterator
 
-import torch
 import torch.distributed as dist
-
 from torch.utils.data import Sampler, Dataset
 
 T_co = TypeVar('T_co', covariant=True)
