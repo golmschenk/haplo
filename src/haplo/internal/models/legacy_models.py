@@ -71,6 +71,7 @@ class ResidualGenerationLightCurveNetworkBlock(Module):
         self.input_to_output_channel_difference = input_channels - output_channels
         if output_channels != input_channels:
             if output_channels < input_channels:
+                self.input_channels = input_channels
                 self.output_channels = output_channels
             else:
                 self.dimension_change_layer = ConstantPad1d(padding=(0, -self.input_to_output_channel_difference),
