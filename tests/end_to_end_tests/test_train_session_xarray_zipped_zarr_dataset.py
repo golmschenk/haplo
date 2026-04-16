@@ -1,6 +1,8 @@
 import os
 import tempfile
 from pathlib import Path
+
+import wandb
 from torch.optim import AdamW
 
 from haplo.internal.xarray_zarr_dataset import XarrayBasedDataset
@@ -15,6 +17,9 @@ from haplo.train_system_configuration import TrainSystemConfiguration
 
 
 def test_simple_train_session():
+    if wandb.run is not None:
+        wandb.finish()
+    os.environ['WANDB_MODE'] = 'offline'
     os.environ['WANDB_DISABLED'] = 'true'
     full_dataset_path = Path(__file__).parent.joinpath(
         'test_train_session_xarray_zipped_zarr_resources/100_svf_dataset.zip')
