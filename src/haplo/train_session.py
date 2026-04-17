@@ -1,25 +1,24 @@
-import platform
+from pathlib import Path
 
 import getpass
 import logging
 import math
-import os
-import socket
-from pathlib import Path
-from typing import Callable, List
-
 import numpy as np
+import os
+import platform
+import socket
 import stringcase
 import torch
 import wandb as wandb
 from torch import Tensor, tensor
-from torch.distributed import init_process_group, destroy_process_group, ReduceOp
+from torch.distributed import destroy_process_group, ReduceOp
 from torch.nn import Module
 from torch.nn.parallel import DistributedDataParallel
 from torch.nn.utils import clip_grad_norm_
 from torch.optim import Optimizer
 from torch.types import Device
 from torch.utils.data import DataLoader, DistributedSampler, Dataset
+from typing import Callable, List
 
 from haplo.distributed import ddp_setup
 from haplo.logging import set_up_default_logger
