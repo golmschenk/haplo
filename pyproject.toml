@@ -17,7 +17,7 @@ dependencies = [
     "onnx>=1.14.1",
     "onnxruntime>=1.15.1",
     "pandas>=2.1.0",
-    "polars-lts-cpu>=0.20",
+    "polars>=0.20",
     "pyarrow>=13.0.0",
     "wandb>=0.18.0",
     "pytest>=7.4.2",
@@ -27,9 +27,9 @@ dependencies = [
     "tenacity>=8.2.3",
     "myst-parser",
     "furo>=2023.9.10",
-    "dask>=2023.1.1,<2025.4.0",  # TODO: Remove restriction when dependencies fix Zip bug.
+    "dask>=2023.1.1,<2025.4.0",  # TODO: Remove restriction when dependencies fix Zip bug. (https://github.com/scikit-build/scikit-build-core/issues/696)
     "xarray>2023.1.0",
-    "zarr @ git+https://github.com/zarr-developers/zarr-python.git@2eb89e1f213879c51f048c35bbfd6674c1abe285",  # TODO: Update to 3.1.4 when released.
+    "zarr>=3.1.4",
     "numcodecs>=0.15.0,!=0.16.0",
 ]
 
