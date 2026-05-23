@@ -20,8 +20,9 @@ def ddp_setup(system_configuration: TrainSystemConfiguration):
         os.environ['LOCAL_RANK'] = str(0)
         os.environ['WORLD_SIZE'] = str(1)
         os.environ['LOCAL_WORLD_SIZE'] = str(1)
-        os.environ["MASTER_ADDR"] = "localhost"
-        os.environ["MASTER_PORT"] = "35728"
+        os.environ['MASTER_ADDR'] = 'localhost'
+        os.environ['MASTER_PORT'] = '35728'
+        os.environ['TORCHELASTIC_RESTART_COUNT'] = str(0)
     init_process_group(backend=distributed_back_end)
 
 

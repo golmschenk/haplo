@@ -38,7 +38,7 @@ def constantinos_kalapotharakos_format_file_to_xarray_zarr(
         shutil.rmtree(output_path)
     with input_path.open() as file_handle:
         file_contents = get_memory_mapped_file_contents(file_handle)
-        value_iterator = re.finditer(rb"[^\s]+", file_contents)
+        value_iterator = re.finditer(rb'[^\s]+', file_contents)
         input_set = []
         output_set = []
         encoding = {
