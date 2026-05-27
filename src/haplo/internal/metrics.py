@@ -34,13 +34,30 @@ class PlusOneChiSquaredStatisticMetric2d(Module):
         return chi_squared_statistic
 
 # TODO: Merge 2D version with 1D version.
-class MeanDifferenceSquaredOverMedianExpectedSquaredMetric2d(Module):
+class MeanDifferenceSquaredOverMedianExpectedSquaredMetricPerEnergyBin2d(Module):
     def forward(self, output: torch.Tensor, target: torch.Tensor):
         epsilon = 1e-10
         observed = output.type(torch.float64) + 1.0
         expected = target.type(torch.float64) + 1.0
         numerator = torch.mean(((observed - expected) ** 2), dim=2)
         median = torch.median(expected, dim=2).values
+        denominator = median ** 2
+        quality_indicator = numerator / denominator
+        metric_f64 = torch.mean(torch.log10(quality_indicator + epsilon))
+        metric = metric_f64.type(torch.float32)
+        return metric
+
+# TODO: Merge 2D version with 1D version.
+class MeanDifferenceSquaredOverMedianExpectedSquaredMetric2d(Module):
+    def forward(self, output: torch.Tensor, target: torch.Tensor):
+        epsilon = 1e-10
+        observed = output.type(torch.float64) + 1.0
+        expected = target.type(torch.float64) + 1.0
+        flattened_expected = torch.flatten(expected, start_dim=1)
+        square_difference = ((observed - expected) ** 2)
+        flattened_square_difference = torch.flatten(square_difference, start_dim=1)
+        numerator = torch.mean(flattened_square_difference, dim=1)
+        median = torch.median(flattened_expected, dim=1).values
         denominator = median ** 2
         quality_indicator = numerator / denominator
         metric_f64 = torch.mean(torch.log10(quality_indicator + epsilon))
