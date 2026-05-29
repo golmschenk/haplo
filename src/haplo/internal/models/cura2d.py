@@ -74,6 +74,6 @@ class Cura(Module):
         for index, block in enumerate(self.blocks):
             x = block(x)
         x = self.end_conv(x)
-        x = x.reshape([-1, 64])
+        x = x.reshape([-1, 64, 64])
         x = self.output_transformation(x)
         return x

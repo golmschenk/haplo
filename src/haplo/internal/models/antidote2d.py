@@ -667,7 +667,93 @@ class AntidotePrototype8(Module):
         for index, block in enumerate(self.blocks):
             x = block(x)
         x = self.end_conv(x)
-        x = x.reshape([-1, 64])
+        x = x.reshape([-1, 64, 64])
+        x = self.output_transformation(x)
+        return x
+
+class AntidotePrototype8For260By32(Module):
+    @classmethod
+    def new(cls, input_features_shape: int = 11, input_transformation: Module | None = None,
+            output_transformation: Module | None = None) -> Self:
+        """
+        Constructor for the model.
+
+        :param input_features_shape: The shape of input features.
+        :param input_transformation: The transformation to be applied to the input data.
+        :param output_transformation: The transformation to be applied to the output data.
+        :return: An instance of the network model.
+        """
+        if input_transformation is None:
+            input_transformation = Identity()
+        if output_transformation is None:
+            output_transformation = Identity()
+        instance = cls(input_features_shape=input_features_shape, input_transformation=input_transformation,
+                       output_transformation=output_transformation)
+        return instance
+
+    def __init__(self, input_features_shape: int, input_transformation: Module, output_transformation: Module):
+        super().__init__()
+        self.input_features: int = input_features_shape
+        self.input_transformation: Module = input_transformation
+        self.output_transformation: Module = output_transformation
+
+        self.blocks = ModuleList()
+        self.dense0 = Conv2d(self.input_features, 400, kernel_size=1)
+        self.activation = GELU()
+        self.dense1 = Conv2d(self.dense0.out_channels, 400, kernel_size=1)
+        output_channels = 128
+        self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+            output_channels=output_channels, input_channels=400, dropout_rate=0.0,
+            batch_normalization=False, activation_type=GELU))
+        input_channels = output_channels
+        energy_bin_scale_factor = 2.74
+        for output_channels in [512, 512, 256, 128, 64]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=[energy_bin_scale_factor, 2],
+                dropout_rate=0.0,
+                batch_normalization=False,
+                activation_type=GELU))
+            input_channels = output_channels
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
+                    batch_normalization=False,
+                    activation_type=GELU
+                ))
+                input_channels = output_channels
+        for output_channels in [32]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=[energy_bin_scale_factor, 1],
+                dropout_rate=0.0,
+                batch_normalization=False,
+                activation_type=GELU))
+            input_channels = output_channels
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
+                    batch_normalization=False,
+                    activation_type=GELU
+                ))
+                input_channels = output_channels
+        self.end_conv = Conv2d(input_channels, 1, kernel_size=1)
+
+    def forward(self, x):
+        """
+        The forward pass of the model.
+
+        :param x: The input data to infer on.
+        :return: The network prediction.
+        """
+        x = self.input_transformation(x)
+        x = x.reshape([-1, self.input_features, 1, 1])
+        x = self.dense0(x)
+        x = self.activation(x)
+        x = self.dense1(x)
+        x = self.activation(x)
+        for index, block in enumerate(self.blocks):
+            x = block(x)
+        x = self.end_conv(x)
+        x = x.reshape([-1, 260, 32])
         x = self.output_transformation(x)
         return x
 

@@ -25,7 +25,9 @@ class ResidualGenerationLightCurveNetworkBlock(Module):
         )
         self.dimension_increase_layer = ConvTranspose2d(
             in_channels=reduced_channels, out_channels=output_channels, kernel_size=1)
-        if upsampling_scale_factor > 1:
+        if isinstance(upsampling_scale_factor, list):
+            upsampling_scale_factor = tuple(upsampling_scale_factor)
+        if isinstance(upsampling_scale_factor, tuple) or upsampling_scale_factor > 1:
             self.upsampling_layer = Upsample(scale_factor=upsampling_scale_factor)
         else:
             self.upsampling_layer = None
