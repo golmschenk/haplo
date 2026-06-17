@@ -118,6 +118,7 @@ def constantinos_kalapotharakos_format_file_to_xarray_zarr_zip(
     shutil.rmtree(temporary_intermediate_unzipped_zarr_path)
 
 
+# TODO: Seems unused. Probably remove.
 def constantinos_kalapotharakos_format_file_to_zarr(input_file_path: Path, output_file_path: Path,
                                                     parameter_count: int = 11) -> None:
     """
@@ -134,6 +135,7 @@ def constantinos_kalapotharakos_format_file_to_zarr(input_file_path: Path, outpu
                                                                            parameter_count)
 
 
+# TODO: Seems unused. Probably remove.
 def constantinos_kalapotharakos_file_handle_to_1d_input_1d_output_zarr(file_contents: bytes | mmap.mmap,
                                                                        output_file_path: Path,
                                                                        input_size: int = 11,
