@@ -671,7 +671,7 @@ class AntidotePrototype8(Module):
         x = self.output_transformation(x)
         return x
 
-class AntidotePrototype8For260By32(Module):
+class AntidotePrototype8For400By32(Module):
     @classmethod
     def new(cls, input_features_shape: int = 11, input_transformation: Module | None = None,
             output_transformation: Module | None = None) -> Self:
@@ -706,8 +706,22 @@ class AntidotePrototype8For260By32(Module):
             output_channels=output_channels, input_channels=400, dropout_rate=0.0,
             batch_normalization=False, activation_type=GELU))
         input_channels = output_channels
-        energy_bin_scale_factor = 2.74
-        for output_channels in [512, 512, 256, 128, 64]:
+        for output_channels in [512, 512]:
+            self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=[2, 2],
+                dropout_rate=0.0,
+                batch_normalization=False,
+                activation_type=GELU))
+            input_channels = output_channels
+            for _ in range(2):
+                self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
+                    input_channels=input_channels, output_channels=output_channels, dropout_rate=0.0,
+                    batch_normalization=False,
+                    activation_type=GELU
+                ))
+                input_channels = output_channels
+        energy_bin_scale_factor = 3.1
+        for output_channels in [256, 128, 64]:
             self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
                 output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=[energy_bin_scale_factor, 2],
                 dropout_rate=0.0,
@@ -723,7 +737,7 @@ class AntidotePrototype8For260By32(Module):
                 input_channels = output_channels
         for output_channels in [32]:
             self.blocks.append(ResidualGenerationLightCurveNetworkBlock(
-                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=[energy_bin_scale_factor, 1],
+                output_channels=output_channels, input_channels=input_channels, upsampling_scale_factor=[3.51, 1],
                 dropout_rate=0.0,
                 batch_normalization=False,
                 activation_type=GELU))
@@ -753,13 +767,13 @@ class AntidotePrototype8For260By32(Module):
         for index, block in enumerate(self.blocks):
             x = block(x)
         x = self.end_conv(x)
-        x = x.reshape([-1, 260, 32])
+        x = x.reshape([-1, 400, 32])
         x = self.output_transformation(x)
         return x
 
 
 if __name__ == '__main__':
     x_ = torch.rand(size=[7, 11])
-    model = AntidotePrototype0.new()
+    model = AntidotePrototype8For400By32.new(input_features_shape=11)
     y_ = model(x_)
     pass

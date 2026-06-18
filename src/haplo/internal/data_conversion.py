@@ -2,17 +2,12 @@ from __future__ import annotations
 
 import itertools
 import logging
-import mmap
 import re
 import shutil
 from enum import StrEnum
 from pathlib import Path
 
-import pandas as pd
 import xarray
-import zarr
-from pandas import DataFrame
-from xarray import Dataset
 from zarr.storage import ZipStore
 
 from haplo.internal.constantinos_kalapotharakos_format import get_memory_mapped_file_contents
