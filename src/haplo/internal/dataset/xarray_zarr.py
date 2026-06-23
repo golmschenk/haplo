@@ -29,3 +29,10 @@ class XarrayBasedDataset(SizedDataset):
         input_ = self.xarray_dataset['input'][index].to_numpy()
         output = self.xarray_dataset['output'][index].to_numpy()
         return input_, output
+
+
+class Xarray2dEnergyBinSubsampling(XarrayBasedDataset):
+    def __getitem__(self, index):
+        input_ = self.xarray_dataset['input'][index].to_numpy()
+        output = self.xarray_dataset['output'][index, 0:400].to_numpy()
+        return input_, output
