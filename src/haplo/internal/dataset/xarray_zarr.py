@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import numpy as np
 import xarray
 from typing import Self
 from xarray import Dataset
@@ -35,4 +36,10 @@ class Xarray2dEnergyBinSubsampling(XarrayBasedDataset):
     def __getitem__(self, index):
         input_ = self.xarray_dataset['input'][index].to_numpy()
         output = self.xarray_dataset['output'][index, 0:400].to_numpy()
+        return input_, output
+
+class Xarray2dPermutedAxes(XarrayBasedDataset):
+    def __getitem__(self, index):
+        input_ = self.xarray_dataset['input'][index].to_numpy()
+        output = np.permute_dims(self.xarray_dataset['output'][index].to_numpy(), [0, 2, 1])
         return input_, output
