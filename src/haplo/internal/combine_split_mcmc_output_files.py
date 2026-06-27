@@ -168,7 +168,7 @@ def get_chain_count_and_known_complete_iterations(split_data_file_path: Path, el
         if chain_index > max_chain_index:
             if chain_index != max_chain_index + 1:
                 raise ValueError(
-                    f'Chain index order in {split_data_file_path} did not increase by 1 for record {record_index}.')
+                    f'Chain index order in `{split_data_file_path}` did not increase by 1 for record {record_index}.')
             max_chain_index = chain_index
         else:
             break
@@ -181,7 +181,7 @@ def get_chain_count_and_known_complete_iterations(split_data_file_path: Path, el
         chain_index = record[elements_per_record - 1]
         if record_index % chain_count != chain_index:
             logger.warning(
-                f'Chain index order in {split_data_file_path} did not increase by 1 for record {record_index}.')
+                f'Chain index order in `{split_data_file_path}` did not increase by 1 for record {record_index}.')
         if chain_index == max_chain_index:
             data_file0_iterations += 1
     if chain_index == max_chain_index:

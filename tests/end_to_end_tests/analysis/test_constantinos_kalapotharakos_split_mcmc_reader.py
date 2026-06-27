@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import pytest
@@ -52,11 +53,15 @@ def test_constantinos_kalapotharakos_split_mcmc_reader_determines_correct_number
     assert known_complete_iteration_index4 == 3
 
 
-def test_constantinos_kalapotharakos_split_mcmc_reader_errors_when_chains_stop_incrementing_correctly():
-    with pytest.raises(ValueError):
+def test_constantinos_kalapotharakos_split_mcmc_reader_errors_when_chains_stop_incrementing_correctly(caplog):
+    caplog.set_level(logging.INFO)
+    with caplog.at_level(logging.WARNING):
         _ = get_chain_count_and_known_complete_iterations(
-            Path(__file__).parent.joinpath('constantinos_kalapotharakos_split_mcmc_reader_resources/mcmc_vac_100005.dat'),
+            Path(__file__).parent.joinpath(
+                'constantinos_kalapotharakos_split_mcmc_reader_resources/mcmc_vac_100005.dat'),
             elements_per_record=13)
+    assert 'Chain index order in' in caplog.text
+    assert 'did not increase by 1 for record 3.' in caplog.text
 
 
 def test_constantinos_kalapotharakos_split_mcmc_reader_fills_in_corrupted_data():
