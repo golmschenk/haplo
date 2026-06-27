@@ -43,8 +43,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     logger.info(f'Scanning first file to get chain count and iteration count.')
     chain_count, known_complete_iterations = get_chain_count_and_known_complete_iterations(split_data_file_paths[0],
                                                                                            elements_per_record)
-    max_known_complete_iteration_index = known_complete_iterations - 1
-    iterations = np.arange(max_known_complete_iteration_index + 1, dtype=np.int64)
+    iterations = np.arange(known_complete_iterations, dtype=np.int64)
     cpus = np.arange(len(split_data_file_paths), dtype=np.int64)
     chains = np.array([0, 1], dtype=np.int64)
     parameter_count = elements_per_record - 2
@@ -62,7 +61,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
             split_process_result = pool.apply_async(process_split_file,
                                                     [
                                                         temporary_combined_output_path0, split_data_path, split_index,
-                                                        elements_per_record, max_known_complete_iteration_index, chains,
+                                                        elements_per_record, known_complete_iterations, chains,
                                                         parameter_count, parameter_indexes,
                                                         scanning_iteration_chunk_size
                                                     ])
@@ -79,8 +78,8 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     shutil.rmtree(temporary_combined_output_path0)
     if not any(split_is_final_iteration_known_incomplete_list):  # All false, meaning we should add the final iteration.
         save_final_iteration_region(temporary_combined_output_path1, final_iteration_parameters_batch,
-                                    final_iteration_log_likelihood_batch, max_known_complete_iteration_index + 1, cpus,
-                                    chains, parameter_count, parameter_indexes)
+                                    final_iteration_log_likelihood_batch, known_complete_iterations, cpus, chains,
+                                    parameter_count, parameter_indexes)
     if combined_output_path.suffix == '.zip':
         dataset = xarray.open_zarr(temporary_combined_output_path1)
         temporary_combined_output_zip_path1 = temporary_combined_output_path1.parent.joinpath(
@@ -123,20 +122,20 @@ def save_batch_to_cpu_and_iteration_region(zarr_path, parameters_batch_, log_lik
     region_dataset.to_zarr(zarr_path, region='auto')
 
 
-def save_final_iteration_region(zarr_path, parameters_batch_, log_likelihood_batch_,
-                                 iteration_, cpus_, chains_, parameter_count_, parameter_indexes_):
-    flat_parameters_batch_array = np.array(parameters_batch_, dtype=np.float32)
+def save_final_iteration_region(zarr_path, parameters_batch, log_likelihood_batch,
+                                 iteration, cpus, chains, parameter_count, parameter_indexes):
+    flat_parameters_batch_array = np.array(parameters_batch, dtype=np.float32)
     parameters_batch_array = flat_parameters_batch_array.reshape(
-        [1, cpus_.size, chains_.size, parameter_count_])
-    flat_log_likelihood_batch_array = np.array(log_likelihood_batch_, dtype=np.float32)
+        [1, cpus.size, chains.size, parameter_count])
+    flat_log_likelihood_batch_array = np.array(log_likelihood_batch, dtype=np.float32)
     log_likelihood_batch_array = flat_log_likelihood_batch_array.reshape(
-        [1, cpus_.size, chains_.size])
+        [1, cpus.size, chains.size])
     region_dataset = xarray.Dataset(
         coords={
-            'iteration': np.array([iteration_], dtype=np.int64),
-            'cpu': cpus_,
-            'chain': chains_,
-            'parameter_index': parameter_indexes_,
+            'iteration': np.array([iteration], dtype=np.int64),
+            'cpu': cpus,
+            'chain': chains,
+            'parameter_index': parameter_indexes,
         },
         data_vars={
             'parameter': (
@@ -267,7 +266,7 @@ def check_for_existing_files(combined_output_path_, overwrite_):
 
 
 def process_split_file(temporary_combined_output_path0_, split_data_path_, split_index_, elements_per_record_,
-                       max_known_complete_iteration_, chains_, parameter_count_, parameter_indexes_,
+                       known_complete_iterations, chains_, parameter_count_, parameter_indexes_,
                        scanning_iteration_chunk_size_) -> tuple[list[float], list[tuple[float, ...]], bool]:
     logger.info(f'Processing {split_data_path_}.')
     split_final_iteration_parameters_batch_: list[tuple[float, ...]] = []
@@ -296,7 +295,7 @@ def process_split_file(temporary_combined_output_path0_, split_data_path_, split
         if chain == 1:
             chain = 0
             iteration += 1
-            if iteration > batch_start_iteration + scanning_iteration_chunk_size_ or iteration > max_known_complete_iteration_:
+            if iteration > batch_start_iteration + scanning_iteration_chunk_size_ or iteration >= known_complete_iterations:
                 save_batch_to_cpu_and_iteration_region(temporary_combined_output_path0_, parameters_batch,
                                                        log_likelihood_batch, batch_start_iteration, iteration,
                                                        split_data_frame_cpu_number, chains_, parameter_count_,
@@ -304,7 +303,7 @@ def process_split_file(temporary_combined_output_path0_, split_data_path_, split
                 batch_start_iteration = iteration
                 parameters_batch = []
                 log_likelihood_batch = []
-            if iteration > max_known_complete_iteration_:
+            if iteration >= known_complete_iterations:
                 try:
                     record = next(record_generator)
                     split_final_iteration_parameters_batch_.append(record[:parameter_count_])
