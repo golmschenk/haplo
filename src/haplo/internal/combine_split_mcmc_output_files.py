@@ -37,8 +37,8 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     :param multiprocess_pool_size: The number of processes to handle the conversion process.
     :return: None
     """
-    temporary_combined_output_path0, temporary_combined_output_path1 = _check_for_existing_files(
-        combined_output_path, overwrite)
+    temporary_combined_output_path0, temporary_combined_output_path1 = check_for_existing_files(combined_output_path,
+                                                                                                overwrite)
     split_data_file_paths = sorted(split_mcmc_output_directory.glob('*.dat'))
     logger.info(f'Scanning first file to get chain count and iteration count.')
     chain_count, known_complete_iterations = get_chain_count_and_known_complete_iterations(split_data_file_paths[0],
@@ -50,8 +50,8 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     parameter_count = elements_per_record - 2
     parameter_indexes = np.arange(parameter_count, dtype=np.int64)
     scanning_iteration_chunk_size = 1_000_000
-    _create_empty_dataset_zarr(temporary_combined_output_path0, iterations, cpus, chains, parameter_indexes,
-                               scanning_iteration_chunk_size)
+    create_empty_dataset_zarr(temporary_combined_output_path0, iterations, cpus, chains, parameter_indexes,
+                              scanning_iteration_chunk_size)
 
     final_iteration_parameters_batch: list[tuple[float, ...]] = []
     final_iteration_log_likelihood_batch: list[float] = []
@@ -59,7 +59,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     with Pool(processes=multiprocess_pool_size) as pool:
         split_process_results = []
         for split_index, split_data_path in enumerate(split_data_file_paths):
-            split_process_result = pool.apply_async(_process_split_file,
+            split_process_result = pool.apply_async(process_split_file,
                                                     [
                                                         temporary_combined_output_path0, split_data_path, split_index,
                                                         elements_per_record, max_known_complete_iteration_index, chains,
@@ -73,15 +73,14 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
             final_iteration_parameters_batch.extend(split_final_iteration_parameters_batch)
             final_iteration_log_likelihood_batch.extend(split_final_iteration_log_likelihood_batch)
             split_is_final_iteration_known_incomplete_list.append(split_is_final_iteration_known_incomplete)
-    _rechunk_dataset(old_zarr_path_=temporary_combined_output_path0, new_zarr_path_=temporary_combined_output_path1,
-                     iterations_=iterations, cpus_=cpus, chains_=chains, parameter_indexes_=parameter_indexes,
-                     new_iteration_chunk_size_=1_000)
+    rechunk_dataset(old_zarr_path_=temporary_combined_output_path0, new_zarr_path_=temporary_combined_output_path1,
+                    iterations_=iterations, cpus_=cpus, chains_=chains, parameter_indexes_=parameter_indexes,
+                    new_iteration_chunk_size_=1_000)
     shutil.rmtree(temporary_combined_output_path0)
     if not any(split_is_final_iteration_known_incomplete_list):  # All false, meaning we should add the final iteration.
-        _save_final_iteration_region(temporary_combined_output_path1, final_iteration_parameters_batch,
-                                     final_iteration_log_likelihood_batch,
-                                     max_known_complete_iteration_index + 1, cpus, chains,
-                                     parameter_count, parameter_indexes)
+        save_final_iteration_region(temporary_combined_output_path1, final_iteration_parameters_batch,
+                                    final_iteration_log_likelihood_batch, max_known_complete_iteration_index + 1, cpus,
+                                    chains, parameter_count, parameter_indexes)
     if combined_output_path.suffix == '.zip':
         dataset = xarray.open_zarr(temporary_combined_output_path1)
         temporary_combined_output_zip_path1 = temporary_combined_output_path1.parent.joinpath(
@@ -94,7 +93,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         temporary_combined_output_path1.rename(combined_output_path)
 
 
-def _save_batch_to_cpu_and_iteration_region(zarr_path, parameters_batch_, log_likelihood_batch_,
+def save_batch_to_cpu_and_iteration_region(zarr_path, parameters_batch_, log_likelihood_batch_,
                                             region_start_iteration, region_end_iteration, cpu, chains_,
                                             parameter_count_, parameter_indexes_):
     flat_parameters_batch_array = np.array(parameters_batch_, dtype=np.float32)
@@ -124,7 +123,7 @@ def _save_batch_to_cpu_and_iteration_region(zarr_path, parameters_batch_, log_li
     region_dataset.to_zarr(zarr_path, region='auto')
 
 
-def _save_final_iteration_region(zarr_path, parameters_batch_, log_likelihood_batch_,
+def save_final_iteration_region(zarr_path, parameters_batch_, log_likelihood_batch_,
                                  iteration_, cpus_, chains_, parameter_count_, parameter_indexes_):
     flat_parameters_batch_array = np.array(parameters_batch_, dtype=np.float32)
     parameters_batch_array = flat_parameters_batch_array.reshape(
@@ -193,7 +192,7 @@ def get_chain_count_and_known_complete_iterations(split_data_file_path: Path, el
     return chain_count, max_known_complete_iterations
 
 
-def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, parameter_indexes_, iteration_chunk_size_,
+def create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, parameter_indexes_, iteration_chunk_size_,
                                cpu_chunk_size_: int = 1):
     if iteration_chunk_size_ == -1:
         iteration_chunk_size_ = len(iterations_)
@@ -235,11 +234,11 @@ def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, paramete
     empty_dataset.to_zarr(zarr_path_, compute=False, encoding=encoding)
 
 
-def _rechunk_dataset(old_zarr_path_, new_zarr_path_, iterations_, cpus_, chains_, parameter_indexes_,
+def rechunk_dataset(old_zarr_path_, new_zarr_path_, iterations_, cpus_, chains_, parameter_indexes_,
                      new_iteration_chunk_size_):
     logger.info('Rechunking dataset.')
-    _create_empty_dataset_zarr(new_zarr_path_, iterations_, cpus_, chains_, parameter_indexes_,
-                               new_iteration_chunk_size_, cpu_chunk_size_=-1)
+    create_empty_dataset_zarr(new_zarr_path_, iterations_, cpus_, chains_, parameter_indexes_,
+                              new_iteration_chunk_size_, cpu_chunk_size_=-1)
     old_dataset = xarray.open_zarr(old_zarr_path_)
     iteration_batches = np.split(iterations_,
                                  np.arange(new_iteration_chunk_size_, len(iterations_), new_iteration_chunk_size_))
@@ -250,7 +249,7 @@ def _rechunk_dataset(old_zarr_path_, new_zarr_path_, iterations_, cpus_, chains_
         batch.to_zarr(new_zarr_path_, region='auto')
 
 
-def _check_for_existing_files(combined_output_path_, overwrite_):
+def check_for_existing_files(combined_output_path_, overwrite_):
     temporary_directory_ = combined_output_path_.parent
     temporary_combined_output_path0_ = temporary_directory_.joinpath(combined_output_path_.name + '.haplo_partial0')
     if temporary_combined_output_path0_.exists():
@@ -267,9 +266,9 @@ def _check_for_existing_files(combined_output_path_, overwrite_):
     return temporary_combined_output_path0_, temporary_combined_output_path1_
 
 
-def _process_split_file(temporary_combined_output_path0_, split_data_path_, split_index_, elements_per_record_,
-                        max_known_complete_iteration_, chains_, parameter_count_, parameter_indexes_,
-                        scanning_iteration_chunk_size_) -> tuple[list[float], list[tuple[float, ...]], bool]:
+def process_split_file(temporary_combined_output_path0_, split_data_path_, split_index_, elements_per_record_,
+                       max_known_complete_iteration_, chains_, parameter_count_, parameter_indexes_,
+                       scanning_iteration_chunk_size_) -> tuple[list[float], list[tuple[float, ...]], bool]:
     logger.info(f'Processing {split_data_path_}.')
     split_final_iteration_parameters_batch_: list[tuple[float, ...]] = []
     split_final_iteration_log_likelihood_batch_: list[float] = []
@@ -298,10 +297,10 @@ def _process_split_file(temporary_combined_output_path0_, split_data_path_, spli
             chain = 0
             iteration += 1
             if iteration > batch_start_iteration + scanning_iteration_chunk_size_ or iteration > max_known_complete_iteration_:
-                _save_batch_to_cpu_and_iteration_region(temporary_combined_output_path0_, parameters_batch,
-                                                        log_likelihood_batch, batch_start_iteration, iteration,
-                                                        split_data_frame_cpu_number, chains_, parameter_count_,
-                                                        parameter_indexes_)
+                save_batch_to_cpu_and_iteration_region(temporary_combined_output_path0_, parameters_batch,
+                                                       log_likelihood_batch, batch_start_iteration, iteration,
+                                                       split_data_frame_cpu_number, chains_, parameter_count_,
+                                                       parameter_indexes_)
                 batch_start_iteration = iteration
                 parameters_batch = []
                 log_likelihood_batch = []
