@@ -40,8 +40,11 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     temporary_combined_output_path0, temporary_combined_output_path1 = _check_for_existing_files(
         combined_output_path, overwrite)
     split_data_file_paths = sorted(split_mcmc_output_directory.glob('*.dat'))
-    max_known_complete_iteration = _get_known_complete_iterations(split_data_file_paths, elements_per_record)
-    iterations = np.arange(max_known_complete_iteration + 1, dtype=np.int64)
+    logger.info(f'Scanning first file to get chain count and iteration count.')
+    chain_count, known_complete_iterations = get_chain_count_and_known_complete_iterations(split_data_file_paths[0],
+                                                                                           elements_per_record)
+    max_known_complete_iteration_index = known_complete_iterations + 1
+    iterations = np.arange(max_known_complete_iteration_index + 1, dtype=np.int64)
     cpus = np.arange(len(split_data_file_paths), dtype=np.int64)
     chains = np.array([0, 1], dtype=np.int64)
     parameter_count = elements_per_record - 2
@@ -59,7 +62,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
             split_process_result = pool.apply_async(_process_split_file,
                                                     [
                                                         temporary_combined_output_path0, split_data_path, split_index,
-                                                        elements_per_record, max_known_complete_iteration, chains,
+                                                        elements_per_record, max_known_complete_iteration_index, chains,
                                                         parameter_count, parameter_indexes,
                                                         scanning_iteration_chunk_size
                                                     ])
@@ -77,7 +80,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     if not any(split_is_final_iteration_known_incomplete_list):  # All false, meaning we should add the final iteration.
         _save_final_iteration_region(temporary_combined_output_path1, final_iteration_parameters_batch,
                                      final_iteration_log_likelihood_batch,
-                                     max_known_complete_iteration + 1, cpus, chains,
+                                     max_known_complete_iteration_index + 1, cpus, chains,
                                      parameter_count, parameter_indexes)
     if combined_output_path.suffix == '.zip':
         dataset = xarray.open_zarr(temporary_combined_output_path1)
@@ -150,24 +153,37 @@ def _save_final_iteration_region(zarr_path, parameters_batch_, log_likelihood_ba
     region_dataset.to_zarr(zarr_path, append_dim='iteration')
 
 
-def _get_known_complete_iterations(split_data_file_paths_, elements_per_record_):
-    logger.info(f'Scanning first file to get iteration count.')
-    split_data_path0 = split_data_file_paths_[0]
+def get_chain_count_and_known_complete_iterations(split_data_file_path: Path, elements_per_record: int
+                                                   ) -> tuple[int, int]:
     record_generator_ = constantinos_kalapotharakos_format_record_generator(
-        split_data_path0, elements_per_record=elements_per_record_)
-    data_file0_iterations = 0
-    read_chain0 = False
-    for _ in record_generator_:
-        if read_chain0:
-            data_file0_iterations += 1
-            read_chain0 = False
+        split_data_file_path, elements_per_record=elements_per_record)
+    max_chain_index = -1
+    for record_index, record in enumerate(record_generator_):
+        chain_index = record[elements_per_record - 1]
+        if chain_index > max_chain_index:
+            if chain_index != max_chain_index + 1:
+                raise ValueError(
+                    f'Chain index order in {split_data_file_path} did not increase by 1 for record {record_index}.')
+            max_chain_index = chain_index
         else:
-            read_chain0 = True
-    if read_chain0:
-        max_known_complete_iteration_ = data_file0_iterations - 1
+            break
+    chain_count = max_chain_index + 1
+    record_generator_ = constantinos_kalapotharakos_format_record_generator(
+        split_data_file_path, elements_per_record=elements_per_record)
+    data_file0_iterations = 0
+    chain_index = 0
+    for record_index, record in enumerate(record_generator_):
+        chain_index = record[elements_per_record - 1]
+        if record_index % chain_count != chain_index:
+            raise ValueError(
+                f'Chain index order in {split_data_file_path} did not increase by 1 for record {record_index}.')
+        if chain_index == max_chain_index:
+            data_file0_iterations += 1
+    if chain_index == max_chain_index:
+        max_known_complete_iterations = data_file0_iterations - 1
     else:
-        max_known_complete_iteration_ = data_file0_iterations - 2
-    return max_known_complete_iteration_
+        max_known_complete_iterations = data_file0_iterations
+    return chain_count, max_known_complete_iterations
 
 
 def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, parameter_indexes_, iteration_chunk_size_,
@@ -176,6 +192,8 @@ def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, paramete
         iteration_chunk_size_ = len(iterations_)
     if cpu_chunk_size_ == -1:
         cpu_chunk_size_ = len(cpus_)
+    chain_chunk_size_ = len(chains_)
+    parameter_indexes_chunk_size_ = len(parameter_indexes_)
     empty_dataset = xarray.Dataset(
         coords={
             'iteration': iterations_,
@@ -201,10 +219,11 @@ def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, paramete
     encoding = {
         'iteration': {'dtype': 'int64', 'chunks': (iteration_chunk_size_,)},
         'cpu': {'dtype': 'int64', 'chunks': (cpu_chunk_size_,)},
-        'chain': {'dtype': 'int64', 'chunks': (-1,)},
-        'parameter_index': {'dtype': 'int64', 'chunks': (-1,)},
-        'parameter': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, -1, -1)},
-        'log_likelihood': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, -1)},
+        'chain': {'dtype': 'int64', 'chunks': (chain_chunk_size_,)},
+        'parameter_index': {'dtype': 'int64', 'chunks': (parameter_indexes_chunk_size_,)},
+        'parameter': {'dtype': 'float32', 'chunks': (
+            iteration_chunk_size_, cpu_chunk_size_, chain_chunk_size_, parameter_indexes_chunk_size_)},
+        'log_likelihood': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, chain_chunk_size_)},
     }
     empty_dataset.to_zarr(zarr_path_, compute=False, encoding=encoding)
 
@@ -220,7 +239,7 @@ def _rechunk_dataset(old_zarr_path_, new_zarr_path_, iterations_, cpus_, chains_
     for iteration_batch in iteration_batches:
         logger.info(f'Rechunking iteration: {iteration_batch[0]}')
         batch: xarray.Dataset = old_dataset.sel({'iteration': iteration_batch})
-        batch = batch.chunk({'iteration': new_iteration_chunk_size_, 'cpu': -1})
+        batch = batch.chunk({'iteration': new_iteration_chunk_size_, 'cpu': len(cpus_)})
         batch.to_zarr(new_zarr_path_, region='auto')
 
 
