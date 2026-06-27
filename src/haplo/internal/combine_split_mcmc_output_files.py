@@ -1,12 +1,16 @@
-import dask.array
+"""
+Tools for converting the Constantinos Kalapotharakos format split mcmc output files to Xarray Zarr.
+"""
 import itertools
 import logging
-import numpy as np
 import re
 import shutil
-import xarray
-from multiprocessing.pool import AsyncResult, Pool
+from multiprocessing.pool import Pool
 from pathlib import Path
+
+import dask.array
+import numpy as np
+import xarray
 from zarr.storage import ZipStore
 
 from haplo.internal.constantinos_kalapotharakos_format import constantinos_kalapotharakos_format_record_generator
@@ -50,7 +54,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     final_iteration_log_likelihood_batch: list[float] = []
     split_is_final_iteration_known_incomplete_list: list[bool] = []
     with Pool(processes=multiprocess_pool_size) as pool:
-        split_process_results: list[AsyncResult] = []
+        split_process_results = []
         for split_index, split_data_path in enumerate(split_data_file_paths):
             split_process_result = pool.apply_async(_process_split_file,
                                                     [
@@ -249,7 +253,10 @@ def _process_split_file(temporary_combined_output_path0_, split_data_path_, spli
         split_data_path_, elements_per_record=elements_per_record_)
     parameters_batch: list[tuple[float, ...]] = []
     log_likelihood_batch: list[float] = []
-    split_data_frame_cpu_number = int(re.search(r'1(\d+)\.dat', split_data_path_.name).group(1))
+    match = re.search(r'1(\d+)\.dat', split_data_path_.name)
+    if match is None:
+        raise ValueError(f'Expected a file pattern matching `1(\\d+)\\.dat` but found {split_data_path_.name}.')
+    split_data_frame_cpu_number = int(match.group(1))
     if split_index_ != split_data_frame_cpu_number:
         raise ValueError(f'A split MCMC output file was expected but not found. '
                          f'Expected a file for CPU number {split_index_}, but found {split_data_path_.name}.')
