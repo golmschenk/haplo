@@ -154,7 +154,14 @@ def _save_final_iteration_region(zarr_path, parameters_batch_, log_likelihood_ba
 
 
 def get_chain_count_and_known_complete_iterations(split_data_file_path: Path, elements_per_record: int
-                                                   ) -> tuple[int, int]:
+                                                  ) -> tuple[int, int]:
+    """
+    Gets the chain count and known complete iterations from a given split MCMC data file.
+
+    :param split_data_file_path: The path to the split MCMC data file.
+    :param elements_per_record: The number of elements per record.
+    :return: The chain count and known complete iterations count.
+    """
     record_generator_ = constantinos_kalapotharakos_format_record_generator(
         split_data_file_path, elements_per_record=elements_per_record)
     max_chain_index = -1
