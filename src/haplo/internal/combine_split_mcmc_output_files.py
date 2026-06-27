@@ -240,7 +240,7 @@ def _check_for_existing_files(combined_output_path_, overwrite_):
 
 def _process_split_file(temporary_combined_output_path0_, split_data_path_, split_index_, elements_per_record_,
                         max_known_complete_iteration_, chains_, parameter_count_, parameter_indexes_,
-                        scanning_iteration_chunk_size_) -> (list[tuple[float, ...]], list[float], bool):
+                        scanning_iteration_chunk_size_) -> tuple[list[float], list[tuple[float, ...]], bool]:
     logger.info(f'Processing {split_data_path_}.')
     split_final_iteration_parameters_batch_: list[tuple[float, ...]] = []
     split_final_iteration_log_likelihood_batch_: list[float] = []
