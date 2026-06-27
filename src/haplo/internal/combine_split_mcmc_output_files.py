@@ -201,11 +201,10 @@ def _create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, paramete
     encoding = {
         'iteration': {'dtype': 'int64', 'chunks': (iteration_chunk_size_,)},
         'cpu': {'dtype': 'int64', 'chunks': (cpu_chunk_size_,)},
-        'chain': {'dtype': 'int64', 'chunks': (len(chains_),)},
-        'parameter_index': {'dtype': 'int64', 'chunks': (len(parameter_indexes_),)},
-        'parameter': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, len(chains_),
-                                                     len(parameter_indexes_))},
-        'log_likelihood': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, len(chains_))},
+        'chain': {'dtype': 'int64', 'chunks': (-1,)},
+        'parameter_index': {'dtype': 'int64', 'chunks': (-1,)},
+        'parameter': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, -1, -1)},
+        'log_likelihood': {'dtype': 'float32', 'chunks': (iteration_chunk_size_, cpu_chunk_size_, -1)},
     }
     empty_dataset.to_zarr(zarr_path_, compute=False, encoding=encoding)
 
