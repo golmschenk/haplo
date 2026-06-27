@@ -180,7 +180,7 @@ def get_chain_count_and_known_complete_iterations(split_data_file_path: Path, el
     for record_index, record in enumerate(record_generator_):
         chain_index = record[elements_per_record - 1]
         if record_index % chain_count != chain_index:
-            raise ValueError(
+            logger.warning(
                 f'Chain index order in {split_data_file_path} did not increase by 1 for record {record_index}.')
         if chain_index == max_chain_index:
             data_file0_iterations += 1

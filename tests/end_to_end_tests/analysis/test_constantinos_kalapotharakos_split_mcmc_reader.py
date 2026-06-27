@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from haplo.internal.combine_split_mcmc_output_files import get_chain_count_and_known_complete_iterations
+from haplo.internal.constantinos_kalapotharakos_format import constantinos_kalapotharakos_format_record_generator
 
 
 def test_constantinos_kalapotharakos_split_mcmc_reader_determines_correct_number_of_chains():
@@ -56,3 +57,13 @@ def test_constantinos_kalapotharakos_split_mcmc_reader_errors_when_chains_stop_i
         _ = get_chain_count_and_known_complete_iterations(
             Path(__file__).parent.joinpath('constantinos_kalapotharakos_split_mcmc_reader_resources/mcmc_vac_100005.dat'),
             elements_per_record=13)
+
+
+def test_constantinos_kalapotharakos_split_mcmc_reader_fills_in_corrupted_data():
+    generator = constantinos_kalapotharakos_format_record_generator(
+        Path(__file__).parent.joinpath('constantinos_kalapotharakos_split_mcmc_reader_resources/'
+                                       'mcmc_vac_corrupted_100006.dat'),
+        elements_per_record=13
+    )
+    records = list(generator)
+    assert len(records) == 6

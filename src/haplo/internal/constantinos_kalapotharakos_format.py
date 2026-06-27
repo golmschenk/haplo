@@ -32,7 +32,7 @@ def constantinos_kalapotharakos_format_record_generator(path: Path, elements_per
     with path.open() as file_handle:
         file_contents = get_memory_mapped_file_contents(file_handle)
         generator = constantinos_kalapotharakos_format_record_generator_from_file_contents(
-            file_contents=file_contents, elements_per_record=elements_per_record)
+            file_contents=file_contents, elements_per_record=elements_per_record, file_path_for_logging=path)
         for record in generator:
             yield record
 
@@ -40,30 +40,54 @@ def constantinos_kalapotharakos_format_record_generator(path: Path, elements_per
 def constantinos_kalapotharakos_format_record_generator_from_file_contents(
         file_contents: bytes | mmap.mmap,
         *,
-        elements_per_record: int
+        elements_per_record: int,
+        file_path_for_logging: Path | None = None,
 ) -> Iterator[tuple[float, ...]]:
     """
     Create a record generator for a Constantinos Kalapotharakos format file's contents.
 
     :param file_contents: The file contents object.
     :param elements_per_record: The number of elements per record.
+    :param file_path_for_logging: The optional file path to include in logging messages.
     :return: A generator that iterates over the records.
     """
+    path_logging_string = f'{file_path_for_logging.name}: ' if file_path_for_logging is not None else ''
     value_iterator = re.finditer(rb"\S+", file_contents)
-    count = 0
+    record_index = 0
+    record_string_length = 0
+    record_string_length_determined = False
+    values = []
     while True:
-        values = []
         try:
-            values.append(float(next(value_iterator).group(0)))
+            value_regex_match = next(value_iterator)
+            value_string = value_regex_match.group(0)
+            try:
+                values = [float(value_string)]
+            except ValueError as error:
+                if value_string.startswith(b'\x00') and record_string_length_determined:
+                    null_value_repeat_count = len(value_string) // len(b'\x00')
+                    yields_to_repeat = null_value_repeat_count // record_string_length
+                    for _ in range(yields_to_repeat):
+                        logger.warning(f'{path_logging_string}Encountered repeating `b\'\x00\'` string. '
+                                       f'Yielding previous record for record {record_index}.')
+                        yield tuple(values)
+                        record_index += 1
+                    continue
+                else:
+                    raise error
         except StopIteration:
             break
         try:
             for _ in range(elements_per_record - 1):
-                values.append(float(next(value_iterator).group(0)))
+                value_regex_match = next(value_iterator)
+                values.append(float(value_regex_match.group(0)))
+                if not record_string_length_determined:
+                    record_string_length = value_regex_match.end() + 1
             yield tuple(values)
-            if count % 100000 == 0:
-                logger.info(f'Processed {count} rows.')
-            count += 1
+            if record_index % 100000 == 0:
+                logger.info(f'{path_logging_string}Processed {record_index} records.')
+            record_index += 1
+            record_string_length_determined = True
         except StopIteration:
             raise ConstantinosKalapotharakosFormatError(
                 f'The Constantinos Kalapotharakos format file ran out of elements when trying to get '
