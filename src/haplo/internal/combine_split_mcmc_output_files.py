@@ -43,7 +43,7 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
     logger.info(f'Scanning first file to get chain count and iteration count.')
     chain_count, known_complete_iterations = get_chain_count_and_known_complete_iterations(split_data_file_paths[0],
                                                                                            elements_per_record)
-    max_known_complete_iteration_index = known_complete_iterations + 1
+    max_known_complete_iteration_index = known_complete_iterations - 1
     iterations = np.arange(max_known_complete_iteration_index + 1, dtype=np.int64)
     cpus = np.arange(len(split_data_file_paths), dtype=np.int64)
     chains = np.array([0, 1], dtype=np.int64)
