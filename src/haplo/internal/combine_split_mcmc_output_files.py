@@ -78,9 +78,9 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
                     new_iteration_chunk_size_=1_000)
     shutil.rmtree(temporary_combined_output_path0)
     if not any(split_is_final_iteration_known_incomplete_list):  # All false, meaning we should add the final iteration.
-        save_final_iteration_region(temporary_combined_output_path1, final_iteration_parameters_batch,
-                                    final_iteration_log_likelihood_batch, known_complete_iterations, cpus, chains,
-                                    parameter_count, parameter_indexes)
+        save_batch_region(temporary_combined_output_path1, final_iteration_parameters_batch,
+                          final_iteration_log_likelihood_batch, np.array([known_complete_iterations], dtype=np.int64),
+                          cpus, chains, parameter_count, parameter_indexes, append_iteration=True)
     if combined_output_path.suffix == '.zip':
         dataset = xarray.open_zarr(temporary_combined_output_path1)
         temporary_combined_output_zip_path1 = temporary_combined_output_path1.parent.joinpath(
@@ -93,9 +93,16 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         temporary_combined_output_path1.rename(combined_output_path)
 
 
-def save_batch_region(zarr_path: Path, parameters_batch: npt.NDArray, log_likelihood_batch: npt.NDArray,
-                      iterations: npt.NDArray, cpus: npt.NDArray, chains: npt.NDArray,
-                      parameter_count: int, parameter_indexes: npt.NDArray):
+def save_batch_region(
+        zarr_path: Path,
+        parameters_batch: list[tuple[float, ...]],
+        log_likelihood_batch: list[float],
+        iterations: npt.NDArray,
+        cpus: npt.NDArray, chains: npt.NDArray,
+        parameter_count: int,
+        parameter_indexes: npt.NDArray,
+        append_iteration: bool = False,
+):
     flat_parameters_batch_array = np.array(parameters_batch, dtype=np.float32)
     parameters_batch_array = flat_parameters_batch_array.reshape(
         [iterations.size, cpus.size, chains.size, parameter_count])
@@ -120,36 +127,10 @@ def save_batch_region(zarr_path: Path, parameters_batch: npt.NDArray, log_likeli
             ),
         },
     )
-    region_dataset.to_zarr(zarr_path, region='auto')
-
-
-def save_final_iteration_region(zarr_path, parameters_batch, log_likelihood_batch,
-                                iteration, cpus, chains, parameter_count, parameter_indexes):
-    flat_parameters_batch_array = np.array(parameters_batch, dtype=np.float32)
-    parameters_batch_array = flat_parameters_batch_array.reshape(
-        [1, cpus.size, chains.size, parameter_count])
-    flat_log_likelihood_batch_array = np.array(log_likelihood_batch, dtype=np.float32)
-    log_likelihood_batch_array = flat_log_likelihood_batch_array.reshape(
-        [1, cpus.size, chains.size])
-    region_dataset = xarray.Dataset(
-        coords={
-            'iteration': np.array([iteration], dtype=np.int64),
-            'cpu': cpus,
-            'chain': chains,
-            'parameter_index': parameter_indexes,
-        },
-        data_vars={
-            'parameter': (
-                ['iteration', 'cpu', 'chain', 'parameter_index'],
-                parameters_batch_array,
-            ),
-            'log_likelihood': (
-                ['iteration', 'cpu', 'chain'],
-                log_likelihood_batch_array,
-            ),
-        },
-    )
-    region_dataset.to_zarr(zarr_path, append_dim='iteration')
+    if append_iteration:
+        region_dataset.to_zarr(zarr_path, append_dim='iteration')
+    else:
+        region_dataset.to_zarr(zarr_path, region='auto')
 
 
 def get_chain_count_and_known_complete_iterations(split_data_file_path: Path, elements_per_record: int
