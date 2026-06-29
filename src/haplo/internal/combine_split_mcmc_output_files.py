@@ -92,18 +92,18 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         temporary_combined_output_path1.rename(combined_output_path)
 
 
-def save_batch_to_cpu_and_iteration_region(zarr_path, parameters_batch_, log_likelihood_batch_,
-                                            region_start_iteration, region_end_iteration, cpu, chains_,
-                                            parameter_count_, parameter_indexes_):
+def save_batch_region(zarr_path, parameters_batch_, log_likelihood_batch_,
+                      iterations, cpu, chains_,
+                      parameter_count_, parameter_indexes_):
     flat_parameters_batch_array = np.array(parameters_batch_, dtype=np.float32)
     parameters_batch_array = flat_parameters_batch_array.reshape(
-        [region_end_iteration - region_start_iteration, 1, chains_.size, parameter_count_])
+        [iterations.size, 1, chains_.size, parameter_count_])
     flat_log_likelihood_batch_array = np.array(log_likelihood_batch_, dtype=np.float32)
     log_likelihood_batch_array = flat_log_likelihood_batch_array.reshape(
-        [region_end_iteration - region_start_iteration, 1, chains_.size])
+        [iterations.size, 1, chains_.size])
     region_dataset = xarray.Dataset(
         coords={
-            'iteration': np.arange(region_start_iteration, region_end_iteration, dtype=np.int64),
+            'iteration': iterations,
             'cpu': np.array([cpu], dtype=np.int64),
             'chain': chains_,
             'parameter_index': parameter_indexes_,
@@ -123,7 +123,7 @@ def save_batch_to_cpu_and_iteration_region(zarr_path, parameters_batch_, log_lik
 
 
 def save_final_iteration_region(zarr_path, parameters_batch, log_likelihood_batch,
-                                 iteration, cpus, chains, parameter_count, parameter_indexes):
+                                iteration, cpus, chains, parameter_count, parameter_indexes):
     flat_parameters_batch_array = np.array(parameters_batch, dtype=np.float32)
     parameters_batch_array = flat_parameters_batch_array.reshape(
         [1, cpus.size, chains.size, parameter_count])
@@ -192,7 +192,7 @@ def get_chain_count_and_known_complete_iterations(split_data_file_path: Path, el
 
 
 def create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, parameter_indexes_, iteration_chunk_size_,
-                               cpu_chunk_size_: int = 1):
+                              cpu_chunk_size_: int = 1):
     if iteration_chunk_size_ == -1:
         iteration_chunk_size_ = len(iterations_)
     if cpu_chunk_size_ == -1:
@@ -234,7 +234,7 @@ def create_empty_dataset_zarr(zarr_path_, iterations_, cpus_, chains_, parameter
 
 
 def rechunk_dataset(old_zarr_path_, new_zarr_path_, iterations_, cpus_, chains_, parameter_indexes_,
-                     new_iteration_chunk_size_):
+                    new_iteration_chunk_size_):
     logger.info('Rechunking dataset.')
     create_empty_dataset_zarr(new_zarr_path_, iterations_, cpus_, chains_, parameter_indexes_,
                               new_iteration_chunk_size_, cpu_chunk_size_=-1)
@@ -296,10 +296,10 @@ def process_split_file(temporary_combined_output_path0_, split_data_path_, split
         if chain_index == chains_[-1]:
             iteration += 1
             if iteration > batch_start_iteration + scanning_iteration_chunk_size_ or iteration >= known_complete_iterations:
-                save_batch_to_cpu_and_iteration_region(temporary_combined_output_path0_, parameters_batch,
-                                                       log_likelihood_batch, batch_start_iteration, iteration,
-                                                       split_data_frame_cpu_number, chains_, parameter_count_,
-                                                       parameter_indexes_)
+                iterations = np.arange(batch_start_iteration, iteration, dtype=np.int64)
+                save_batch_region(temporary_combined_output_path0_, parameters_batch, log_likelihood_batch,
+                                  iterations, split_data_frame_cpu_number, chains_,
+                                  parameter_count_, parameter_indexes_)
                 batch_start_iteration = iteration
                 parameters_batch = []
                 log_likelihood_batch = []
