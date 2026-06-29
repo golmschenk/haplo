@@ -10,6 +10,7 @@ from pathlib import Path
 
 import dask.array
 import numpy as np
+import numpy.typing as npt
 import xarray
 from zarr.storage import ZipStore
 
@@ -92,21 +93,21 @@ def combine_constantinos_kalapotharakos_split_mcmc_output_files_to_xarray_zarr(
         temporary_combined_output_path1.rename(combined_output_path)
 
 
-def save_batch_region(zarr_path, parameters_batch_, log_likelihood_batch_,
-                      iterations, cpu, chains_,
-                      parameter_count_, parameter_indexes_):
-    flat_parameters_batch_array = np.array(parameters_batch_, dtype=np.float32)
+def save_batch_region(zarr_path: Path, parameters_batch: npt.NDArray, log_likelihood_batch: npt.NDArray,
+                      iterations: npt.NDArray, cpus: npt.NDArray, chains: npt.NDArray,
+                      parameter_count: int, parameter_indexes: npt.NDArray):
+    flat_parameters_batch_array = np.array(parameters_batch, dtype=np.float32)
     parameters_batch_array = flat_parameters_batch_array.reshape(
-        [iterations.size, 1, chains_.size, parameter_count_])
-    flat_log_likelihood_batch_array = np.array(log_likelihood_batch_, dtype=np.float32)
+        [iterations.size, cpus.size, chains.size, parameter_count])
+    flat_log_likelihood_batch_array = np.array(log_likelihood_batch, dtype=np.float32)
     log_likelihood_batch_array = flat_log_likelihood_batch_array.reshape(
-        [iterations.size, 1, chains_.size])
+        [iterations.size, cpus.size, chains.size])
     region_dataset = xarray.Dataset(
         coords={
             'iteration': iterations,
-            'cpu': np.array([cpu], dtype=np.int64),
-            'chain': chains_,
-            'parameter_index': parameter_indexes_,
+            'cpu': cpus,
+            'chain': chains,
+            'parameter_index': parameter_indexes,
         },
         data_vars={
             'parameter': (
@@ -297,9 +298,9 @@ def process_split_file(temporary_combined_output_path0_, split_data_path_, split
             iteration += 1
             if iteration > batch_start_iteration + scanning_iteration_chunk_size_ or iteration >= known_complete_iterations:
                 iterations = np.arange(batch_start_iteration, iteration, dtype=np.int64)
-                save_batch_region(temporary_combined_output_path0_, parameters_batch, log_likelihood_batch,
-                                  iterations, split_data_frame_cpu_number, chains_,
-                                  parameter_count_, parameter_indexes_)
+                save_batch_region(temporary_combined_output_path0_, parameters_batch, log_likelihood_batch, iterations,
+                                  np.array([split_data_frame_cpu_number], dtype=np.int64), chains_, parameter_count_,
+                                  parameter_indexes_)
                 batch_start_iteration = iteration
                 parameters_batch = []
                 log_likelihood_batch = []
