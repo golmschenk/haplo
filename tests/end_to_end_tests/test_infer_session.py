@@ -11,7 +11,7 @@ from haplo.models import SingleDenseNetwork
 
 
 def test_infer_session():
-    os.environ["WANDB_MODE"] = "disabled"
+    os.environ['WANDB_MODE'] = 'disabled'
     os.environ['WANDB_DISABLED'] = 'true'
     full_dataset_path = Path(__file__).parent.joinpath(
         'test_train_session_xarray_zipped_zarr_resources/100_svf_dataset.zarr.zip')
