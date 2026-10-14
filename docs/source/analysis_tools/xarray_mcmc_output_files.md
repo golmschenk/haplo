@@ -135,8 +135,10 @@ See the [full Xarray documentation](https://docs.xarray.dev/en/stable/) for ever
 You can open the Xarray dataset from the Zarr file using:
 ```python
 import xarray
+from zarr.storage import ZipStore
 
-dataset = xarray.open_zarr(zarr_path)
+store = ZipStore(zarr_path)
+dataset = xarray.open_zarr(store)
 ```
 
 At any point after manipulating the Xarray dataset (say, after reducing the subsample by slicing on the iterations), you can save the updated dataset to another Zarr file using:
