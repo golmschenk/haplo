@@ -27,8 +27,10 @@ Note, this expects all the `.dat` files in the directory are the split output fi
 Once converted, you can open the Xarray dataset from the Zarr file using:
 ```python
 import xarray
+from zarr.storage import ZipStore
 
-dataset = xarray.open_zarr(zarr_path)
+store = ZipStore(zarr_path)
+dataset = xarray.open_zarr(store)
 ```
 
 Xarray automatically parallelizes many tasks. This is normally useful on your own machine or a job node, as it speeds things up. However, if you just want to do a couple quick operations on a cluster login node (such as the PFE login node), the node often gets mad at you for trying to use all the available CPUs. We can explicitly tell Xarray (which uses Dask under-the-hood) to only use a single core using:
